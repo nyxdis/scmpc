@@ -49,6 +49,7 @@
  * Private functions.
  */
 
+#if 0
 static struct hostent *resolve(const char *hostname)
 {
 	short int i;
@@ -103,6 +104,73 @@ static int server_connect(struct hostent *he, int port, int sockd)
 		return 0;
 
 	return 1;
+}
+#endif
+
+/*
+ * http://www.ipv6style.jp/en/apps/20030829/index.shtml
+ */
+static int server_connect(const char *host, int port, error_t **error)
+{
+	int err, sockd = -1, s_opts, c;
+	char *service;
+	struct addrinfo hints, *res, *result;
+	error_t *child_error = NULL;
+
+	*error = NULL;
+	
+	service = alloc_sprintf(6, "%d", port);
+	memset(&hints, 0, sizeof(hints)); 
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+
+	err = getaddrinfo(host, service, &hints, &result);
+	if (err) {
+		int error_val = (err == EAI_AGAIN) ? 2 : 1;
+		if (err == EAI_MEMORY) {
+			*error = ERROR_OUT_OF_MEMORY;
+			freeaddrinfo(result);
+			return -1;
+		}
+		child_error = error_set(1, gai_strerror(err), NULL);
+		*error = error_set(error_val, "Could not get host information",
+				child_error);
+		freeaddrinfo(result);
+		return -1;
+	}
+
+	/* Attempt to connect using getaddrinfo results */
+	for (res = result; res != NULL; res = res->ai_next) {
+		sockd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		if (sockd < 0) {
+			/* This one's broken... Try again. */
+			continue;
+		}
+
+		/* Add non-blocking option without clobbering previous options. */
+		s_opts = fcntl(sockd, F_GETFL, 0);
+		fcntl(sockd, F_SETFL, s_opts | O_NONBLOCK);
+
+		c = connect(sockd, res->ai_addr, res->ai_addrlen);
+		if (c < 0 && errno != EINPROGRESS) {
+			close(sockd);
+			sockd = -1;
+			continue;
+		}
+
+		/* Success! */
+		break;
+	}
+
+	freeaddrinfo(result);
+	free(service);
+
+	if (sockd < 0) {
+		*error = error_set(2, "Could not connect to host.", child_error);
+		return -1;
+	} else {
+		return sockd;
+	}
 }
 
 
@@ -270,7 +338,9 @@ mpd_connection *mpd_connect(const char *hostname, int port, int timeout,
 		error_t **error)
 {
 	mpd_connection *conn;
+#if 0
 	struct hostent *he;
+#endif
 	buffer_t *buffer;
 	error_t *child_error = NULL;
 	
@@ -288,6 +358,17 @@ mpd_connection *mpd_connect(const char *hostname, int port, int timeout,
 	}
 	
 	conn->status = DISCONNECTED;
+	conn->sockd = server_connect(hostname, port, &child_error);
+	if (ERROR_IS_SET(child_error)) {
+		if (child_error == ERROR_OUT_OF_MEMORY) {
+			error_clear(child_error);
+			*error = ERROR_OUT_OF_MEMORY;
+		} else {
+			*error = error_set(-1, "Could not connect to host.", child_error);
+		}
+		goto mpd_connect_error;
+	}
+#if 0
 	conn->sockd = sock_open();
 	if (conn->sockd == 0) {
 		*error = error_set(-1, "Could not allocate socket.", NULL);
@@ -304,6 +385,7 @@ mpd_connection *mpd_connect(const char *hostname, int port, int timeout,
 		*error = error_set(-1, "Could not connect to host.", NULL);
 		goto mpd_connect_error;
 	}
+#endif
 
 	conn->timeout.tv_sec = timeout;
 	conn->timeout.tv_usec = 0;

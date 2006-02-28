@@ -168,9 +168,10 @@ The default location of the pid file.
 .RE
 
 .SH BUGS
-There is no IPv6 support for communicating with MPD. If libcurl was compiled
-with IPv6 support and Audioscrobbler supports it, it should work for
-communicating with Audioscrobbler, but I have no way of testing it.
+The MPD connection code should work with IPv6, but I have no way of testing it.
+If libcurl was compiled with IPv6 support and Audioscrobbler supports it, it
+should work for communicating with Audioscrobbler, but like I say, I have no
+way of knowing.
 .PP
 There is no proxy support for communicating with MPD. However, if you use a
 proxy to connect to the internet and your \fIhttp_proxy\fR environment variable
