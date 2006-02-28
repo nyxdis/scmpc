@@ -1,0 +1,4 @@
+argtable:  http://argtable.sourceforge.net/
+confuse:   http://www.nongnu.org/confuse/
+libdaemon: http://0pointer.de/lennart/projects/libdaemon/
+libcurl:   http://curl.haxx.se/libcurl  (needs to be >= 7.10)

@@ -1,0 +1,42 @@
+##
+# Just in case you start wondering what I was smoking when I made this build
+# system:
+#
+# http://www.xs4all.nl/~evbergen/nonrecursive-make.html
+#
+
+SHELL := /bin/sh
+
+.SUFFIXES:
+.SUFFIXES: .c .o
+
+CC := @CC@
+CFLAGS := @CFLAGS@
+LDFLAGS := @LDFLAGS@
+LIBS := @LIBS@ @libcurl_LIBS@ @confuse_LIBS@ @libdaemon_LIBS@
+
+BUILD_CFLAGS := -Wall -Wextra -pedantic -Wno-unused-parameter $(CFLAGS)
+
+INSTALL := @INSTALL@
+
+prefix := @prefix@
+exec_prefix := @exec_prefix@
+bindir := @bindir@
+sysconfdir := @sysconfdir@
+datadir := @datadir@
+mandir := @mandir@
+man1dir := $(mandir)/man1
+
+srcdir := @srcdir@
+builddir := .
+VPATH := @srcdir@
+
+program_name := @PACKAGE_NAME@
+program_version := @PACKAGE_VERSION@
+program_name_version := $(program_name)-$(program_version)
+
+CLEAN := 
+DISTCLEAN := autom4te.cache config.log config.status Makefile
+MAINTAINER_CLEAN := configure 
+
+include $(srcdir)/Rules.mk
