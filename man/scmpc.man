@@ -168,16 +168,17 @@ The default location of the pid file.
 .RE
 
 .SH BUGS
-There is no IPv6 support for communicating with MPD. Communicating with
-Audioscrobbler uses the libcurl library, but I haven't investigated
-sufficiently to find out the state of IPv6 support in that.
+There is no IPv6 support for communicating with MPD. If libcurl was compiled
+with IPv6 support and Audioscrobbler supports it, it should work for
+communicating with Audioscrobbler, but I have no way of testing it.
 .PP
-There is no proxy support for communicating with MPD. However, if your
-\fIhttp_proxy\fR environment variable is set up correctly, \fBscmpc\fR should
-use that automatically when connecting to Audioscrobbler.
+There is no proxy support for communicating with MPD. However, if you use a
+proxy to connect to the internet and your \fIhttp_proxy\fR environment variable
+is set up correctly, \fBscmpc\fR should use that automatically when connecting
+to Audioscrobbler.
 .PP
-Currently, there is no support for translating scmpc. This is the most likely
-deficiency that I know of the be fixed soon.
+Currently, there is no support for translating scmpc, but that could be added
+at some point in the future if there is demand for it.
 .PP
 Please report any other bugs to Jonathan Coome <jcoome@gmail.com>.
 
