@@ -50,6 +50,14 @@ typedef struct write_buffer_t {
 	size_t avail;
 } buffer_t;
 
+/**
+ * file_open()
+ *
+ * A version of fopen() that also checks that the file you're writing to or
+ * reading from isn't a symbolic link, and also provides some more helpful
+ * errors if something goes wrong.
+ */
+FILE *file_open(const char *filename, const char *mode, error_t **error);
 
 /**
  * open_log()

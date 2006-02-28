@@ -40,8 +40,8 @@
 #include <config.h>
 #endif
 
-#include "misc.h"
 #include "liberror.h"
+#include "misc.h"
 #include "scmpc.h"
 #include "mpd.h"
 #include "libmpd.h"

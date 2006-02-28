@@ -40,8 +40,8 @@
 #include <config.h>
 #endif
 
-#include "misc.h"
 #include "liberror.h"
+#include "misc.h"
 #include "md5.h"
 #include "scmpc.h"
 #include "libmpd.h"
@@ -576,18 +576,21 @@ static void save_queue(void)
 	queue_node *current_song;
 	static bool writeable_warned = FALSE;
 	enum loglevel warning_level = ERROR;
+	error_t *error;
 	
 	pthread_mutex_lock(&submission_queue_mutex);
 
 	current_song = queue.first;
 
-	if ((cache_file = fopen(prefs.cache_file, "w")) == NULL) {
+	cache_file = file_open(prefs.cache_file, "w", &error);
+	if (ERROR_IS_SET(error)) {
 		if (! writeable_warned)
 			writeable_warned = TRUE;
 		else
 			warning_level = INFO;
-		scmpc_log(warning_level,"Cache file cannot be opened for writing (%s).",
-				prefs.cache_file);
+		scmpc_log(warning_level,"Cache file (%s) cannot be opened for writing"
+				": %s", prefs.cache_file, error->msg);
+		error_clear(error);
 		goto save_queue_exit;
 	}
 	
@@ -621,13 +624,18 @@ static void load_queue(void)
 	char *line, *artist, *album, *title, *date;
 	long length;
 	FILE *cache_file;
+	error_t *error;
 
 	artist = title = album = date = NULL;
 	length = 0;
 	
-	if ((cache_file = fopen(prefs.cache_file, "r")) == NULL) {
-		scmpc_log(DEBUG, "Cache file cannot be opened for reading (%s).",
-				prefs.cache_file);
+	cache_file = file_open(prefs.cache_file, "r", &error);
+	if (ERROR_IS_SET(error)) {
+		if (error == ERROR_OUT_OF_MEMORY)
+			return;
+		scmpc_log(DEBUG, "Cache file (%s) cannot be opened for reading"
+				": %s", prefs.cache_file, error->msg);
+		error_clear(error);
 		return;
 	}
 	

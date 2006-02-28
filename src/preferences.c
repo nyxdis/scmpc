@@ -34,6 +34,7 @@
 #include <config.h>
 #endif
 
+#include "liberror.h"
 #include "misc.h"
 #include "scmpc.h"
 #include "preferences.h"
@@ -264,7 +265,7 @@ static void parse_command_line(int argc, char **argv)
 	} else if (version->count > 0) {
 		printf("%s version %s\n", progname, SCMPC_VERSION);
 		printf("A multithreaded audioscrobbler client for MPD.\n");
-		printf("Copyright 2005 Jonathan Coome <jcoome@gmail.com>\n");
+		printf("Copyright 2005-2006 Jonathan Coome <jcoome@gmail.com>\n");
 		exit_code = EXIT_SUCCESS;
 		goto exit;
 	} else if (n_errors > 0) {

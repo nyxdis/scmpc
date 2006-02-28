@@ -25,7 +25,7 @@ maintainer-clean: distclean
 	rm -fr $(MAINTAINER_CLEAN)
 
 .PHONY: dist
-dist: depend
+dist: depend clean
 	@echo Creating $(program_name_version).tar.bz2
 	@rm -f ./$(program_name_version).tar.bz2
 	@cp -r ../$(program_name) ../$(program_name_version)
@@ -33,9 +33,10 @@ dist: depend
 		--exclude "autom4te.cache" --exclude "*.swp" --exclude "scmpc.conf" \
 		--exclude "config.log" --exclude "config.status" --exclude "Makefile" \
 		--exclude "config.h" --exclude "stamp-h1" --exclude "*.o" \
+		--exclude ".svn" \
 		../$(program_name_version)/
 	@mv ../$(program_name_version).tar.bz2 .
-	@rm -r ../$(program_name_version)
+	@rm -fr ../$(program_name_version)
 
 check:
 	@echo Currently there are no tests for this program...

@@ -16,10 +16,10 @@ DEFINES := -DHAVE_CONFIG_H
 INCLUDES := -I$(src_d) -I$(src_b)
 LDLIBS := $(LIBS)
 
-CLEAN += $(OBJS) $(PROGRAM) $(DEPENDS)
-DISTCLEAN += $(src_b)/config.h $(src_b)/stamp-h1
+CLEAN += $(OBJS) $(PROGRAM)
+DISTCLEAN += $(src_b)/config.h $(src_b)/stamp-h1 $(DEPENDS)
 
-targets: $(DEPENDS) $(PROGRAM)
+targets: $(PROGRAM)
 install: $(PROGRAM)_install
 uninstall: $(PROGRAM)_uninstall
 

@@ -169,19 +169,15 @@ The default location of the pid file.
 
 .SH BUGS
 There is no IPv6 support for communicating with MPD. Communicating with
-Audioscrobbler uses the libcurl library, which I haven't investigated
+Audioscrobbler uses the libcurl library, but I haven't investigated
 sufficiently to find out the state of IPv6 support in that.
 .PP
-I don't know the level of support for proxies either - I'm pretty sure that you
-won't be able to use a proxy between scmpc and MPD, but I'm less sure about
-Audioscrobbler. Again, it uses libcurl, but I haven't investigated this part.
+There is no proxy support for communicating with MPD. However, if your
+\fIhttp_proxy\fR environment variable is set up correctly, \fBscmpc\fR should
+use that automatically when connecting to Audioscrobbler.
 .PP
 Currently, there is no support for translating scmpc. This is the most likely
 deficiency that I know of the be fixed soon.
-.PP
-File permissions may be insecure by default, and it scmpc doesn't currently
-check that it's not going to be writing to a symbolic link. \fBThis may be
-dangerous.\fR
 .PP
 Please report any other bugs to Jonathan Coome <jcoome@gmail.com>.
 

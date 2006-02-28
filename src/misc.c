@@ -24,6 +24,7 @@
 
 #include <pthread.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <signal.h>
 #include <unistd.h>
 #include <time.h>
@@ -31,11 +32,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <errno.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include "liberror.h"
 #include "misc.h"
 #include "scmpc.h"
 #include "preferences.h"
@@ -48,15 +51,45 @@ void __die(const char msg[], const char file[], int line)
 	end_program();
 }
 
+FILE *file_open(const char *filename, const char *mode, error_t **error)
+{
+	FILE *file;
+	struct stat file_status;
+
+	*error = NULL;
+	
+	if (stat(filename, &file_status) != 0) {
+		if (! (errno == ENOENT && strchr(mode, 'r') == NULL)) {
+			*error = error_set(errno, strerror(errno), NULL);
+			return NULL;
+		}
+		/* Otherwise the file is going to be created by fopen() */
+	} else if (! S_ISREG(file_status.st_mode)) {
+		*error = error_set(1, "This file is not a regular text file.", NULL);
+		return NULL;
+	}
+
+	file = fopen(filename, mode);
+	if (file == NULL) {
+		*error = error_set(errno, strerror(errno), NULL);
+		return NULL;
+	}
+	
+	return file;
+}
+
 void open_log(const char *filename)
 {
+	error_t *error = NULL;
+	
 	if (! prefs.fork) {
 		log_file = stdout;
 	} else {
-		log_file = fopen(filename, "a");
-		if (log_file == NULL) {
-			fprintf(stderr, "The log file (%s) cannot be opened for writing.\n",
-					filename);
+		log_file = file_open(filename, "a", &error);
+		if (ERROR_IS_SET(error)) {
+			fprintf(stderr, "The log file (%s) cannot be opened: %s\n",
+					filename, error->msg);
+			error_clear(error);
 		}
 	}
 }

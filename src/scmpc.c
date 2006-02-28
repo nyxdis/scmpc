@@ -45,8 +45,8 @@
 #include <config.h>
 #endif
 
-#include "misc.h"
 #include "liberror.h"
+#include "misc.h"
 #include "libmpd.h"
 #include "mpd.h"
 #include "scmpc.h"
