@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 	open_log(prefs.log_file);
 	
 	if ((pid = daemon_pid_file_is_running()) >= 0) {
-		fprintf(stderr, "Daemon is already running on PID file %u\n", pid);
+		fprintf(stderr, "Daemon is already running with PID: %u\n", pid);
 		exit(EXIT_FAILURE);
 	}
 	

@@ -155,12 +155,12 @@ static void as_set_password(as_connection *as_conn, const char *challenge,
 	}
 }
 
-static long int check_interval(char *line, char *strtok_buffer)
+static unsigned long check_interval(char *line, char *strtok_buffer)
 {
 	while ((line = strtok_r(NULL, "\n", &strtok_buffer)) != NULL) {
 		if (strncmp(line, "INTERVAL", 8) == 0) {
 			scmpc_log(DEBUG, "Received interval of %ss", &line[9]);
-			return strtol(&line[9], NULL, 10);
+			return (unsigned long)strtol(&line[9], NULL, 10);
 		}
 	}
 	return 10L;
@@ -176,15 +176,17 @@ static void as_handshake(as_connection *as_conn)
 {
 	char *handshake_url, *s_buffer, *line;
 	unsigned short int line_no = 1;
-	int ret, retry_time;
+	int ret;
+	unsigned long retry_time = 1;
 	buffer_t *buffer;
 
 	scmpc_log(DEBUG, "as_handshake() called");
 	
 	/* We should wait at least half an hour between handshake attempts. */
-	retry_time = (int)difftime(as_conn->last_handshake, time(NULL));
+	retry_time = (unsigned long)difftime(as_conn->last_handshake, time(NULL));
 	if (as_conn->last_handshake != 0 && retry_time < 1800) {
-		scmpc_log(DEBUG, "Last handshake was less than 30 minutes ago. Sleeping.");
+		scmpc_log(DEBUG, "Last handshake was less than 30 minutes ago. "
+				"Sleeping for %d seconds.", retry_time);
 		as_conn->interval = retry_time;
 		return;
 	}

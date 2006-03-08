@@ -49,7 +49,7 @@ typedef struct {
 	struct curl_slist *headers;
 	char *submit_url;
 	char password[33];
-	long interval;
+	unsigned long interval;
 	long error_count;
 	enum connection_status status;
 	time_t last_handshake;
