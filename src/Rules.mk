@@ -17,7 +17,8 @@ INCLUDES := -I$(src_d) -I$(src_b)
 LDLIBS := $(LIBS)
 
 CLEAN += $(OBJS) $(PROGRAM)
-DISTCLEAN += $(src_b)/config.h $(src_b)/stamp-h1 $(DEPENDS)
+DISTCLEAN += $(src_b)/config.h $(src_b)/stamp-h1
+MAINTAINER_CLEAN += $(DEPENDS)
 
 targets: $(PROGRAM)
 install: $(PROGRAM)_install

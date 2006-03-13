@@ -23,7 +23,7 @@
  */
 
 
-#define SCMPC_VERSION "0.1.0"
+#define SCMPC_VERSION "0.1.1"
 
 /**
  * end_program()
