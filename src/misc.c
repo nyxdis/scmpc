@@ -60,12 +60,17 @@ FILE *file_open(const char *filename, const char *mode, error_t **error)
 	
 	if (stat(filename, &file_status) != 0) {
 		if (! (errno == ENOENT && strchr(mode, 'r') == NULL)) {
+			/* Something went wrong - the file doesn't exist an we're trying to
+			 * read from it, or anything else. */
 			*error = error_set(errno, strerror(errno), NULL);
 			return NULL;
 		}
 		/* Otherwise the file is going to be created by fopen() */
-	} else if (! S_ISREG(file_status.st_mode)) {
-		*error = error_set(1, "This file is not a regular text file.", NULL);
+	} else if (! S_ISREG(file_status.st_mode) && strchr(mode, 'r') == NULL) {
+		char *errorstr = alloc_sprintf(strlen(filename)+1, "%s is not a regular"
+				" text file - scmpc will not write to it.", filename);
+		*error = error_set(0, errorstr, NULL);
+		free(errorstr);
 		return NULL;
 	}
 

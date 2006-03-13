@@ -37,7 +37,7 @@
 /* Prerequisite of audioscrobbler.h */
 #include <curl/curl.h>
 
-#include <libdaemon/dpid.h>
+/* #include <libdaemon/dpid.h> */
 #include <libdaemon/dlog.h>
 #include <libdaemon/dfork.h>
 
@@ -54,6 +54,10 @@
 #include "preferences.h"
 
 /* Static function prototypes */
+static int scmpc_is_running(void);
+static int scmpc_pid_create(void);
+static int scmpc_pid_remove(void);
+
 static void cleanup(void);
 static void daemonise(void);
 static void *sig_handler(void *arg);
@@ -87,7 +91,6 @@ int main(int argc, char *argv[])
 	
 	/* Set indetification string for the daemon for both syslog and PID file */
 	daemon_log_ident = daemon_ident_from_argv0(argv[0]);
-	daemon_pid_file_proc = pid_filename;
 
 	/* Used by some libdaemon functions internally. */
 	daemon_log_use = DAEMON_LOG_STDERR;
@@ -98,7 +101,7 @@ int main(int argc, char *argv[])
 	 * will get some idea that there isn't going to be any logging. */
 	open_log(prefs.log_file);
 	
-	if ((pid = daemon_pid_file_is_running()) >= 0) {
+	if ((pid = scmpc_is_running()) >= 0) {
 		fprintf(stderr, "Daemon is already running with PID: %u\n", pid);
 		exit(EXIT_FAILURE);
 	}
@@ -170,8 +173,9 @@ static void cleanup(void)
 		scmpc_log(DEBUG, "pthread_join(scrobbler) failed: %d", rc);
 	}
 
-	if (prefs.fork && daemon_pid_file_remove() != 0)
-		scmpc_log(ERROR, "Could not unlink pid file.");
+	if (prefs.fork) {
+		scmpc_pid_remove();
+	}
 	
 	scmpc_log(INFO, "Exiting.\n");
 	close_log();
@@ -184,9 +188,109 @@ static void cleanup(void)
 	pthread_exit(EXIT_SUCCESS);
 }
 
-const char *pid_filename(void)
+
+static int scmpc_is_running(void)
 {
-	return (const char *)prefs.pid_file;
+	error_t *error;
+	int pid, ret;
+	FILE *pid_file = file_open(prefs.pid_file, "r", &error);
+
+	if (ERROR_IS_SET(error)) {
+		/* File probably doesn't exist, so it will be created by
+		 * scmpc_pid_create(). */
+		/* XXX:  What will happen if the file has weird permissions? */
+		error_clear(error);
+		return -1;
+	}
+
+	ret = fscanf(pid_file, "%d", &pid);
+	fclose(pid_file);
+
+	if (ret < 1) {
+		/* This is an invalid pid file. Remove it, and carry on. */
+		if (unlink(prefs.pid_file) == -1) {
+			fprintf(stderr, "A file exists at %s, but it is not a valid pid "
+					"file, and cannot be removed. Please check and possibly "
+					"remove this file yourself.\n", prefs.pid_file);
+			return 1;
+		} else {
+			fprintf(stdout, "Invalid pid file removed at %s\n",prefs.pid_file);
+			return -1;
+		}
+	}
+
+	if (kill((pid_t)pid, 0) == 0) {
+		/* The pid that the file references exists, and we have permission to
+		 * kill it. This probably means it is another instance of this program
+		 * running, but _it may not be_. There's probably a way to check the
+		 * argv[0] of the process, but looking through /proc can't be
+		 * particularly portable... */
+		return pid;
+	} else if (errno == EPERM) {
+		/* The pid that the file references exists, but since we can't send
+		 * signals to it it probably isn't this program. Remove the file and
+		 * carry on as if it was never there. */
+		if (unlink(prefs.pid_file) == -1) {
+			/* That's odd, we don't own the file, either. Raise an error, and
+			 * tell the main program that the daemon is already running. */
+			fprintf(stderr, "A pid file exists at %s, but it doesn't appear to"
+					" reference a running scmpc program, and scmpc isn't "
+					"running with enough permissions to remove it. Please "
+					"check, and possibly remove this file yourself.\n", 
+					prefs.pid_file);
+			return 1;
+		} else {
+			fprintf(stdout, "Old pid file removed.\n");
+			return -1;
+		}
+	} else if (errno == ESRCH) {
+		/* There is nothing running with this pid. Remove the file and carry on
+		 * our merry way. */
+		if (unlink(prefs.pid_file) == -1) {
+			/* Hmm, we can't remove the file. Raise an error, and tell the main
+			 * program that scmpc is already running. */
+			fprintf(stderr, "A pid file exists at %s, but it doesn't appear to"
+					" reference a running scmpc program, and scmpc isn't "
+					"running with enough permissions to remove it. Please "
+					"check, and possibly remove this file yourself.\n", 
+					prefs.pid_file);
+			return 1;
+		} else {
+			fprintf(stdout, "Old pid file removed.\n");
+			return -1;
+		}
+	} else {
+		fprintf(stderr, "kill() was sent an invalid signal. This shouldn't be "
+				"happening, and is a bug.\n");
+		return 1;
+	}
+}
+
+static int scmpc_pid_create(void)
+{
+	error_t *error;
+	FILE *pid_file = file_open(prefs.pid_file, "w", &error);
+
+	if (ERROR_IS_SET(error)) {
+		scmpc_log(ERROR, "Cannot open pid file for writing (%s): %s\n", 
+				prefs.pid_file, error->msg);
+		error_clear(error);
+		return 0;
+	}
+
+	fprintf(pid_file, "%d\n", (int)getpid());
+	fclose(pid_file);
+	return 1;
+}
+
+static int scmpc_pid_remove(void)
+{
+	if (unlink(prefs.pid_file) == -1) {
+		scmpc_log(ERROR, "Could not remove pid file: %s", strerror(errno));
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 static void daemonise(void)
@@ -219,10 +323,11 @@ static void daemonise(void)
 			exit(EXIT_FAILURE);
 		}
 	} else { /* The daemon */
+		/* Unset the ridiculous umask */
+		umask(027);
+		
 		/* Create the PID file */
-		if (daemon_pid_file_create() < 0) {
-			scmpc_log(ERROR, "Could not create PID file (%s): %s.",
-					prefs.pid_file, strerror(errno));
+		if (! scmpc_pid_create()) {
 			/* Send the error condition to the parent process */
 			daemon_retval_send(1);
 			exit(EXIT_FAILURE);
