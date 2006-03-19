@@ -357,8 +357,7 @@ static void as_submit_queue(as_connection *as_conn)
 		scmpc_log(ERROR, "Could not parse audioscrobbler submit response.");
 	} else if (strncmp(line, "FAILED", 6) == 0) {
 		if (strcmp(last_failed, &line[7]) != 0) {
-			memset(last_failed, '\0', 512);
-			strncpy(last_failed, &line[7], 511);
+			strlcpy(last_failed, &line[7], sizeof(last_failed));
 			scmpc_log(INFO, "Audioscrobbler returned FAILED: %s", &line[7]);
 		}
 		as_conn->interval = check_interval(line, s_buffer);
@@ -509,8 +508,7 @@ void __add_song_to_queue(const char *artist, const char *title,
 		time_broken_down = gmtime_r(&time_s, &result);
 		strftime(new_song->date, 20, "%Y-%m-%d %H:%M:%S", time_broken_down);
 	} else {
-		memset(&(new_song->date), '\0', 20);
-		strncpy(new_song->date, date, 19);
+		strlcpy(new_song->date, date, sizeof(new_song->date));
 	}
 	
 	pthread_mutex_lock(&submission_queue_mutex);

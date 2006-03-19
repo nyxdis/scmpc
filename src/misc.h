@@ -137,3 +137,12 @@ char *alloc_sprintf(int estimated_size, const char *format, ...);
  * keeps reading until a newline is read.
  */
 char *read_line_from_file(FILE *file);
+
+/* Two useful OpenBSD string functions. */
+#ifndef HAVE_STRLCAT
+size_t strlcat(char *dst, const char *src, size_t siz);
+#endif
+
+#ifndef HAVE_STRLCPY
+size_t strlcpy(char *dst, const char *src, size_t siz);
+#endif

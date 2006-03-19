@@ -4,9 +4,12 @@ src_b := $(builddir)/src
 
 VPATH += $(src_d)
 
+SRC_FILES := $(wildcard $(src_d)/*.c)
 SRC := audioscrobbler.c liberror.c libmpd.c md5.c misc.c mpd.c preferences.c \
 		scmpc.c
+
 OBJS := $(patsubst %.c,$(src_b)/%.o,$(SRC))
+
 PROGRAM := $(src_b)/scmpc
 DEPENDS := $(src_d)/depends.mk
 
@@ -25,9 +28,8 @@ install: $(PROGRAM)_install
 uninstall: $(PROGRAM)_uninstall
 
 .PHONY: depend
-depend: $(SRC) $(SRC:.c=.h)
-#	touch $@
-	$(srcdir)/depends.sh 'src_b' $(patsubst %,$(src_d)/%,$(SRC)) > $(DEPENDS)
+depend: $(SRC_FILES) $(SRC_FILES:.c=.h)
+	$(srcdir)/depends.sh 'src_b' $(patsubst %,$(src_d)/%,$(SRC_FILES)) > $(DEPENDS)
 
 $(PROGRAM): $(OBJS)
 	$(CC) $(LDFLAGS) $(LDLIBS) $(OBJS) -o $@

@@ -135,6 +135,7 @@ void scmpc_log(enum loglevel level, const char *format, ...)
 	fflush(log_file);
 }
 
+#define BUFFER_SIZE 1024
 /**
  * buffer_alloc()
  *
@@ -147,13 +148,13 @@ buffer_t *buffer_alloc(void)
 	buffer = malloc(sizeof(buffer_t));
 	if (buffer == NULL)
 		return NULL;
-	buffer->buffer = calloc(1024, 1);
+	buffer->buffer = calloc(BUFFER_SIZE, 1);
 	if (buffer->buffer == NULL) {
 		free(buffer);
 		return NULL;
 	}
 	buffer->len = 0;
-	buffer->avail = 1023;
+	buffer->avail = BUFFER_SIZE;
 
 	return buffer;
 }
@@ -189,7 +190,7 @@ size_t buffer_write(void *input, size_t size, size_t nmemb, void *buf)
 	
 		/* Memory is added in 1024 byte blocks. 
 		 * Work out how many more we need. */
-		alloc_size = ((input_length/1024)+1)*1024 + buffer->len+buffer->avail+1;
+		alloc_size = ((input_length/1024)+1)*1024 + buffer->len + buffer->avail;
 		new_buffer = realloc(buffer->buffer, alloc_size);
 		if (new_buffer == NULL) {
 			free(old_contents);
@@ -197,16 +198,14 @@ size_t buffer_write(void *input, size_t size, size_t nmemb, void *buf)
 		} else {
 			buffer->buffer = new_buffer;
 		}
-		buffer->avail = alloc_size-1;
+		buffer->avail = alloc_size;
 
-		/* So that strncat doesn't break horribly on dirty memory. */
-		memset(&(buffer->buffer), '\0', alloc_size);
-		strcpy(buffer->buffer, old_contents);
+		strlcpy(buffer->buffer, old_contents, alloc_size);
 		
 		free(old_contents);
 	}
 
-	strncat(buffer->buffer, input, input_length);
+	strlcat(buffer->buffer, input, buffer->avail + buffer->len);
 	buffer->len += input_length;
 	buffer->avail -= input_length;
 
@@ -269,12 +268,15 @@ char *read_line_from_file(FILE *file)
 	if ((line = malloc(line_length)) == NULL)
 		return NULL;
 
+	/* Fetch up to line_length bytes from the file, or up to a newline */
 	ret = fgets(line, line_length, file);
 	if (ret == NULL) {
 		free(line);
 		return NULL;
 	}
 
+	/* If the line was too long, and so doesn't contain a newline, carry on
+	 * fetching until it does. */
 	while ((newline = strchr(line, '\n')) == NULL) {
 		char *old_line = line;
 
@@ -297,12 +299,117 @@ char *read_line_from_file(FILE *file)
 			return NULL;
 		}
 
-		strncat(line, tmp, line_length/2);
+		strlcat(line, tmp, line_length);
 		free(tmp);
 	}
 
+	/* Don't include the newline in the line we return. */
 	if (newline != NULL)
 		*newline = '\0';
 
 	return line;
 }
+
+/* The following copyright notice applies to the strlcat function below. */
+/*
+ * Copyright (c) 1998 Todd C. Miller <Todd.Miller@courtesan.com>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*
+ * Appends src to string dst of size siz (unlike strncat, siz is the
+ * full size of dst, not space left).  At most siz-1 characters
+ * will be copied.  Always NUL terminates (unless siz <= strlen(dst)).
+ * Returns strlen(src) + MIN(siz, strlen(initial dst)).
+ * If retval >= siz, truncation occurred.
+ */
+#ifndef HAVE_STRLCAT
+size_t
+strlcat(char *dst, const char *src, size_t siz)
+{
+	char *d = dst;
+	const char *s = src;
+	size_t n = siz;
+	size_t dlen;
+
+	/* Find the end of dst and adjust bytes left but don't go past end */
+	while (n-- != 0 && *d != '\0')
+		d++;
+	dlen = d - dst;
+	n = siz - dlen;
+
+	if (n == 0)
+		return(dlen + strlen(s));
+	while (*s != '\0') {
+		if (n != 1) {
+			*d++ = *s;
+			n--;
+		}
+		s++;
+	}
+	*d = '\0';
+
+	return(dlen + (s - src));	/* count does not include NUL */
+}
+#endif
+
+/* The following copyright notice applies to the strlcpy function below. */
+/*
+ * Copyright (c) 1998 Todd C. Miller <Todd.Miller@courtesan.com>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*
+ * Copy src to string dst of size siz.  At most siz-1 characters
+ * will be copied.  Always NUL terminates (unless siz == 0).
+ * Returns strlen(src); if retval >= siz, truncation occurred.
+ */
+#ifndef HAVE_STRLCPY
+size_t
+strlcpy(char *dst, const char *src, size_t siz)
+{
+	char *d = dst;
+	const char *s = src;
+	size_t n = siz;
+
+	/* Copy as many bytes as will fit */
+	if (n != 0 && --n != 0) {
+		do {
+			if ((*d++ = *s++) == 0)
+				break;
+		} while (--n != 0);
+	}
+
+	/* Not enough room in dst, add NUL and traverse rest of src */
+	if (n == 0) {
+		if (siz != 0)
+			*d = '\0';		/* NUL-terminate dst */
+		while (*s++)
+			;
+	}
+
+	return(s - src - 1);	/* count does not include NUL */
+}
+#endif

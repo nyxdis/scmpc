@@ -311,7 +311,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA PKG_CONFIG ac_pt_PKG_CONFIG confuse_CFLAGS confuse_LIBS libdaemon_CFLAGS libdaemon_LIBS libcurl_CFLAGS libcurl_LIBS mpd_host mpd_port mpd_timeout cache_interval queue_length log_level CPP EGREP LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA PKG_CONFIG ac_pt_PKG_CONFIG confuse_CFLAGS confuse_LIBS libdaemon_CFLAGS libdaemon_LIBS libcurl_CFLAGS libcurl_LIBS CPP EGREP LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -2915,8 +2915,6 @@ cat >>confdefs.h <<_ACEOF
 #define DEFAULT_MPD_HOST "$DEFAULT_HOST"
 _ACEOF
 
-mpd_host="$DEFAULT_HOST"
-
 
 echo "$as_me:$LINENO: checking for default MPD port" >&5
 echo $ECHO_N "checking for default MPD port... $ECHO_C" >&6
@@ -2934,8 +2932,6 @@ echo "${ECHO_T}$DEFAULT_PORT" >&6
 cat >>confdefs.h <<_ACEOF
 #define DEFAULT_MPD_PORT $DEFAULT_PORT
 _ACEOF
-
-mpd_port=$DEFAULT_PORT
 
 
 echo "$as_me:$LINENO: checking for default MPD timeout" >&5
@@ -2955,8 +2951,6 @@ cat >>confdefs.h <<_ACEOF
 #define DEFAULT_MPD_TIMEOUT $DEFAULT_TIMEOUT
 _ACEOF
 
-mpd_timeout=$DEFAULT_TIMEOUT
-
 
 echo "$as_me:$LINENO: checking for default cache interval" >&5
 echo $ECHO_N "checking for default cache interval... $ECHO_C" >&6
@@ -2975,8 +2969,6 @@ cat >>confdefs.h <<_ACEOF
 #define DEFAULT_CACHE_INTERVAL $DEFAULT_CACHE
 _ACEOF
 
-cache_interval=$DEFAULT_CACHE
-
 
 echo "$as_me:$LINENO: checking for default maximum song queue length" >&5
 echo $ECHO_N "checking for default maximum song queue length... $ECHO_C" >&6
@@ -2994,8 +2986,6 @@ echo "${ECHO_T}$DEFAULT_QUEUE" >&6
 cat >>confdefs.h <<_ACEOF
 #define DEFAULT_QUEUE_LENGTH $DEFAULT_QUEUE
 _ACEOF
-
-queue_length=$DEFAULT_QUEUE
 
 
 echo "$as_me:$LINENO: checking for default log level" >&5
@@ -3026,8 +3016,6 @@ else
 cat >>confdefs.h <<_ACEOF
 #define DEFAULT_LOG_LEVEL $log_level
 _ACEOF
-
-	log_level=$DEFAULT_LOG_LEVEL
 
 fi
 
@@ -3936,7 +3924,10 @@ esac
 
 
 
-for ac_func in gethostbyname memset select socket strdup strerror strstr strtol
+
+
+for ac_func in gethostbyname memset select socket strdup strerror strstr \
+	strtol strlcpy strlcat
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 echo "$as_me:$LINENO: checking for $ac_func" >&5
@@ -4037,6 +4028,18 @@ _ACEOF
 fi
 done
 
+
+#if test $ac_cv_func_strlcpy = no; then
+#	AC_SUBST([LOCAL_STRLCPY], 1)
+#else
+#	AC_SUBST([LOCAL_STRLCPY], 0)
+#fi
+#
+#if test $ac_cv_func_strlcat = no; then
+#	AC_SUBST([LOCAL_STRLCAT], 1)
+#else
+#	AC_SUBST([LOCAL_STRLCAT], 0)
+#fi
 
                     ac_config_files="$ac_config_files examples/scmpc.conf Makefile"
 cat >confcache <<\_ACEOF
@@ -4669,12 +4672,6 @@ s,@libdaemon_CFLAGS@,$libdaemon_CFLAGS,;t t
 s,@libdaemon_LIBS@,$libdaemon_LIBS,;t t
 s,@libcurl_CFLAGS@,$libcurl_CFLAGS,;t t
 s,@libcurl_LIBS@,$libcurl_LIBS,;t t
-s,@mpd_host@,$mpd_host,;t t
-s,@mpd_port@,$mpd_port,;t t
-s,@mpd_timeout@,$mpd_timeout,;t t
-s,@cache_interval@,$cache_interval,;t t
-s,@queue_length@,$queue_length,;t t
-s,@log_level@,$log_level,;t t
 s,@CPP@,$CPP,;t t
 s,@EGREP@,$EGREP,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t

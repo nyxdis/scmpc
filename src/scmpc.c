@@ -312,7 +312,7 @@ static void daemonise(void)
 		/* Wait for 2 seconds for the return value passed from the daemon 
 		 * process */
 		if ((ret = daemon_retval_wait(2)) < 0) {
-			fputs("Did not recieve return value from daemon process.\n",stderr);
+			fputs("Did not receive return value from daemon process.\n",stderr);
 			exit(EXIT_FAILURE);
 		}
 
@@ -376,7 +376,8 @@ static void *sig_handler(void *arg)
 				scmpc_log(INFO, "SIGHUP caught. Ignoring for now.");
 				break;
 			case SIGSEGV:
-				scmpc_log(ERROR, "Segfault. Exiting (hopefully!).");
+				scmpc_log(ERROR, "Segfault in signal handling thread.");
+				end_program();
 				break;
 			default:
 				scmpc_log(INFO, "Caught signal %d. Ignoring.", signal);
