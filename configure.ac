@@ -28,6 +28,9 @@ AC_CHECK_LIB([pthread], [pthread_mutex_init],,
 	AC_MSG_ERROR([[scmpc requires a pthread library]]))
 
 
+# The AC_SUBST values are used to replace the default values in the
+# configuration file. Don't remove them!
+
 AC_MSG_CHECKING([for default MPD host])
 AC_ARG_WITH([default-mpd-host],
 	    AC_HELP_STRING([--with-default-mpd-host=ARG],
@@ -36,6 +39,7 @@ AC_ARG_WITH([default-mpd-host],
             [DEFAULT_HOST="localhost"])
 AC_MSG_RESULT([$DEFAULT_HOST])
 AC_DEFINE_UNQUOTED([DEFAULT_MPD_HOST], ["$DEFAULT_HOST"], [Default MPD host])
+AC_SUBST([mpd_host], ["$DEFAULT_HOST"])
 
 AC_MSG_CHECKING([for default MPD port])
 AC_ARG_WITH([default-mpd-port],
@@ -45,6 +49,7 @@ AC_ARG_WITH([default-mpd-port],
             [DEFAULT_PORT="6600"])
 AC_MSG_RESULT([$DEFAULT_PORT])
 AC_DEFINE_UNQUOTED([DEFAULT_MPD_PORT], [$DEFAULT_PORT], [Default MPD port])
+AC_SUBST([mpd_port], [$DEFAULT_PORT])
 
 AC_MSG_CHECKING([for default MPD timeout])
 AC_ARG_WITH([default-mpd-timeout],
@@ -55,6 +60,7 @@ AC_ARG_WITH([default-mpd-timeout],
 AC_MSG_RESULT([$DEFAULT_TIMEOUT])
 AC_DEFINE_UNQUOTED([DEFAULT_MPD_TIMEOUT], [$DEFAULT_TIMEOUT], 
 	[Default MPD timeout])
+AC_SUBST([mpd_timeout], [$DEFAULT_TIMEOUT])
 
 AC_MSG_CHECKING([for default cache interval])
 AC_ARG_WITH([default-cache-interval],
@@ -66,6 +72,7 @@ AC_ARG_WITH([default-cache-interval],
 AC_MSG_RESULT([$DEFAULT_CACHE])
 AC_DEFINE_UNQUOTED([DEFAULT_CACHE_INTERVAL], [$DEFAULT_CACHE], 
 	[Default cache interval])
+AC_SUBST([cache_interval], [$DEFAULT_CACHE])
 
 AC_MSG_CHECKING([for default maximum song queue length])
 AC_ARG_WITH([default-queue-length],
@@ -77,6 +84,7 @@ AC_ARG_WITH([default-queue-length],
 AC_MSG_RESULT([$DEFAULT_QUEUE])
 AC_DEFINE_UNQUOTED([DEFAULT_QUEUE_LENGTH], [$DEFAULT_QUEUE], 
 	[Default maximum number of unsubmitted songs to keep in memory])
+AC_SUBST([queue_length], [$DEFAULT_QUEUE])
 
 AC_MSG_CHECKING([for default log level])
 AC_ARG_WITH([default-log-level],
@@ -97,6 +105,7 @@ if test "x$log_level" = "x"; then
 	AC_MSG_ERROR([[Invalid value for default-log-level: $DEFAULT_LOG_LEVEL]])
 else
 	AC_DEFINE_UNQUOTED([DEFAULT_LOG_LEVEL], [$log_level], [Default log level])
+	AC_SUBST([log_level], [$DEFAULT_LOG_LEVEL])
 fi
 
 # Checks for header files.
@@ -123,18 +132,6 @@ AC_C_BIGENDIAN(
 #AC_FUNC_STRFTIME
 #AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([gethostbyname memset select socket strdup strerror strstr \
-	strtol strlcpy strlcat])
-
-#if test $ac_cv_func_strlcpy = no; then
-#	AC_SUBST([LOCAL_STRLCPY], 1)
-#else
-#	AC_SUBST([LOCAL_STRLCPY], 0)
-#fi
-#
-#if test $ac_cv_func_strlcat = no; then
-#	AC_SUBST([LOCAL_STRLCAT], 1)
-#else
-#	AC_SUBST([LOCAL_STRLCAT], 0)
-#fi
+	strtol strlcat strlcpy])
 
 AC_OUTPUT([examples/scmpc.conf Makefile])
