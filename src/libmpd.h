@@ -38,23 +38,6 @@ typedef struct {
 #endif
 } mpd_connection;
 
-/**
- * mpd_song:
- *
- * A struct containing information about the current song. If mpd_state is
- * anything other than PLAYING, everything else will be (null).
- */
-typedef struct {
-	char *artist;
-	char *title;
-	char *album;
-	char *filename;
-	long length;
-	long current_pos;
-	enum { STOPPED, PAUSED, PLAYING, UNKNOWN } mpd_state;
-	long crossfade;
-} mpd_song;
-
 
 /**
  * mpd_response()
