@@ -132,6 +132,6 @@ AC_C_BIGENDIAN(
 #AC_FUNC_STRFTIME
 #AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([gethostbyname memset select socket strdup strerror strstr \
-	strtol strlcat strlcpy])
+	strtol strlcat strlcpy asprintf getline])
 
 AC_OUTPUT([examples/scmpc.conf Makefile])

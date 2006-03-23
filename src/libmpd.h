@@ -1,5 +1,5 @@
 /**
- * libmpd.c: MPD interaction code.
+ * libmpd.h: MPD interaction code.
  *
  * ==================================================================
  * Copyright (c) 2005-2006 Jonathan Coome.
@@ -27,12 +27,6 @@
  * mpd_connection_t:
  *
  * Contains the very basic stuff needed to pass an mpd connection around.
- * After doing anything, check to see if an error has occurred. If so, 
- * error will be set to 1, and there will be an explanatory message in
- * error_str[].
- *
- * TODO: Perhaps set error to different numbers, depending on what has
- * happened? Maybe use an enum to make it easier to manipulate.
  */
 typedef struct {
 	int sockd;
@@ -63,48 +57,84 @@ typedef struct {
 
 
 /**
- * mpd_connect()
+ * mpd_response()
  *
- * Connects to mpd. Returns a pointer to a calloc'ed mpd_connection_t struct
- * for use with other functions. Check to see if the connection worked by
- * checking mpd_connection_t->error.
- *
- * FIXME: It only works with IPv4 addresses at the moment.
+ * Reads the response from the MPD server, and puts it into the buffer
+ * provided. Returns 0 on error, and 1 otherwise.
  */
-mpd_connection *mpd_connect(const char *hostname, int port, int timeout,
-		error_t **error);
+int mpd_response(mpd_connection *mpd_conn, buffer_t *buffer, 
+		struct s_exception *e);
+
+
+/**
+ * mpd_send_command()
+ *
+ * Sends a command to the MPD server described by mpd_conn. Returns 0 on
+ * failure, and 1 on success.
+ */
+int mpd_send_command(mpd_connection *mpd_conn, const char *command, 
+		struct s_exception *e);
+
+
+/**
+ * mpd_escape()
+ *
+ * Escapes any " or \ characters in a string, and puts the new string in the
+ * dynamically allocated string *escaped. Returns the size of the escaped
+ * string, or 0 if an error occurred.
+ */
+size_t mpd_escape(char **escaped, const char *string);
+
 
 /**
  * mpd_send_password()
  *
- * Send a password to the server.
+ * Sends a password to mpd. Returns 0 on error, -1 if MPD doesn't accept the
+ * password, and 1 on success.
  */
-void mpd_send_password(mpd_connection *mpd_conn, const char *_password, 
-		error_t **error);
+int mpd_send_password(mpd_connection *mpd_conn, const char *password,
+		struct s_exception *e);
+
 
 /**
- * mpd_disconnect():
+ * mpd_connection_init()
  *
- * Disconnects from mpd, and closes the socket. Also frees the mpd_conn
- * struct allocated by mpd_connect().
+ * Allocates the memory for the mpd_conn struct.
+ * XXX: Is this really necessary? Why not use a static struct?
+ */
+mpd_connection *mpd_connection_init(void);
+
+
+/**
+ * mpd_connection_cleanup()
+ *
+ * Frees the memory allocated by mpd_connection_init().
+ */
+void mpd_connection_cleanup(mpd_connection *mpd_conn);
+
+
+/**
+ * mpd_connect()
+ *
+ * Connects to an MPD server. Returns 0 on failure, and 1 on success.
+ */
+int mpd_connect(mpd_connection *mpd_conn, const char *hostname, int port, 
+		int timeout, struct s_exception *e);
+
+
+/**
+ * mpd_disconnect()
+ *
+ * Disconnects from MPD.
  */
 void mpd_disconnect(mpd_connection *mpd_conn);
 
+
 /**
- * mpd_command():
+ * mpd_check_server()
  *
- * Sends the specified command to mpd, and returns the number of bytes sent.
- * (WHY?) Raises an mpd_conn->error if not all of the command was sent.
- *
- * Now a static function - nothing outside this library should be using it
- * anyway. It's also now named send_command()
-int mpd_command ( mpd_connection *mpd_conn, char command[] );
+ * Checks the connection to the server by sending it a "status\n" command. If
+ * it receives no answer it will assume you need a password but haven't set it.
+ * Returns 0 on failure, and 1 on success.
  */
-
-int mpd_server_response(mpd_connection *mpd_conn, const char *end, 
-		buffer_t *buffer, error_t **error);
-
-int mpd_send_command(mpd_connection *mpd_conn, const char *command, 
-		error_t **error);
-
-void mpd_check_server(mpd_connection *mpd_conn, error_t **error);
+int mpd_check_server(mpd_connection *mpd_conn, struct s_exception *e);

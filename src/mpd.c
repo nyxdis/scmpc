@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#include "liberror.h"
+#include "exception.h"
 #include "misc.h"
 #include "scmpc.h"
 #include "mpd.h"
@@ -59,67 +59,85 @@ mpd_song_info song_info;
 /**
  * mpd_thread_cleanup()
  *
- * Called when the thread exits. It clears any mpd_errors hanging around, and
- * disconnects from mpd.
+ * Called when the thread exits. It disconnects from MPD and frees the memory
+ * allocated for the connection struct.
  */
-static void mpd_thread_cleanup(void *mpd_conn)
+static void mpd_thread_cleanup(void *conn)
 {
-	mpd_connection **conn = (mpd_connection **)mpd_conn;
-	mpd_disconnect(*conn);
+	mpd_connection *mpd_conn = (mpd_connection *)conn;
+	mpd_disconnect(mpd_conn);
+	mpd_connection_cleanup(mpd_conn);
 }
 
 /**
  * mpd_reconnect()
  *
- * ...
+ * Attempts to connect to MPD, maybe disconnecting first if the connection
+ * failed. It sends the password if there is one specified, and checks to make
+ * sure we have read access to the server. Returns 1 on success, and 0 on
+ * failure.
  */
-static void mpd_reconnect(mpd_connection **mpd_conn)
+static int mpd_reconnect(mpd_connection *mpd_conn)
 {
 	extern struct preferences prefs;
-	error_t *error = NULL;
-	bool new_connection = TRUE;
+	struct s_exception e = EXCEPTION_INIT;
 
-	if (*mpd_conn != NULL) {
-		new_connection = FALSE;
-		scmpc_log(ERROR, "Connection error, disconnecting from MPD.");
+	if (mpd_conn->status == CONNECTED) {
+		mpd_disconnect(mpd_conn);
 	}
 	
-	while (1) {
-		if (*mpd_conn != NULL)
-			mpd_disconnect(*mpd_conn);
-		*mpd_conn = mpd_connect(prefs.mpd_hostname, prefs.mpd_port, 
-				prefs.mpd_timeout, &error);
-		if (ERROR_IS_SET(error)) {
-			error_clear(error); /* Ignore the error, and simply try */
-			sleep(30);             /* again until we do reconnect. */
-			continue;
-		}
-		
-		if (strlen(prefs.mpd_password) > 0) {
-			mpd_send_password(*mpd_conn, prefs.mpd_password, &error);
-			if (ERROR_IS_SET(error)) {
-				error_clear(error);
-				sleep(30);
-				continue;
-			}
-		}
-
-		mpd_check_server(*mpd_conn, &error);
-		if (ERROR_IS_SET(error)) {
-			if (error == ERROR_OUT_OF_MEMORY)
-				continue;
-			if (new_connection)
-				scmpc_log(ERROR, "Could not check mpd status: %s", error->msg);
-			error_clear(error);
-			sleep(30);
-			continue;
-		}
-		if (new_connection)
-			scmpc_log(INFO, "Connected to mpd.");
-		else
-			scmpc_log(ERROR, "Successfully reconnected to MPD.");
-		break;
+	mpd_connect(mpd_conn, prefs.mpd_hostname, prefs.mpd_port, 
+			prefs.mpd_timeout, &e);
+	if (e.code != 0) {
+		scmpc_log(DEBUG, "MPD connection error: %s", e.msg);
+		goto mpd_reconnect_error;
 	}
+
+	if (strlen(prefs.mpd_password) > 0) {
+		mpd_send_password(mpd_conn, prefs.mpd_password, &e);
+		if (e.code != 0) {
+			if (e.code == INVALID_PASSWORD) {
+				scmpc_log(ERROR, "Your password was not accepted by MPD. "
+						"Please correct it and restart this program.");
+			} else {
+				scmpc_log(DEBUG, "MPD connection error: %s", e.msg);
+			}
+			goto mpd_reconnect_error;
+		}
+	}
+
+	mpd_check_server(mpd_conn, &e);
+	if (e.code != 0) {
+		if (e.code == INVALID_PASSWORD) {
+			scmpc_log(ERROR, "You do not have read access to the MPD server. "
+					"Please correct your password and restart this program.");
+		}
+		goto mpd_reconnect_error;
+	}
+
+	scmpc_log(INFO, "Connected to mpd.");
+	return 1;
+
+mpd_reconnect_error:
+	exception_clear(e);
+	return 0;
+}
+
+/**
+ * mpd_clear_song():
+ *
+ * Frees all the memory allocated by mpd_get_song().
+ */
+static void mpd_clear_song(mpd_song *song)
+{
+	if (song == NULL)
+		return;
+	
+	free(song->artist);
+	free(song->album);
+	free(song->title);
+	free(song->filename);
+	free(song);
 }
 
 /**
@@ -128,16 +146,13 @@ static void mpd_reconnect(mpd_connection **mpd_conn)
  * Returns a dynamically allocated mpd_song struct filled with the relevant
  * information from mpd. If the player is not playing, everything but
  * state will be empty. Once used, free the memory with mpd_clear_song().
- *
- * Returns null if an error occurs conversing with the deamon, so check
- * mpd_conn->error after using the command.
  */
-static mpd_song *mpd_get_song(mpd_connection *mpd_conn, error_t **error)
+static mpd_song *mpd_get_song(mpd_connection *mpd_conn, struct s_exception *e)
 {
 	char *line, *l_buffer, *value;
-	mpd_song *current_song;
-	error_t *child_error = NULL;
-	buffer_t *buffer;
+	mpd_song *current_song = NULL;
+	buffer_t *buffer = NULL;
+	struct s_exception ce = EXCEPTION_INIT;
 	char command[] = "command_list_begin\n"
 	                 "status\n"
 	                 "currentsong\n"
@@ -145,34 +160,31 @@ static mpd_song *mpd_get_song(mpd_connection *mpd_conn, error_t **error)
 
 	buffer = buffer_alloc();
 	if (buffer == NULL) {
-		*error = ERROR_OUT_OF_MEMORY;
-		return NULL;
+		e->code = OUT_OF_MEMORY;
+		goto error;
 	}
 	
-	mpd_send_command(mpd_conn, command, &child_error);
-	if (ERROR_IS_SET(child_error)) {
-		*error = error_set(-1, "Could not send command to mpd server.", 
-				child_error);
-		return NULL;
+	mpd_send_command(mpd_conn, command, &ce);
+	if (ce.code != 0) {
+		exception_reraise(e, ce);
+		goto error;
 	}
 	
-	mpd_server_response(mpd_conn, "OK\n", buffer, &child_error);
-	if (ERROR_IS_SET(child_error)) {
-		*error = error_set(-1, "Error occurred while waiting for the server "
-				"to reply.", child_error);
+	mpd_response(mpd_conn, buffer, &ce);
+	if (ce.code != 0) {
+		exception_reraise(e, ce);
 		goto error;
 	}
 
 	current_song = calloc(1, sizeof(mpd_song));
 	if (current_song == NULL) {
-		*error = ERROR_OUT_OF_MEMORY;
+		e->code = OUT_OF_MEMORY;
 		goto error;
 	}
 
 	line = strtok_r(buffer->buffer, "\n", &l_buffer);
 	if (line == NULL) {
-		*error = error_set(-1, "Could not parse response to get_song command",
-				NULL);
+		exception_create(e, "Could not parse response to get_song command");
 		goto error;
 	}
 
@@ -213,16 +225,16 @@ static mpd_song *mpd_get_song(mpd_connection *mpd_conn, error_t **error)
 
 			time = strtok_r(value, ":", &t_buffer);
 			if (time == NULL) {
-				*error = error_set(-1, "Could not parse time values.", NULL);
-				goto cleanup;
+				exception_create(e, "Could not parse time values.");
+				goto error;
 			} else {
 				current_song->current_pos = strtol(time, NULL, 10);
 			}
 
 			time = strtok_r(NULL, ":", &t_buffer);
 			if (time == NULL) {
-				*error = error_set(-1, "Could not parse time values.", NULL);
-				goto cleanup;
+				exception_create(e, "Could not parse time values.");
+				goto error;
 			} else {
 				current_song->length = strtol(time, NULL, 10);
 			}
@@ -230,28 +242,14 @@ static mpd_song *mpd_get_song(mpd_connection *mpd_conn, error_t **error)
 	} while ((line = strtok_r(NULL, "\n", &l_buffer)) != NULL);
 
 cleanup:
+	mpd_conn->error_count = 0;
 	buffer_free(buffer);
 	return current_song;
 error:
+	mpd_conn->error_count++;
 	buffer_free(buffer);
+	mpd_clear_song(current_song);
 	return NULL;
-}
-
-/**
- * mpd_clear_song():
- *
- * Frees all the memory allocated by mpd_get_song().
- */
-static void mpd_clear_song(mpd_song *song)
-{
-	if (song == NULL)
-		return;
-	
-	free(song->artist);
-	free(song->album);
-	free(song->title);
-	free(song->filename);
-	free(song);
 }
 
 /**
@@ -296,20 +294,19 @@ static void initialise_song_info(mpd_song *song)
  *
  * The main function in the thread. It retrieves the current song and player
  * status, and checks whether a song is valid and should be submitted to
- * audioscrobbler. If it is, it notifies the audioscrobbler thread using its
- * add_song_to_queue() function.
+ * audioscrobbler. If it is, it adds the song to the unsubmitted songs queue
+ * with the queue_add() function.
  */
 static void new_song_check(mpd_connection *mpd_conn)
 {
 	mpd_song *song;
-	error_t *error = NULL;
+	struct s_exception e = EXCEPTION_INIT;
 
-	song = mpd_get_song(mpd_conn, &error);
-	if (ERROR_IS_SET(error)) {
-		scmpc_log(ERROR,"Could not get current song: %s", error->msg);
-		error_clear(error);
-		/* mpd_clear_song() will do nothing if the song is NULL anyway. */
-		goto cleanup;
+	song = mpd_get_song(mpd_conn, &e);
+	if (e.code != 0) {
+		scmpc_log(ERROR,"Could not get current song: %s", e.msg);
+		exception_clear(e);
+		return;
 	}
 
 	/* Server isn't doing anything interesting... */
@@ -382,8 +379,7 @@ static void new_song_check(mpd_connection *mpd_conn)
 					reported_time);
 			song_info.submission_state = INVALID;
 		} else {
-			add_song_to_queue(song->artist, song->title, song->album, 
-					song->length);
+			queue_add(song->artist, song->title, song->album, song->length, NULL);
 			song_info.submission_state = SUBMITTED;
 		}
 	}
@@ -401,24 +397,32 @@ cleanup:
 void *mpd_thread(void *arg)
 {
 	mpd_connection *mpd_conn = NULL;
-	struct timespec sleeptime;
 
-	/* Sleep for a second. */
-	sleeptime.tv_sec = 1;
-	sleeptime.tv_nsec = 0;
+	mpd_conn = mpd_connection_init();
+	if (mpd_conn == NULL)
+		end_program();
 	
-	pthread_cleanup_push(mpd_thread_cleanup, (void *)&mpd_conn);
+	pthread_cleanup_push(mpd_thread_cleanup, (void *)mpd_conn);
 
 	while (1) {
+		unsigned int sleep_length = 1;
+
 		pthread_testcancel();
-		if (mpd_conn == NULL || mpd_conn->error_count >= 3 
-				|| mpd_conn->status == DISCONNECTED) {
+		if (mpd_conn->error_count >= 3 || mpd_conn->status == DISCONNECTED) {
 			initialise_song_info(NULL);
-			mpd_reconnect(&mpd_conn);
+			mpd_reconnect(mpd_conn);
 		} else if (mpd_conn->status != BADUSER) {
 			new_song_check(mpd_conn);
 		}
-		nanosleep(&sleeptime, NULL);
+
+		if (mpd_conn->error_count > 0 && (mpd_conn->error_count % 3) == 0) {
+			scmpc_log(INFO, "There have been 3 MPD connection failures in "
+					"succession. Waiting for 1 minute before reconnecting.");
+			sleep_length =  60;
+		}
+
+		sleep(sleep_length);
+			
 	}
 
 	pthread_cleanup_pop(0);

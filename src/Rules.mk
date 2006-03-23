@@ -5,8 +5,8 @@ src_b := $(builddir)/src
 VPATH += $(src_d)
 
 SRC_FILES := $(wildcard $(src_d)/*.c)
-SRC := audioscrobbler.c liberror.c libmpd.c md5.c misc.c mpd.c preferences.c \
-		scmpc.c
+SRC_HEADERS := $(wildcard $(src_d)/*.h)
+SRC := audioscrobbler.c libmpd.c md5.c misc.c mpd.c preferences.c scmpc.c
 
 OBJS := $(patsubst %.c,$(src_b)/%.o,$(SRC))
 
@@ -15,7 +15,7 @@ DEPENDS := $(src_d)/depends.mk
 
 -include $(DEPENDS)
 
-DEFINES := -DHAVE_CONFIG_H
+DEFINES := -DHAVE_CONFIG_H -D_GNU_SOURCE
 INCLUDES := -I$(src_d) -I$(src_b)
 LDLIBS := $(LIBS)
 
@@ -28,8 +28,8 @@ install: $(PROGRAM)_install
 uninstall: $(PROGRAM)_uninstall
 
 .PHONY: depend
-depend: $(SRC_FILES) $(SRC_FILES:.c=.h)
-	$(srcdir)/depends.sh 'src_b' $(patsubst %,$(src_d)/%,$(SRC_FILES)) > $(DEPENDS)
+depend: $(SRC_FILES) $(SRC_HEADERS)
+	$(srcdir)/depends.sh 'src_b' $(SRC_FILES) > $(DEPENDS)
 
 $(PROGRAM): $(OBJS)
 	$(CC) $(LDFLAGS) $(LDLIBS) $(OBJS) -o $@

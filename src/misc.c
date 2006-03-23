@@ -22,80 +22,59 @@
  * ==================================================================
  */
 
-#include <pthread.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <signal.h>
 #include <unistd.h>
-#include <time.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
 #include <errno.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <time.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "liberror.h"
+#include "exception.h"
 #include "misc.h"
-#include "scmpc.h"
 #include "preferences.h"
+#include "scmpc.h"
 
-FILE *log_file;
+char *error_strings[] = {
+	"No error occurred.",
+	"Out of memory.",
+	"File not found.",
+	"Connection timed out.",
+	"Could not connect to host.",
+	"Invalid password specified."
+};
 
-void __die(const char msg[], const char file[], int line)
-{
-	scmpc_log(ERROR, "%s:%d %s", file, line, msg);
-	end_program();
-}
-
-FILE *file_open(const char *filename, const char *mode, error_t **error)
-{
-	FILE *file;
-	struct stat file_status;
-
-	*error = NULL;
-	
-	if (stat(filename, &file_status) != 0) {
-		if (! (errno == ENOENT && strchr(mode, 'r') == NULL)) {
-			/* Something went wrong - the file doesn't exist an we're trying to
-			 * read from it, or anything else. */
-			*error = error_set(errno, strerror(errno), NULL);
-			return NULL;
-		}
-		/* Otherwise the file is going to be created by fopen() */
-	} else if (! S_ISREG(file_status.st_mode) && strchr(mode, 'r') == NULL) {
-		char *errorstr = alloc_sprintf(strlen(filename)+1, "%s is not a regular"
-				" text file - scmpc will not write to it.", filename);
-		*error = error_set(0, errorstr, NULL);
-		free(errorstr);
-		return NULL;
-	}
-
-	file = fopen(filename, mode);
-	if (file == NULL) {
-		*error = error_set(errno, strerror(errno), NULL);
-		return NULL;
-	}
-	
-	return file;
-}
+static FILE *log_file;
 
 void open_log(const char *filename)
 {
-	error_t *error = NULL;
+	struct s_exception e = EXCEPTION_INIT;
 	
 	if (! prefs.fork) {
 		log_file = stdout;
-	} else {
-		log_file = file_open(filename, "a", &error);
-		if (ERROR_IS_SET(error)) {
+		return;
+	}
+	
+	log_file = file_open(filename, "a", &e);
+	switch (e.code) {
+		case 0:
+			break;
+		case OUT_OF_MEMORY:
+			fputs("Out of memory.", stderr);
+			exit(EXIT_FAILURE);
+		case USER_DEFINED:
 			fprintf(stderr, "The log file (%s) cannot be opened: %s\n",
-					filename, error->msg);
-			error_clear(error);
-		}
+					filename, e.msg);
+			exception_clear(e);
+		default:
+			fprintf(stderr, "Unexpected error from file_open: %s\n", e.msg);
+			break;
 	}
 }
 
@@ -123,7 +102,10 @@ void scmpc_log(enum loglevel level, const char *format, ...)
 	
 	t = time(NULL);
 	t_broken_down = localtime(&t);
-	strftime(time_buf, TIME_BUF_LEN, "%Y-%m-%d %H:%M:%S  ", t_broken_down);
+	if (t_broken_down == NULL)
+		strlcpy(time_buf, "{localtime() failed}", TIME_BUF_LEN);
+	else
+		strftime(time_buf, TIME_BUF_LEN, "%Y-%m-%d %H:%M:%S  ", t_broken_down);
 
 	fputs(time_buf, log_file);
 	
@@ -148,7 +130,7 @@ buffer_t *buffer_alloc(void)
 	buffer = malloc(sizeof(buffer_t));
 	if (buffer == NULL)
 		return NULL;
-	buffer->buffer = calloc(BUFFER_SIZE, 1);
+	buffer->buffer = calloc(BUFFER_SIZE, sizeof(char));
 	if (buffer->buffer == NULL) {
 		free(buffer);
 		return NULL;
@@ -173,36 +155,27 @@ void buffer_free(buffer_t *buffer)
 /**
  * buffer_write()
  *
- * Callback used by curl whenever it receives data from the server.
+ * Writes to a buffer that automatically increases in size when required.
  */
 size_t buffer_write(void *input, size_t size, size_t nmemb, void *buf)
 {
 	size_t input_length = size * nmemb;
-	char *old_contents, *new_buffer;
+	char *new_buffer;
 	buffer_t *buffer = (buffer_t *)buf;
 
 	if (input_length > buffer->avail) {
 		size_t alloc_size;
 
-		old_contents = strdup(buffer->buffer);
-		if (old_contents == NULL)
-			return 0;
-	
 		/* Memory is added in 1024 byte blocks. 
 		 * Work out how many more we need. */
 		alloc_size = ((input_length/1024)+1)*1024 + buffer->len + buffer->avail;
 		new_buffer = realloc(buffer->buffer, alloc_size);
 		if (new_buffer == NULL) {
-			free(old_contents);
 			return 0;
 		} else {
 			buffer->buffer = new_buffer;
 		}
-		buffer->avail = alloc_size;
-
-		strlcpy(buffer->buffer, old_contents, alloc_size);
-		
-		free(old_contents);
+		buffer->avail = alloc_size - buffer->len;
 	}
 
 	strlcat(buffer->buffer, input, buffer->avail + buffer->len);
@@ -212,103 +185,173 @@ size_t buffer_write(void *input, size_t size, size_t nmemb, void *buf)
 	return input_length;
 }
 
-/* Based on the glibc printf manpage, so the copyright for this probably
- * belongs to the GNU Foundation.
- *
- * XXX: I'm not sure about the portability of using the return value of
- * vnsprintf... */
-char *alloc_sprintf(int size, const char *format, ...)
+
+FILE *file_open(const char *filename, const char *mode, struct s_exception *e)
 {
-	int n;
+	FILE *file;
+	struct stat file_status;
+	enum modes_e { READ, WRITE, APPEND } mode_e;
+
+	switch (mode[0]) {
+		case 'r': mode_e = READ; break;
+		case 'w': mode_e = WRITE; break;
+		case 'a': mode_e = APPEND; break;
+		default:
+			e->code = USER_DEFINED;
+			if (asprintf(&(e->msg), "Invalid mode '%s' passed to file_open "
+						"for file '%s'", mode, filename) == -1)
+				e->code = OUT_OF_MEMORY;
+			return NULL;
+	}
+
+	/* We don't want to write to symbolic links, because they could point to
+	 * anything. However, we don't really care about /reading/ from them. */
+
+	if (mode_e == WRITE || mode_e == APPEND) {
+		if (stat(filename, &file_status) != 0) {
+			/* It doesn't matter if the file doesn't exist - in this case it
+			 * isn't a link of any kind, so it can be safely created by fopen
+			 * below. */
+			if (errno != ENOENT) {
+				exception_create(e, strerror(errno));
+				return NULL;
+			}
+		} else if (! S_ISREG(file_status.st_mode)) {
+			exception_create(e, "This file is not a regular text file. "
+					"scmpc will not write to it.");
+			return NULL;
+		}
+	}
+
+	file = fopen(filename, mode);
+	if (file == NULL) {
+		if (errno == ENOENT) {
+			e->code = FILE_NOT_FOUND;
+		} else {
+			exception_create(e, strerror(errno));
+		}
+		return NULL;
+	}
+
+	return file;
+}
+
+#ifndef HAVE_ASPRINTF
+int asprintf(char **ret, const char *format, ...)
+{
+	int n, size = 100;
 	char *p, *np;
 	va_list ap;
-
-	if (size == 0)
-		size = 100;
 	
-	if ((p = malloc(size)) == NULL)
-		return NULL;
+	if ((p = malloc((size_t)size)) == NULL)
+		goto error;
 
-	while (1) {
+	while (TRUE) {
 		/* Try to print in the allocated space. */
 		va_start(ap, format);
-		n = vsnprintf(p, size, format, ap);
+		n = vsnprintf(p, (size_t)size, format, ap);
 		va_end(ap);
 		
 		/* If that worked, return the string. */
 		if (n > -1 && n < size)
-			return p;
+			break;
 		
 		/* Else try again with more space. */
-		if (n > -1)    /* glibc 2.1 */
-			size = n+1; /* precisely what is needed */
-		else           /* glibc 2.0 */
-			size *= 2;  /* twice the old size */
+		if (n > -1) /* vsnprintf returned the amount of space needed. */
+			size = n+1;
+		else        /* vsnprintf didn't return anything useful. */
+			size *= 2;
 		
-		if ((np = realloc (p, size)) == NULL) {
+		if ((np = realloc(p, (size_t)size)) == NULL) {
 			free(p);
-			return NULL;
+			goto error;
 		} else {
 			p = np;
 		}
 	}
+
+	*ret = p;
+	return (int)strlen(*ret);
+
+error:
+	*ret = NULL;
+	return -1;
 }
+#endif
 
-/**
- * read_line_from_file()
- *
- * Reads a line from the file specified. It allocates the memory required, and
- * keeps reading until a newline is read.
- */
-char *read_line_from_file(FILE *file)
+#ifndef HAVE_GETLINE
+ssize_t getline(char **lineptr, size_t *n, FILE *stream)
 {
-	char *line, *tmp, *newline, *ret;
-	size_t line_length = 256;
+	char *dest = *lineptr, *ret, *newline;
+	size_t len = *n;
 	
-	if ((line = malloc(line_length)) == NULL)
-		return NULL;
-
-	/* Fetch up to line_length bytes from the file, or up to a newline */
-	ret = fgets(line, line_length, file);
-	if (ret == NULL) {
-		free(line);
-		return NULL;
+	if (dest == NULL || len < 1) {
+		len = 256;
+		if ((dest = malloc(len)) == NULL) {
+			goto error;
+		}
 	}
-
+	
+	/* Fetch up to line_length bytes from the file, or up to a newline */
+	ret = fgets(dest, (int) (len-1), stream);
+	if (ret == NULL) {
+		if (feof(stream) != 0) {
+			dest[0] = '\0';
+			len = 0;
+			return 0;
+		} else {
+			goto error;
+		}
+	}
+	
 	/* If the line was too long, and so doesn't contain a newline, carry on
-	 * fetching until it does. */
-	while ((newline = strchr(line, '\n')) == NULL) {
-		char *old_line = line;
+	 * fetching until it does, or we hit the end of the file. */
+	while ((newline = strchr(dest, '\n')) == NULL) {
+		char *new_dest, *tmp;
 
-		if ((tmp = malloc(line_length)) == NULL) {
-			free(line);
-			return NULL;
-		}
-		
-		ret = fgets(tmp, line_length, file);
-		if (ret == NULL && ! feof(file)) {
-			free(tmp);
-			free(line);
-			return NULL;
-		}
-		
-		line_length *= 2;
-		if ((line = realloc(old_line, line_length)) == NULL) {
-			free(old_line);
-			free(tmp);
-			return NULL;
+		/* Create a new storage space the same size as the last one, and carry
+		 * on reading. We'll need to append this to the previous string - fgets
+		 * will just overwrite it. */
+		if ((tmp = malloc(len)) == NULL) {
+			goto error;
 		}
 
-		strlcat(line, tmp, line_length);
+		ret = fgets(tmp, (int) (len-1), stream);
+		if (ret == NULL) {
+			/* This probably shouldn't happen... */
+			if (feof(stream) != 0) {
+				free(tmp);
+				break;
+			} else {
+				free(tmp);
+				goto error;
+			}
+		}
+
+		len *= 2;
+		if ((new_dest = realloc(dest, (size_t)len)) == NULL) {
+			free(tmp);
+			goto error;
+		}
+
+		dest = new_dest;
+		strlcat(dest, tmp, len);
 		free(tmp);
 	}
-
+	
 	/* Don't include the newline in the line we return. */
 	if (newline != NULL)
 		*newline = '\0';
+	
+	return (ssize_t) (newline - dest - 1);
 
-	return line;
+error:
+	free(dest);
+	dest = NULL;
+	len = 0;
+	return -1;
 }
+#endif
 
 /* The following copyright notice applies to the strlcat function below. */
 /*

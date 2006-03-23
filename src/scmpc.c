@@ -45,7 +45,7 @@
 #include <config.h>
 #endif
 
-#include "liberror.h"
+#include "exception.h"
 #include "misc.h"
 #include "libmpd.h"
 #include "mpd.h"
@@ -191,15 +191,15 @@ static void cleanup(void)
 
 static int scmpc_is_running(void)
 {
-	error_t *error;
+	struct s_exception e = EXCEPTION_INIT;
 	int pid, ret;
-	FILE *pid_file = file_open(prefs.pid_file, "r", &error);
+	FILE *pid_file = file_open(prefs.pid_file, "r", &e);
 
-	if (ERROR_IS_SET(error)) {
+	if (e.code != 0) {
 		/* File probably doesn't exist, so it will be created by
 		 * scmpc_pid_create(). */
 		/* XXX:  What will happen if the file has weird permissions? */
-		error_clear(error);
+		exception_clear(e);
 		return -1;
 	}
 
@@ -268,13 +268,13 @@ static int scmpc_is_running(void)
 
 static int scmpc_pid_create(void)
 {
-	error_t *error;
-	FILE *pid_file = file_open(prefs.pid_file, "w", &error);
+	struct s_exception e = EXCEPTION_INIT;
+	FILE *pid_file = file_open(prefs.pid_file, "w", &e);
 
-	if (ERROR_IS_SET(error)) {
+	if (e.code != 0) {
 		scmpc_log(ERROR, "Cannot open pid file for writing (%s): %s\n", 
-				prefs.pid_file, error->msg);
-		error_clear(error);
+				prefs.pid_file, e.msg);
+		exception_clear(e);
 		return 0;
 	}
 

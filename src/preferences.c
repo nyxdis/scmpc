@@ -34,7 +34,7 @@
 #include <config.h>
 #endif
 
-#include "liberror.h"
+#include "exception.h"
 #include "misc.h"
 #include "scmpc.h"
 #include "preferences.h"
@@ -129,13 +129,22 @@ static int parse_files(cfg_t *cfg)
 		config_files[0] = strdup("");
 		config_files[1] = strdup("");
 	} else {
-		config_files[0] = alloc_sprintf(32, "%s/.scmpcrc", home);
-		config_files[1] = alloc_sprintf(32, "%s/.scmpc/scmpc.conf", home);
+		if ((asprintf(&(config_files[0]), "%s/.scmpcrc", home)) == -1)
+			exit(EXIT_FAILURE);
+		if ((asprintf(&(config_files[1]), "%s/.scmpc/scmpc.conf", home))== -1){
+			free(config_files[0]);
+			exit(EXIT_FAILURE);
+		}
 	}
 	config_files[2] = strdup(prefs.config_file);
 	
 	for (i = 0; i < 3; i++)
 	{
+		if (config_files[i] == NULL) {
+			fputs("Out of memory.", stderr);
+			exit(EXIT_FAILURE);
+		}
+			
 		switch (cfg_parse(cfg, config_files[i]))
 		{
 			case CFG_PARSE_ERROR:

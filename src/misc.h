@@ -22,6 +22,11 @@
  * ==================================================================
  */
 
+
+typedef short int bool;
+#define FALSE 0
+#define TRUE (! FALSE)
+
 enum loglevel {
 	NONE,
 	ERROR,
@@ -34,11 +39,6 @@ enum connection_status {
 	DISCONNECTED,
 	BADUSER
 };
-
-typedef enum {
-	FALSE,
-	TRUE
-} bool;
 
 typedef struct write_buffer_t {
 	/* The actual data returned by the server. */
@@ -57,7 +57,7 @@ typedef struct write_buffer_t {
  * reading from isn't a symbolic link, and also provides some more helpful
  * errors if something goes wrong.
  */
-FILE *file_open(const char *filename, const char *mode, error_t **error);
+FILE *file_open(const char *filename, const char *mode, struct s_exception *e);
 
 /**
  * open_log()
@@ -93,16 +93,6 @@ void close_log(void);
 void scmpc_log(enum loglevel, const char *format, ...);
 
 /**
- * die()
- *
- * Prints a message containing the file and line number to show where it was
- * called, and exits the program. Currently this is an interface to scmpc_log, 
- * but it could be defined differently if it was used somewhere else.
- */
-#define die(x) __die(x, __FILE__, __LINE__)
-void __die(const char msg[], const char file[], int line);
-
-/**
  * buffer_alloc()
  *
  * Allocates a write buffer to be used by buffer_write().
@@ -123,22 +113,21 @@ void buffer_free(buffer_t *buffer);
  */
 size_t buffer_write(void *input, size_t size, size_t nmemb, void *buf);
 
-/**
- * alloc_sprintf()
- *
- * Allocates the memory for a string, and then writes to it sprintf-style.
- */
-char *alloc_sprintf(int estimated_size, const char *format, ...);
+
 
 /**
- * read_line_from_file()
- *
- * Reads a line from the file specified. It allocates the memory required, and
- * keeps reading until a newline is read.
+ * Replacements for non-standard functions that sometimes appear in the
+ * standard libraries of various systems.
  */
-char *read_line_from_file(FILE *file);
 
-/* Two useful OpenBSD string functions. */
+#ifndef HAVE_GETLINE
+ssize_t getline(char **lineptr, size_t *n, FILE *stream);
+#endif
+
+#ifndef HAVE_ASPRINTF
+int asprintf(char **ret, const char *format, ...);
+#endif
+
 #ifndef HAVE_STRLCAT
 size_t strlcat(char *dst, const char *src, size_t siz);
 #endif

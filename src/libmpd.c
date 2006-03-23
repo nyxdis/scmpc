@@ -22,121 +22,61 @@
  * ==================================================================
  */
 
+
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/select.h>
-#include <sys/time.h>
-#include <netinet/in.h>
 #include <netdb.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <fcntl.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <stdio.h>
 #include <errno.h>
-#include <math.h>
+#include <assert.h>
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "liberror.h"
+#include "exception.h"
 #include "misc.h"
 #include "libmpd.h"
 
 
-/*
- * Private functions.
- */
-
-#if 0
-static struct hostent *resolve(const char *hostname)
-{
-	short int i;
-	extern int h_errno;
-	struct hostent *he;
-
-	/* Try to resolve the hostname three times. */
-	for (i = 0; i < 3; i++)
-	{
-		he = gethostbyname(hostname);
-		if (he == NULL) {
-			if (h_errno == TRY_AGAIN && i < 3) {
-				sleep (1);
-			} else {
-				return NULL;
-			}
-		} else {
-			break;
-		}
-	}
-	return he;
-}
-
-static int sock_open(void)
-{
-	int sockd, x;
-	
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockd < 0)
-		return 0;
-
-	/* Add non-blocking option without clobbering previous options. */
-	x = fcntl(sockd, F_GETFL, 0);
-	fcntl(sockd, F_SETFL, x | O_NONBLOCK);
-
-	return sockd;
-}
-
-static int server_connect(struct hostent *he, int port, int sockd)
-{
-	struct sockaddr_in serv_addr;
-	int c;
-	
-	/* FIXME: Doesn't work with IPv6 */
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port   = htons(port);
-	memcpy(&serv_addr.sin_addr.s_addr, he->h_addr_list[0], 
-	         sizeof(serv_addr.sin_addr.s_addr));
-	
-	c = connect(sockd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-	if (c < 0 && errno != EINPROGRESS)
-		return 0;
-
-	return 1;
-}
-#endif
-
-/*
+/**
+ * server_connect()
+ *
+ * Mostly inspired/taken from the link below. Should work with IPv4 and IPv6
+ * addresses transparently. Returns -1 on failure, and the socket descriptor on
+ * success.
+ * 
  * http://www.ipv6style.jp/en/apps/20030829/index.shtml
  */
-static int server_connect(const char *host, int port, error_t **error)
+static int server_connect(const char *host, int port, struct s_exception *e)
 {
 	int err, sockd = -1, s_opts, c;
-	char *service;
+	char *service = NULL;
 	struct addrinfo hints, *res, *result;
-	error_t *child_error = NULL;
 
-	*error = NULL;
-	
-	service = alloc_sprintf(6, "%d", port);
+	if (asprintf(&service, "%d", port) == -1)
+		return -1;
+
 	memset(&hints, 0, sizeof(hints)); 
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
 	err = getaddrinfo(host, service, &hints, &result);
-	if (err) {
-		int error_val = (err == EAI_AGAIN) ? 2 : 1;
-		if (err == EAI_MEMORY) {
-			*error = ERROR_OUT_OF_MEMORY;
+	switch (err) {
+		case 0:
+			break;
+		case EAI_MEMORY:
+			freeaddrinfo(result);
+			e->code = OUT_OF_MEMORY;
+			return -1;
+		case EAI_AGAIN:
+		default:
+			e->code = USER_DEFINED;
+			if (asprintf(&(e->msg), "Could not get host information: %s",
+					gai_strerror(err)) == -1)
+				e->code = OUT_OF_MEMORY;
 			freeaddrinfo(result);
 			return -1;
-		}
-		child_error = error_set(1, gai_strerror(err), NULL);
-		*error = error_set(error_val, "Could not get host information",
-				child_error);
-		freeaddrinfo(result);
-		return -1;
 	}
 
 	/* Attempt to connect using getaddrinfo results */
@@ -166,28 +106,36 @@ static int server_connect(const char *host, int port, error_t **error)
 	free(service);
 
 	if (sockd < 0) {
-		*error = error_set(2, "Could not connect to host.", child_error);
+		exception_raise(e, CONNECTION_FAILURE);
 		return -1;
 	} else {
 		return sockd;
 	}
 }
 
-
-/*
- * Public Functions
+/**
+ * mpd_response()
+ *
+ * Reads the response from the MPD server, and puts it into the buffer
+ * provided. Returns 0 on error, and 1 otherwise.
  */
-
-int mpd_server_response(mpd_connection *mpd_conn, const char *end, 
-		buffer_t *buffer, error_t **error)
+int mpd_response(mpd_connection *mpd_conn, buffer_t *buffer, 
+		struct s_exception *e)
 {
-#define INPUT_BUFLEN 1024
 	fd_set read_flags;
-	char input_buffer[INPUT_BUFLEN];
+	char input_buffer[1024], *ack = NULL;
 	int ret, bytes_recvd, written;
+	bool checked = FALSE;
 
-	/* Read until we get the response we're looking for. */
-	while (strstr(buffer->buffer, end) == NULL)
+	/* MPD signals success with OK\n, and failure with ACK <error message>\n.
+	 * When connecting initially, it returns OK MPD <version>. This means that
+	 * there are four things to check for when looking for the end of the
+	 * input: OK or ACK at the start of the string, and OK and ACK following a
+	 * newline. The first only need to be checked at the beginning, but the
+	 * other two need to be checked after every recv. */
+	
+	while (strstr(buffer->buffer, "\nOK\n") == NULL &&
+			(ack = strstr(buffer->buffer, "\nACK")) == NULL)
 	{
 		FD_ZERO(&read_flags);
 		FD_SET(mpd_conn->sockd, &read_flags);
@@ -195,38 +143,59 @@ int mpd_server_response(mpd_connection *mpd_conn, const char *end,
 		ret = select(mpd_conn->sockd+1, &read_flags, NULL, NULL, 
 				&(mpd_conn->timeout));
 		if (ret == -1) {
-			*error = error_set(-1, "select() failed.", NULL);
-			mpd_conn->status = DISCONNECTED;
+			exception_raise(e, CONNECTION_FAILURE);
 			return 0;
 		} else if (ret == 0) {
-			*error = error_set(-2, "Connection timed out.", NULL);
-			mpd_conn->error_count++;
+			exception_raise(e, CONNECTION_TIMEOUT);
 			return 0;
 		} else if (FD_ISSET(mpd_conn->sockd, &read_flags)) {
 			FD_CLR(mpd_conn->sockd, &read_flags);
-			memset(input_buffer, '\0', INPUT_BUFLEN);
+			memset(input_buffer, '\0', sizeof(input_buffer));
 			
-			bytes_recvd = recv(mpd_conn->sockd,input_buffer,INPUT_BUFLEN-1,0);
+			bytes_recvd = recv(mpd_conn->sockd, input_buffer, 
+					sizeof(input_buffer)-1, 0);
 			if (bytes_recvd <= 0) {
-				*error = error_set(-1, "Connection failed.", NULL);
-				mpd_conn->status = DISCONNECTED;
+				exception_raise(e, CONNECTION_FAILURE);
 				return 0;
 			} else {
 				written = buffer_write(input_buffer, 1, bytes_recvd, 
 						(void *)buffer);
 				if (written < bytes_recvd) {
-					*error = ERROR_OUT_OF_MEMORY;
+					e->code = OUT_OF_MEMORY;
 					return 0;
 				}
-				mpd_conn->error_count = 0;
+			}
+		}
+
+		/* Check the start of the string for ACK or OK. We know the string is
+		 * long enough to check if it contains a newline. */
+		if (! checked && strchr(buffer->buffer, '\n') != NULL) {
+			if (strncmp(buffer->buffer, "OK", 2) == 0) {
+				return 1;
+			} else if (strncmp(buffer->buffer, "ACK", 3) == 0) {
+				exception_create(e, buffer->buffer + 4);
+				return 0;
+			} else {
+				checked = TRUE;
 			}
 		}
 	}
+	if (ack != NULL) {
+		exception_create(e, ack+1);
+		return 0;
+	}
+
 	return 1;
 }
 
+/**
+ * mpd_send_command()
+ *
+ * Sends a command to the MPD server described by mpd_conn. Returns 0 on
+ * failure, and 1 on success.
+ */
 int mpd_send_command(mpd_connection *mpd_conn, const char *command, 
-		error_t **error)
+		struct s_exception *e)
 {
 	fd_set write_flags;
 	int ret, bytes_sent;
@@ -244,229 +213,256 @@ int mpd_send_command(mpd_connection *mpd_conn, const char *command,
 		ret = select(mpd_conn->sockd+1, NULL, &write_flags, NULL, 
 				&(mpd_conn->timeout));
 		if (ret == -1) {
-			*error = error_set(-1, "select() failed.", NULL);
-			mpd_conn->status = DISCONNECTED;
+			exception_raise(e, CONNECTION_FAILURE);
 			return 0;
 		} else if (ret == 0) {
-			*error = error_set(0, "Connection timed out.", NULL);
-			mpd_conn->error_count++;
+			exception_raise(e, CONNECTION_TIMEOUT);
 			return 0;
 		} else if (FD_ISSET(mpd_conn->sockd, &write_flags)) {
 			FD_CLR(mpd_conn->sockd, &write_flags);
 			
 			bytes_sent = send(mpd_conn->sockd, command_ptr, command_len, 0);
 			if (bytes_sent < 0) {
-				error_set(-1, "Connection failed", NULL);
-				mpd_conn->status = DISCONNECTED;
+				exception_raise(e, CONNECTION_FAILURE);
 				return 0;
 			} else {
 				command_ptr += bytes_sent;
 				command_len -= bytes_sent;
-				mpd_conn->error_count = 0;
 			}
 		}
 	}
 	return 1;
 }
 
-void mpd_send_password(mpd_connection *mpd_conn, const char *_password, 
-		error_t **error)
+
+size_t mpd_escape(char **escaped, const char *string)
 {
-	char *password, *cmd, *p;
-	const char *_p;
-	size_t cmd_size = 0;
-	buffer_t *buffer;
-	error_t *child_error = NULL;
+	const char *src = string;
+	char *dest;
 
-	buffer = buffer_alloc();
-	if (buffer == NULL) {
-		*error = ERROR_OUT_OF_MEMORY;
-		return;
+	if (src == NULL || *src == '\0') {
+		*escaped = NULL;
+		return 0;
 	}
-	
-	if (_password == NULL || *_password == '\0')
-		return;
-	
-	password = calloc(2 * strlen(_password) + 1, 1);
-	if (password == NULL) {
-		*error = ERROR_OUT_OF_MEMORY;
-		buffer_free(buffer);
-		return;
+
+	/* Allocate double the length of the original string. (Worst case
+	 * scenario - everything has to be escaped). */
+	if ((*escaped = malloc((strlen(src)+1)*2)) == NULL) {
+		*escaped = NULL;
+		return 0;
 	}
-	
-	p = password;
-	_p = _password;
-	
-	while (*_p != '\0') {
-		if (*p == '"' || *p == '\\') {
-			*p = '\\';
-			p++;
+
+	dest = *escaped;
+
+	while (*src != '\0') {
+		/* If the next character of src is " or \, escape it with a \
+		 * before-hand in dest. */
+		if (*src == '"' || *src == '\\') {
+			*dest = '\\';
+			dest++;
 		}
-		*p = *_p;
-		p++; _p++;
+		*dest = *src;
+		*dest++; *src++;
 	}
-	
-	cmd_size = strlen(password) + strlen("password ") + 4;
-	cmd = calloc(cmd_size, 1);
-	if (cmd == NULL) {
-		*error = ERROR_OUT_OF_MEMORY;
-		goto mpd_send_password_exit2;
-	}
-	snprintf(cmd, cmd_size, "password \"%s\"\n", password);
+	*dest = '\0';
 
-	mpd_send_command(mpd_conn, cmd, &child_error);
-	if (ERROR_IS_SET(child_error)) {
-		*error = error_set(-1, "An error occurred while sending the password "
-				"to the server.", child_error);
-		goto mpd_send_password_exit1;
-	}
-	mpd_server_response(mpd_conn, "OK\n", buffer, &child_error);
-	if (ERROR_IS_SET(child_error)) {
-		error_clear(child_error); /* Already set, but irrelevant. */
-		error_set(-1, "Invalid password.", NULL);
-		mpd_conn->status = BADUSER;
-	}
-	
-mpd_send_password_exit1:
-	buffer_free(buffer);
-	free(password);
-mpd_send_password_exit2:
-	free(cmd);
+	return (size_t) (dest - *escaped);
 }
 
-mpd_connection *mpd_connect(const char *hostname, int port, int timeout, 
-		error_t **error)
+int mpd_send_password(mpd_connection *mpd_conn, const char *password,
+		struct s_exception *e)
 {
-	mpd_connection *conn;
-#if 0
-	struct hostent *he;
-#endif
+	int retval = 0;
+	size_t len;
+	char *esc_pass = NULL, *command = NULL;
 	buffer_t *buffer;
-	error_t *child_error = NULL;
+	struct s_exception ce = EXCEPTION_INIT;
+
+	if ((buffer = buffer_alloc()) == NULL) {
+		e->code = OUT_OF_MEMORY;
+		return 0;
+	}
+
+	len = mpd_escape(&esc_pass, password);
+	if (len == 0)
+		goto mpd_send_password_error;
+
+	/* 13 = strlen("password \"\"\n")+1; */
+	len += 13;
+	if ((command = malloc(len)) == NULL) {
+		e->code = OUT_OF_MEMORY;
+		goto mpd_send_password_error;
+	}
+	strlcpy(command, "password \"", len);
+	strlcat(command, esc_pass, len);
+	if (strlcat(command, "\"\n", len) >= len) {
+		exception_create(e, "The buffer is too small to hold the password. "
+				"This means that mpd_escape() has returned the wrong number "
+				"of characters. This is a bug - please report it.");
+		goto mpd_send_password_error;
+	}
+
+	mpd_send_command(mpd_conn, command, &ce);
+	if (ce.code != 0) {
+		exception_reraise(e, ce);
+		goto mpd_send_password_error;
+	}
+
+	mpd_response(mpd_conn, buffer, &ce);
+	switch (ce.code) {
+		case 0:
+			retval = 1;
+			break;
+		case USER_DEFINED:
+			if (strstr(ce.msg, "incorrect password") != NULL) {
+				exception_raise(e, INVALID_PASSWORD);
+				exception_clear(ce);
+				mpd_conn->status = BADUSER;
+			} else {
+				exception_reraise(e, ce);
+			}
+			break;
+		default:
+			exception_reraise(e, ce);
+			break;
+	}
+
+mpd_send_password_error:
+	buffer_free(buffer);
+	free(esc_pass);
+	free(command);
+	return retval;
+}
+
+
+mpd_connection *mpd_connection_init(void)
+{
+	mpd_connection *mpd_conn;
+
+	mpd_conn = calloc(sizeof(mpd_connection), 1);
+	if (mpd_conn == NULL) {
+		return NULL;
+	}
+
+	mpd_conn->status = DISCONNECTED;
+	mpd_conn->error_count = 0;
+
+	return mpd_conn;
+}
+
+void mpd_connection_cleanup(mpd_connection *mpd_conn)
+{
+	free(mpd_conn);
+}
+
+int mpd_connect(mpd_connection *mpd_conn, const char *hostname, int port, 
+		int timeout, struct s_exception *e)
+{
+	buffer_t *buffer = NULL;
+	struct s_exception ce = EXCEPTION_INIT;
+
+	mpd_conn->timeout.tv_sec = timeout;
+	mpd_conn->timeout.tv_usec = 0;
+
+	mpd_conn->sockd = server_connect(hostname, port, &ce);
+	if (ce.code != 0) {
+		exception_reraise(e, ce);
+		return 0;
+	}
 	
 	buffer = buffer_alloc();
 	if (buffer == NULL) {
-		*error = ERROR_OUT_OF_MEMORY;
-		return NULL;
+		e->code = OUT_OF_MEMORY;
+		return 0;
 	}
 	
-	conn = calloc(sizeof(mpd_connection), 1);
-	if (conn == NULL) {
-		buffer_free(buffer);
-		*error = ERROR_OUT_OF_MEMORY;
-		return NULL;
-	}
-	
-	conn->status = DISCONNECTED;
-	conn->sockd = server_connect(hostname, port, &child_error);
-	if (ERROR_IS_SET(child_error)) {
-		if (child_error == ERROR_OUT_OF_MEMORY) {
-			error_clear(child_error);
-			*error = ERROR_OUT_OF_MEMORY;
-		} else {
-			*error = error_set(-1, "Could not connect to host.", child_error);
-		}
-		goto mpd_connect_error;
-	}
-#if 0
-	conn->sockd = sock_open();
-	if (conn->sockd == 0) {
-		*error = error_set(-1, "Could not allocate socket.", NULL);
-		goto mpd_connect_error;
-	}
-
-	he = resolve(hostname);
-	if (he == NULL) {
-		*error = error_set(-2, "Could not resolve hostname.", NULL);
-		goto mpd_connect_error;
-	}
-
-	if (! server_connect(he, port, conn->sockd)) {
-		*error = error_set(-1, "Could not connect to host.", NULL);
-		goto mpd_connect_error;
-	}
-#endif
-
-	conn->timeout.tv_sec = timeout;
-	conn->timeout.tv_usec = 0;
-
-	mpd_server_response(conn, "\n", buffer, &child_error);
-	if (ERROR_IS_SET(child_error)) {
-		if (child_error == ERROR_OUT_OF_MEMORY) {
-			error_clear(child_error);
-			*error = ERROR_OUT_OF_MEMORY;
-			goto mpd_connect_error;
-		} else {
-			*error = error_set(-1, "Error while waiting for a response from "
-					"the mpd server.", child_error);
-			goto mpd_connect_error;
-		}
-	}
-
-	if (strcmp(buffer->buffer, "ACK") == 0) {
-		child_error = error_set(-1, buffer->buffer, NULL);
-		*error = error_set(-1, "Error in communicating with mpd server.", 
-				child_error);
-		goto mpd_connect_error;
-	} else if (strncmp(buffer->buffer, "OK MPD", 6) != 0) { 
-		*error = error_set(-1, "Unexpected response from server.", NULL);
-		goto mpd_connect_error;
-	}
+	/* When you connect, the MPD server immediately sends back 
+	 * "OK MPD <version>" */
+	mpd_response(mpd_conn, buffer, &ce);
+	switch (ce.code) {
+		case 0:
+			mpd_conn->status = CONNECTED;
 #ifdef MPD_VERSION_CHECK
-	conn->version[0] = conn->version[1] = conn->version[2] = 0;
-	sscanf(buffer->buffer, "%*s %*s %d.%d.%d", &(conn->version)[0],
-			&(conn->version)[1], &(conn->version)[2]);
+			conn->version[0] = conn->version[1] = conn->version[2] = 0;
+			sscanf(buffer->buffer, "%*s %*s %d.%d.%d", &(conn->version)[0],
+					&(conn->version)[1], &(conn->version)[2]);
 #endif
-	conn->status = CONNECTED;
+			buffer_free(buffer);
+			mpd_conn->error_count = 0;
+			return 1;
+		case USER_DEFINED:
+			e->code = USER_DEFINED;
+			if (asprintf(&(e->msg), "Error in connecting to the MPD server: "
+						"%s", buffer->buffer) == -1)
+				e->code = OUT_OF_MEMORY;
+			break;
+		case CONNECTION_TIMEOUT:
+			exception_create(e, "Connection timed out while waiting for a "
+					"valid response. This may mean that the specified "
+					"hostname and port don't point to an MPD server. scmpc "
+					"will not attempt to reconnect to it.");
+			mpd_conn->status = BADUSER;
+			break;
+		default:
+			exception_reraise(e, ce);
+			break;
+	}
 
 	buffer_free(buffer);
-	return conn;
-mpd_connect_error:
-	buffer_free(buffer);
-	free(conn);
-	return NULL;
-}
-
-void mpd_check_server(mpd_connection *mpd_conn, error_t **error)
-{
-	error_t *child_error = NULL;
-	buffer_t *buffer;
-	
-	buffer = buffer_alloc();
-	if (buffer == NULL) {
-		*error = ERROR_OUT_OF_MEMORY;
-		return;
-	}
-	
-	mpd_send_command(mpd_conn, "status\n", &child_error);
-	if (ERROR_IS_SET(child_error)) {
-		*error = error_set(-1, "Error sending command to mpd_server.", 
-				child_error);
-		goto mpd_check_server_exit;
-	}
-	mpd_server_response(mpd_conn, "OK\n", buffer, &child_error);
-	if (ERROR_IS_SET(child_error)) {
-		if (child_error->code == -2) {
-			error_clear(child_error);
-			*error = error_set(-2, "You do not have read access to the mpd "
-					"server. Please correct your password and restart this "
-					"program.", NULL);
-		}
-		else {
-			*error = error_set(-1, "An error occurred when attempting to "
-					"contact the mpd server.", child_error);
-		}
-	}
-mpd_check_server_exit:
-	buffer_free(buffer);
+	mpd_conn->error_count++;
+	return 0;
 }
 
 void mpd_disconnect(mpd_connection *mpd_conn)
 {
-	if (mpd_conn == NULL)
-		return;
-	
+	struct s_exception e = EXCEPTION_INIT;
+
+	assert(mpd_conn != NULL);
+
+	mpd_send_command(mpd_conn, "close\n", &e);
+	exception_clear(e);
+
 	shutdown(mpd_conn->sockd, SHUT_RDWR);
 	close(mpd_conn->sockd);
-	free(mpd_conn);
 }
+
+int mpd_check_server(mpd_connection *mpd_conn, struct s_exception *e)
+{
+	buffer_t *buffer;
+	struct s_exception ce = EXCEPTION_INIT;
+	
+	buffer = buffer_alloc();
+	if (buffer == NULL) {
+		e->code = OUT_OF_MEMORY;
+		return 0;
+	}
+	
+	mpd_send_command(mpd_conn, "status\n", &ce);
+	if (ce.code != 0) {
+		exception_reraise(e, ce);
+		goto mpd_check_server_exit;
+	}
+	mpd_response(mpd_conn, buffer, &ce);
+	switch (ce.code) {
+		case 0:
+			break;
+		case USER_DEFINED:
+			if (strstr(ce.msg, "you don't have permission") != NULL) {
+				exception_raise(e, INVALID_PASSWORD);
+				exception_clear(ce);
+				mpd_conn->status = BADUSER;
+			} else {
+				exception_reraise(e, ce);
+			}
+			break;
+		default:
+			exception_reraise(e, ce);
+			break;
+	}
+
+mpd_check_server_exit:
+	buffer_free(buffer);
+	return (e->code == 0);
+}
+
+

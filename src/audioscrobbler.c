@@ -22,48 +22,36 @@
  * ==================================================================
  */
 
-
-/*************
- ** Headers **
- *************/
 #include <pthread.h>
-#include <time.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
-#include <errno.h>
-#include <ctype.h>
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
 #include <curl/curl.h>
+#include <assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "liberror.h"
+#include "exception.h"
 #include "misc.h"
-#include "md5.h"
 #include "scmpc.h"
-#include "libmpd.h"
 #include "preferences.h"
 #include "audioscrobbler.h"
+#include "md5.h"
 
 /********************************
  ** Static function prototypes **
  ********************************/
 
-static as_connection *as_connection_init(void);
-static void as_connection_cleanup(as_connection *as_conn);
-static void as_set_password(as_connection *as_conn, const char *challenge, 
-		const char *password);
-static void as_handshake(as_connection *as_conn);
-static void as_submit_queue(as_connection *as_conn);
+static void as_thread_cleanup(void *as_conn);
 
-static void as_thread_cleanup(void *arg);
-
-static void remove_songs_from_queue(queue_node *song, queue_node *keep_ptr);
-static void save_queue(void);
-static void load_queue(void);
+static void queue_remove_songs(struct queue_node *song, 
+		struct queue_node *keep_ptr);
+static void queue_save(void);
+static void queue_load(void);
 
 /**********************
  ** Global variables **
@@ -76,24 +64,26 @@ static void load_queue(void);
 extern struct preferences prefs;
 
 pthread_mutex_t submission_queue_mutex;
-struct {
-	queue_node *first;
-	queue_node *last;
+static struct queue_t {
+	struct queue_node *first;
+	struct queue_node *last;
 	long int length;
 } queue;
 
-char *curl_error_buffer[CURL_ERROR_SIZE];
+/* I don't like this, but I don't think I'll get useful error messages from
+ * libcurl without it... */
+char curl_error_buffer[CURL_ERROR_SIZE];
 
 
 /********************************************
  ** Audioscrobbler communication functions **
  ********************************************/
 
-static as_connection *as_connection_init(void)
+static struct as_connection *as_connection_init(void)
 {
-	as_connection *as_conn;
+	struct as_connection *as_conn;
 	
-	as_conn = calloc(sizeof(as_connection), 1);
+	as_conn = calloc(sizeof(struct as_connection), 1);
 	if (as_conn == NULL)
 		return NULL;
 	
@@ -108,8 +98,7 @@ static as_connection *as_connection_init(void)
 	
 	curl_easy_setopt(as_conn->handle, CURLOPT_HTTPHEADER, as_conn->headers);
 	curl_easy_setopt(as_conn->handle, CURLOPT_WRITEFUNCTION, &buffer_write);
-	/* curl_easy_setopt(as_conn->curl_handle, CURLOPT_VERBOSE, 1); */
-	curl_easy_setopt(as_conn->handle, CURLOPT_ERRORBUFFER, curl_error_buffer);
+	curl_easy_setopt(as_conn->handle, CURLOPT_ERRORBUFFER, &curl_error_buffer);
 
 	curl_easy_setopt(as_conn->handle, CURLOPT_NOSIGNAL, 1L);
 	curl_easy_setopt(as_conn->handle, CURLOPT_CONNECTTIMEOUT, 5L);
@@ -117,7 +106,7 @@ static as_connection *as_connection_init(void)
 	return as_conn;
 }
 
-static void as_connection_cleanup(as_connection *as_conn)
+static void as_connection_cleanup(struct as_connection *as_conn)
 { 
 	curl_slist_free_all(as_conn->headers);
 	curl_easy_cleanup(as_conn->handle);
@@ -125,8 +114,8 @@ static void as_connection_cleanup(as_connection *as_conn)
 	free(as_conn);
 }
 
-static void as_set_password(as_connection *as_conn, const char *challenge, 
-		const char *password)
+static void as_set_password(struct as_connection *as_conn, 
+		const char *challenge, const char *password)
 {
 	md5_state_t state;
 	md5_byte_t digest[16];
@@ -163,7 +152,102 @@ static unsigned long check_interval(char *line, char *strtok_buffer)
 			return (unsigned long)strtol(&line[9], NULL, 10);
 		}
 	}
-	return 10L;
+	return 10;
+}
+
+static int build_querystring(char **qs, struct as_connection *as_conn, 
+		struct queue_node **last_song)
+{
+	char *username, *artist, *title, *album, *time, *nqs, *tmp;
+	size_t length = 1024;
+	int ret, num = 0;
+	struct queue_node *song = queue.first;
+	
+	if ((*qs = malloc(length)) == NULL)
+		return -1;
+	
+	if ((username = curl_escape(prefs.as_username, 0)) == NULL)
+		return -1;
+
+	ret = asprintf(&tmp, "u=%s&s=%s", username, as_conn->password);
+	curl_free(username);
+	if (ret == -1) {
+		goto build_querystring_error;
+	}
+
+	ret = strlcpy(*qs, tmp, length);
+	free(tmp);
+	if (ret >= (int)length) {
+		scmpc_log(ERROR, "You cannot possibly have a username %d characters "
+				"long. Please fix it and restart this program.", ret-38);
+		as_conn->status = BADUSER;
+		goto build_querystring_error;
+	}
+	
+	while (song != NULL && num < 8) {
+		artist = curl_escape(song->artist, 0);
+		title = curl_escape(song->title, 0);
+		album = curl_escape(song->album, 0);
+		time = curl_escape(song->date, 0);
+
+		ret = asprintf(&tmp, "&a[%d]=%s&t[%d]=%s&b[%d]=%s&m[%d]="
+				"&l[%d]=%ld&i[%d]=%s", num, artist, num, title, num, album, 
+				num, num, song->length, num, time);
+		curl_free(artist); curl_free(title); curl_free(album); curl_free(time);
+		if (ret == -1) {
+			goto build_querystring_error;
+		}
+
+		ret = strlcat(*qs, tmp, length);
+		if (ret >= (int)length) {
+			/* Find the beginning of the truncated string... */
+			char *end, *tmp2;
+			if (asprintf(&tmp2, "&a[%d]", num) == -1) {
+				free(tmp);
+				goto build_querystring_error;
+			}
+			end = strstr(*qs, tmp2);
+			/* ... and overwrite it so we can put the whole string there. */
+			if (end == NULL) {
+				scmpc_log(DEBUG, "Cannot find the start of the truncated "
+						"string in build_querystring. Looking for %s in %s.",
+						tmp2, *qs);
+				free(tmp2); free(tmp);
+				goto build_querystring_error;
+			} else {
+				*end = '\0';
+				free(tmp2);
+			}
+			
+			length *= 2;
+			if ((nqs = realloc(*qs, length)) == NULL) {
+				free(tmp);
+				goto build_querystring_error;
+			} else {
+				*qs = nqs;
+			}
+			
+			ret = strlcat(*qs, tmp, length);
+			if (ret >= (int)length) {
+				scmpc_log(ERROR, "This song's information is unrealistically "
+						"large. Discarding.");
+				free(tmp);
+				song = song->next;
+				continue;
+			}
+		}
+		free(tmp);
+		num++;
+		song = song->next;
+	}
+
+	*last_song = song;
+	return num;
+
+build_querystring_error:
+	free(*qs);
+	*qs = NULL;
+	return -1;
 }
 
 /**
@@ -172,16 +256,20 @@ static unsigned long check_interval(char *line, char *strtok_buffer)
  * Connects to audioscrobbler, and fills the as_conn struct with the received
  * data.
  */
-static void as_handshake(as_connection *as_conn)
+static void as_handshake(struct as_connection *as_conn)
 {
-	char *handshake_url, *s_buffer, *line;
-	unsigned short int line_no = 1;
-	int ret;
-	unsigned long retry_time = 1;
+	unsigned long retry_time;
 	buffer_t *buffer;
+	char *handshake_url, *line, *s_buffer;
+	int ret;
 
-	scmpc_log(DEBUG, "as_handshake() called");
-	
+	if (strlen(prefs.as_username) == 0 || strlen(prefs.as_password) == 0) {
+		scmpc_log(INFO, "No username or password specified. Not connecting to "
+				"audioscrobbler.");
+		as_conn->status = BADUSER;
+		return;
+	}
+
 	/* We should wait at least half an hour between handshake attempts. */
 	retry_time = (unsigned long)difftime(as_conn->last_handshake, time(NULL));
 	if (as_conn->last_handshake != 0 && retry_time < 1800) {
@@ -191,19 +279,14 @@ static void as_handshake(as_connection *as_conn)
 		return;
 	}
 	
-	if (strlen(prefs.as_username) == 0 || strlen(prefs.as_password) == 0) {
-		scmpc_log(INFO, "No username or password specified. Not connecting to "
-				"audioscrobbler.");
-		as_conn->status = BADUSER;
-		return;
-	}
-	
 	buffer = buffer_alloc();
 	if (buffer == NULL)
 		return;
 	
-	handshake_url = alloc_sprintf(150, HANDSHAKE_URL, CLIENT_ID, SCMPC_VERSION,
+	ret = asprintf(&handshake_url, HANDSHAKE_URL, CLIENT_ID, SCMPC_VERSION,
 			prefs.as_username);
+	if (ret == -1)
+		return;
 
 	curl_easy_setopt(as_conn->handle, CURLOPT_WRITEDATA, (void *)buffer);
 	curl_easy_setopt(as_conn->handle, CURLOPT_HTTPGET, TRUE);
@@ -211,22 +294,29 @@ static void as_handshake(as_connection *as_conn)
 	
 	ret = curl_easy_perform(as_conn->handle);
 	free(handshake_url);
+	
 	if (ret != 0) {
 		scmpc_log(ERROR, "Could not connect to the audioscrobbler server: %s",
 				curl_easy_strerror(ret));
-		goto as_handshake_exit;
+		goto as_handshake_error;
 	}
 
 	line = strtok_r(buffer->buffer, "\n", &s_buffer);
 	if (line == NULL) {
 		scmpc_log(DEBUG, "Could not parse audioscrobbler handshake response.");
-		goto as_handshake_exit;
+		goto as_handshake_error;
 	}
 
 	if (strncmp(line, "UP", 2) == 0) {
+		unsigned short int line_no = 1;
+		
 		if (strncmp(line, "UPDATE", 6) == 0) {
 			scmpc_log(INFO, "There is a new version of the scmpc client "
 					"available. See %s for more details.", &line[7]);
+		} else if (strncmp(line, "UPTODATE", 8) != 0) {
+			scmpc_log(DEBUG, "Could not parse audioscrobbler handshake "
+					"response.");
+			goto as_handshake_error;
 		}
 		while ((line = strtok_r(NULL, "\n", &s_buffer)) != NULL) {
 			line_no++; /* Because /I/ don't count from 0. ;-) */
@@ -258,41 +348,14 @@ static void as_handshake(as_connection *as_conn)
 		scmpc_log(ERROR, "The user details you specified were not accepted by "
 				"Audioscrobbler. Please correct them and restart this program.");
 		as_conn->status = BADUSER;
+	} else {
+		scmpc_log(DEBUG, "Could not parse audioscrobbler handshake response.");
 	}
 
-as_handshake_exit:
+as_handshake_error:
 	as_conn->error_count++;
-	scmpc_log(DEBUG, "as_handshake() exiting. error_count = %d", as_conn->error_count);
-	/* Every time it fails 3 times in succession, wait for 30 minutes. */
-	if (as_conn->error_count % 3 == 0)
-		as_conn->interval = 1800;
-	else
-		as_conn->interval = 10;
+	as_conn->interval = 10;
 	buffer_free(buffer);
-}
-
-static char *add_song_to_querystring(char *querystring, queue_node *song, int num)
-{
-	char *artist, *title, *album, *time, *new_querystring;
-	/*
-	 * u=&s=&a[0]=&t[0]=&b[0]=&m[0]=&l[0]=&i[0]=
-	 */
-	artist = curl_escape(song->artist, 0);
-	title = curl_escape(song->title, 0);
-	album = curl_escape(song->album, 0);
-	time = curl_escape(song->date, 0);
-
-	new_querystring = alloc_sprintf(256*(num+1), "%s&a[%d]=%s&t[%d]=%s"
-			"&b[%d]=%s&m[%d]=&l[%d]=%ld&i[%d]=%s", querystring, num, artist, 
-			num, title, num, album, num, num, song->length, num, time);
-	
-	curl_free(artist);
-	curl_free(title);
-	curl_free(album);
-	curl_free(time);
-	free(querystring);
-
-	return new_querystring;
 }
 
 /**
@@ -300,54 +363,43 @@ static char *add_song_to_querystring(char *querystring, queue_node *song, int nu
  *
  * Submits the song to audioscrobbler. 
  */
-static void as_submit_queue(as_connection *as_conn)
+static void as_submit_queue(struct as_connection *as_conn)
 {
-	queue_node *song;
-	short int num_songs = 0;
-	char *querystring,  *username, *line, *s_buffer;
-	int ret;
 	buffer_t *buffer;
+	char *querystring, *line, *s_buffer;
+	struct queue_node *last_added;
+	int ret, num_songs;
 	static char last_failed[512];
-	
-	if (queue.first == NULL)
-		return;
-	
-	buffer = buffer_alloc();
-	if (buffer == NULL)
-		return;
 
-	username = curl_escape(prefs.as_username, 0);
-	if (username == NULL)
+	if (queue.first == NULL) {
+		scmpc_log(DEBUG, "Queue is empty.");
 		return;
-
-	memset(last_failed, '\0', 512);
+	}
 	
-	querystring = alloc_sprintf(75, "u=%s&s=%s", username, as_conn->password);
-
-	curl_free(username);
+	if ((buffer = buffer_alloc()) == NULL)
+		return;
 	
 	pthread_mutex_lock(&submission_queue_mutex);
-
-	song = queue.first;
-
-	while (song != NULL && num_songs < 8) {
-		querystring = add_song_to_querystring(querystring, song, num_songs);
-		num_songs++;
-		song = song->next;
+	num_songs = build_querystring(&querystring, as_conn, &last_added);
+	if (num_songs < 0) {
+		goto as_submit_queue_error;
+	} else if (num_songs == 0) {
+		scmpc_log(DEBUG, "No songs added by build_querystring().");
+		goto as_submit_queue_error;
 	}
-
-	/* scmpc_log(DEBUG, "querystring = %s", querystring); */
+	
+	scmpc_log(DEBUG, "querystring = %s", querystring);
 
 	curl_easy_setopt(as_conn->handle, CURLOPT_WRITEDATA, (void *)buffer);
 	curl_easy_setopt(as_conn->handle, CURLOPT_POSTFIELDS, querystring);
 	curl_easy_setopt(as_conn->handle, CURLOPT_URL, as_conn->submit_url);
-
+	
 	ret = curl_easy_perform(as_conn->handle);
 	if (ret != 0) {
 		scmpc_log(INFO, "Failed to connect to audioscrobbler: %s", 
 				curl_easy_strerror(ret));
 		as_conn->error_count++;
-		goto as_submit_queue_exit;
+		goto as_submit_queue_error;
 	} else {
 		as_conn->error_count = 0;
 	}
@@ -362,28 +414,27 @@ static void as_submit_queue(as_connection *as_conn)
 		}
 		as_conn->interval = check_interval(line, s_buffer);
 	} else if (strncmp(line, "BADAUTH", 7) == 0) {
-		memset(last_failed, '\0', 512);
+		last_failed[0] = '\0';
 		/* TODO: "May need to re-handshake"... */
 		as_conn->status = BADUSER;
 		scmpc_log(ERROR, "Your user details were not accepted by audioscrobbler."
 				" Please correct them and restart this program.");
 	} else if (strncmp(line, "OK", 2) == 0) {
-		memset(last_failed, '\0', 512);
+		last_failed[0] = '\0';
 		if (num_songs == 1)
 			scmpc_log(INFO, "1 song submitted.");
 		else
 			scmpc_log(INFO, "%d songs submitted.", num_songs);
 		as_conn->interval = check_interval(line, s_buffer);
-		remove_songs_from_queue(queue.first, song);
-		queue.first = song;
+		queue_remove_songs(queue.first, last_added);
+		queue.first = last_added;
 	}
-
-as_submit_queue_exit:
+	
+as_submit_queue_error:
 	free(querystring);
 	buffer_free(buffer);
 	pthread_mutex_unlock(&submission_queue_mutex);
 }
-
 
 /**********************
  ** Thread functions **
@@ -398,7 +449,7 @@ as_submit_queue_exit:
  */
 void *as_thread(void *arg)
 {
-	as_connection *as_conn;
+	struct as_connection *as_conn;
 	unsigned int sleep_length;
 	
 	curl_global_init(CURL_GLOBAL_NOTHING);
@@ -409,7 +460,7 @@ void *as_thread(void *arg)
 	if (as_conn == NULL)
 		end_program();
 
-	load_queue();
+	queue_load();
 
 	pthread_cleanup_push(as_thread_cleanup, (void *)as_conn);
 	
@@ -421,6 +472,13 @@ void *as_thread(void *arg)
 			scmpc_log(DEBUG, "New songs in the queue.");
 			as_submit_queue(as_conn);
 		}
+
+		if (as_conn->error_count > 0 && (as_conn->error_count % 3) == 0) {
+			scmpc_log(INFO, "There have been 3 Audioscrobbler connection "
+					"failures in succession. Sleeping for 30 minutes.");
+			as_conn->interval = 1800;
+		}
+		
 		/* Sleep for a minimum of 1 second, or the last received INTERVAL. */
 		sleep_length = (as_conn->interval == 0) ? 1 : as_conn->interval;
 		if (sleep_length > 1)
@@ -439,12 +497,12 @@ void *as_thread(void *arg)
  */
 static void as_thread_cleanup(void *as_conn)
 {
-	as_connection_cleanup((as_connection *)as_conn);
+	as_connection_cleanup((struct as_connection *)as_conn);
 	
-	save_queue();
+	queue_save();
 	
 	pthread_mutex_lock(&submission_queue_mutex);
-	remove_songs_from_queue(queue.first, NULL);
+	queue_remove_songs(queue.first, NULL);
 	pthread_mutex_unlock(&submission_queue_mutex);
 
 	curl_global_cleanup();
@@ -458,10 +516,12 @@ static void as_thread_cleanup(void *as_conn)
  */
 void *cache_thread(void *arg)
 {
+	sleep(1);
+
 	while (1) {
 		pthread_testcancel();
-		save_queue();
-		sleep(prefs.cache_interval * 60);
+		queue_save();
+		sleep((unsigned int)prefs.cache_interval * 60);
 	}
 }
 
@@ -472,25 +532,25 @@ void *cache_thread(void *arg)
  *********************/
 
 /**
- * add_song_to_queue()
+ * queue_add()
  *
  * Add a song to the queue awaiting submission. If there are too many songs in
  * the queue, this will remove the first song (the oldest) and add this song to
  * the end.
  */
-void __add_song_to_queue(const char *artist, const char *title, 
-		const char *album, long int length, const char *date)
+void queue_add(const char *artist, const char *title, const char *album, 
+		long int length, const char *date)
 {
-	queue_node *new_song;
+	struct queue_node *new_song;
 	struct tm *time_broken_down, result;
 	time_t time_s;
 
 	if (artist == NULL || title == NULL || length < 30) {
-		scmpc_log(DEBUG,"Invalid song passed to add_song_to_queue. Rejecting.");
+		scmpc_log(DEBUG,"Invalid song passed to queue_add(). Rejecting.");
 		return;
 	}
 	
-	new_song = malloc(sizeof(queue_node));
+	new_song = malloc(sizeof(struct queue_node));
 	if (new_song == NULL)
 		return;
 
@@ -521,14 +581,14 @@ void __add_song_to_queue(const char *artist, const char *title,
 	}
 	
 	/* Queue is too long. Remove the first item before adding this one. */
-	if (queue.length + 1 > prefs.queue_length) {
-		queue_node *new_first_song = (queue.first)->next;
+	if (queue.length == prefs.queue_length) {
+		struct queue_node *new_first_song = (queue.first)->next;
 		if (new_first_song == NULL) {
-			scmpc_log(DEBUG, "Queue apparently too long, but there is only "
+			scmpc_log(DEBUG, "Queue is apparently too long, but there is only "
 					"one accessible song in the list. New song not added.");
 			goto end;
 		}
-		remove_songs_from_queue(queue.first, new_first_song);
+		queue_remove_songs(queue.first, new_first_song);
 		queue.first = new_first_song;
 		scmpc_log(INFO, "The queue of songs to be submitted is too long. "
 				"Removing the first item.");
@@ -543,16 +603,17 @@ end:
 }
 
 /**
- * remove_songs_from_queue()
+ * queue_remove_songs()
  *
  * Free the memory allocated for songs in the queue. It starts from the
  * beginning or the queue and carries on either until the next song is the one
  * passed as *keep_ptr (so this is the first one that is kept) or this is the
  * last song in the queue.
  */
-static void remove_songs_from_queue(queue_node *song, queue_node *keep_ptr)
+static void queue_remove_songs(struct queue_node *song, 
+		struct queue_node *keep_ptr)
 {
-	queue_node *next_song;
+	struct queue_node *next_song;
 
 	while (song != NULL && song != keep_ptr) {
 		free(song->title);
@@ -563,35 +624,53 @@ static void remove_songs_from_queue(queue_node *song, queue_node *keep_ptr)
 		song = next_song;
 		queue.length--;
 	}
+
+	assert(! (queue.length == 0 && song != NULL));
+	assert(! (queue.length != 0 && song == NULL));
+	
+	if (queue.length == 0) {
+		queue.first = queue.last = NULL;
+	}
 }
 
 /**
- * save_queue
+ * queue_save()
  *
  * Saves the unsubmitted songs queue to the file specified in prefs.cache_file.
  */
-static void save_queue(void)
+static void queue_save(void)
 {
 	FILE *cache_file;
-	queue_node *current_song;
+	struct queue_node *current_song;
 	static bool writeable_warned = FALSE;
 	enum loglevel warning_level = ERROR;
-	error_t *error;
+	struct s_exception e = EXCEPTION_INIT;
 	
 	pthread_mutex_lock(&submission_queue_mutex);
 
 	current_song = queue.first;
 
-	cache_file = file_open(prefs.cache_file, "w", &error);
-	if (ERROR_IS_SET(error)) {
-		if (! writeable_warned)
-			writeable_warned = TRUE;
-		else
-			warning_level = INFO;
-		scmpc_log(warning_level,"Cache file (%s) cannot be opened for writing"
-				": %s", prefs.cache_file, error->msg);
-		error_clear(error);
-		goto save_queue_exit;
+	cache_file = file_open(prefs.cache_file, "w", &e);
+	switch (e.code) {
+		case 0:
+			break;
+		case OUT_OF_MEMORY:
+			scmpc_log(ERROR, "Out of memory.");
+			pthread_mutex_unlock(&submission_queue_mutex);
+			end_program();
+			return;
+		case USER_DEFINED:
+			if (! writeable_warned)
+				writeable_warned = TRUE;
+			else
+				warning_level = INFO;
+			scmpc_log(warning_level,"Cache file (%s) cannot be opened for "
+					"writing: %s", prefs.cache_file, e.msg);
+			exception_clear(e);
+			goto save_queue_exit;
+		default:
+			scmpc_log(DEBUG, "Unexpected error from file_open: %s", e.msg);
+			goto save_queue_exit;
 	}
 	
 	while (current_song != NULL) {
@@ -614,51 +693,77 @@ save_queue_exit:
 }
 
 /**
- * load_queue()
+ * queue_load()
  *
  * Loads the unsubmitted song queue from the file specified by
- * prefs.cache_file. Uses to __add_song_to_queue() to add songs.
+ * prefs.cache_file. Uses queue_add() to add songs.
  */
-static void load_queue(void)
+static void queue_load(void)
 {
-	char *line, *artist, *album, *title, *date;
+	char *line = NULL, *artist, *album, *title, *date;
 	long length;
+	size_t buffer_size;
 	FILE *cache_file;
-	error_t *error;
+	struct s_exception e = EXCEPTION_INIT;
 
 	artist = title = album = date = NULL;
 	length = 0;
 	
-	cache_file = file_open(prefs.cache_file, "r", &error);
-	if (ERROR_IS_SET(error)) {
-		if (error == ERROR_OUT_OF_MEMORY)
+	scmpc_log(DEBUG, "Loading queue.");
+	
+	cache_file = file_open(prefs.cache_file, "r", &e);
+	switch (e.code) {
+		case 0:
+			break;
+		case OUT_OF_MEMORY:
+			scmpc_log(ERROR, "Out of memory.");
+			end_program();
 			return;
-		scmpc_log(DEBUG, "Cache file (%s) cannot be opened for reading"
-				": %s", prefs.cache_file, error->msg);
-		error_clear(error);
-		return;
+		case FILE_NOT_FOUND:
+			return;
+		case USER_DEFINED:
+			scmpc_log(INFO, "Cache file (%s) cannot be opened for reading: %s",
+					prefs.cache_file, e.msg);
+			free(e.msg);
+			return;
+		default:
+			scmpc_log(DEBUG, "Unexpected error from file_open: %s", e.msg);
+			return;
 	}
 	
-	while ((line = read_line_from_file(cache_file)) != NULL) {
+	while (getline(&line, &buffer_size, cache_file) != -1) {
+		char *p = strchr(line, '\n');
+		if (p != NULL)
+			*p = '\0';
+
 		if (strncmp(line, "# BEGIN SONG", 12) == 0) {
-			artist = title = album = date = NULL;
-			length = 0;
+			/* Do nothing */
+			;
 		} else if (strncmp(line, "artist: ", 8) == 0) {
+			free(artist);
 			artist = strdup(&line[8]);
 		} else if (strncmp(line, "title: ", 7) == 0) {
+			free(title);
 			title = strdup(&line[7]);
 		} else if (strncmp(line, "album: ", 7) == 0) {
+			free(album);
 			album = strdup(&line[7]);
 		} else if (strncmp(line, "date: ", 6) == 0) {
+			free(date);
 			date = strdup(&line[6]);
 		} else if (strncmp(line, "length: ", 8) == 0) {
 			length = strtol(&line[8], NULL, 10);
 		} else if (strncmp(line, "# END SONG", 10) == 0) {
-			__add_song_to_queue(artist, title, album, length, date);
+			queue_add(artist, title, album, length, date);
 			free(artist); free(title); free(album); free(date);
+			artist = title = album = date = NULL;
 		}
 		free(line);
+		line = NULL;
 	}
+	free(line);
+
+	free(artist); free(title); free(album); free(date);
 
 	fclose(cache_file);
 }
