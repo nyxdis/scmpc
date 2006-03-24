@@ -94,7 +94,7 @@ static struct as_connection *as_connection_init(void)
 	as_conn->status = DISCONNECTED;
 	as_conn->handle = curl_easy_init();
 	as_conn->headers = curl_slist_append(as_conn->headers, 
-			"User-Agent: scmpc/" SCMPC_VERSION);
+			"User-Agent: scmpc/" PACKAGE_VERSION);
 	
 	curl_easy_setopt(as_conn->handle, CURLOPT_HTTPHEADER, as_conn->headers);
 	curl_easy_setopt(as_conn->handle, CURLOPT_WRITEFUNCTION, &buffer_write);
@@ -283,10 +283,12 @@ static void as_handshake(struct as_connection *as_conn)
 	if (buffer == NULL)
 		return;
 	
-	ret = asprintf(&handshake_url, HANDSHAKE_URL, CLIENT_ID, SCMPC_VERSION,
+	ret = asprintf(&handshake_url, HANDSHAKE_URL, CLIENT_ID, PACKAGE_VERSION,
 			prefs.as_username);
 	if (ret == -1)
 		return;
+
+	scmpc_log(DEBUG, "handshake_url = %s", handshake_url);
 
 	curl_easy_setopt(as_conn->handle, CURLOPT_WRITEDATA, (void *)buffer);
 	curl_easy_setopt(as_conn->handle, CURLOPT_HTTPGET, TRUE);
@@ -724,7 +726,7 @@ static void queue_load(void)
 		case USER_DEFINED:
 			scmpc_log(INFO, "Cache file (%s) cannot be opened for reading: %s",
 					prefs.cache_file, e.msg);
-			free(e.msg);
+			exception_clear(e);
 			return;
 		default:
 			scmpc_log(DEBUG, "Unexpected error from file_open: %s", e.msg);

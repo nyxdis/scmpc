@@ -272,7 +272,7 @@ static void parse_command_line(int argc, char **argv)
 		exit_code = EXIT_SUCCESS;
 		goto exit;
 	} else if (version->count > 0) {
-		printf("%s version %s\n", progname, SCMPC_VERSION);
+		printf("%s version %s\n", progname, PACKAGE_VERSION);
 		printf("A multithreaded audioscrobbler client for MPD.\n");
 		printf("Copyright 2005-2006 Jonathan Coome <jcoome@gmail.com>\n");
 		exit_code = EXIT_SUCCESS;
