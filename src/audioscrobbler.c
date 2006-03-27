@@ -398,9 +398,11 @@ static void as_submit_queue(struct as_connection *as_conn)
 	
 	ret = curl_easy_perform(as_conn->handle);
 	if (ret != 0) {
-		scmpc_log(INFO, "Failed to connect to audioscrobbler: %s", 
+		scmpc_log(INFO, "Failed to connect to Audioscrobbler: %s", 
 				curl_easy_strerror(ret));
 		as_conn->error_count++;
+		/* Wait 10 seconds before trying again. */
+		as_conn->interval = 10;
 		goto as_submit_queue_error;
 	} else {
 		as_conn->error_count = 0;
@@ -408,8 +410,9 @@ static void as_submit_queue(struct as_connection *as_conn)
 
 	line = strtok_r(buffer->buffer, "\n", &s_buffer);
 	if (line == NULL) {
-		scmpc_log(ERROR, "Could not parse audioscrobbler submit response.");
+		scmpc_log(INFO, "Could not parse Audioscrobbler submit response.");
 	} else if (strncmp(line, "FAILED", 6) == 0) {
+		/* Only show the same FAILED message once. */
 		if (strcmp(last_failed, &line[7]) != 0) {
 			strlcpy(last_failed, &line[7], sizeof(last_failed));
 			scmpc_log(INFO, "Audioscrobbler returned FAILED: %s", &line[7]);
@@ -525,6 +528,8 @@ void *cache_thread(void *arg)
 		queue_save();
 		sleep((unsigned int)prefs.cache_interval * 60);
 	}
+
+	pthread_exit(0);
 }
 
 
