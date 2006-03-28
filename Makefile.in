@@ -16,7 +16,8 @@ LDFLAGS := @LDFLAGS@
 LIBS := @LIBS@ @libcurl_LIBS@ @confuse_LIBS@ @libdaemon_LIBS@
 LIBOBJS := @LIBOBJS@
 
-BUILD_CFLAGS := -Wall -Wextra -pedantic -Wno-unused-parameter $(CFLAGS)
+# This is probably broken if gcc isn't being used...
+BUILD_CFLAGS := -Wall -Wextra -pedantic -Wno-unused-parameter -std=c99 $(CFLAGS)
 
 INSTALL := @INSTALL@
 

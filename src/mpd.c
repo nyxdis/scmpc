@@ -160,7 +160,7 @@ static mpd_song *mpd_get_song(mpd_connection *mpd_conn, struct s_exception *e)
 
 	buffer = buffer_alloc();
 	if (buffer == NULL) {
-		e->code = OUT_OF_MEMORY;
+		exception_raise(e, OUT_OF_MEMORY);
 		goto error;
 	}
 	
@@ -178,7 +178,7 @@ static mpd_song *mpd_get_song(mpd_connection *mpd_conn, struct s_exception *e)
 
 	current_song = calloc(1, sizeof(mpd_song));
 	if (current_song == NULL) {
-		e->code = OUT_OF_MEMORY;
+		exception_raise(e, OUT_OF_MEMORY);
 		goto error;
 	}
 

@@ -197,10 +197,8 @@ FILE *file_open(const char *filename, const char *mode, struct s_exception *e)
 		case 'w': mode_e = WRITE; break;
 		case 'a': mode_e = APPEND; break;
 		default:
-			e->code = USER_DEFINED;
-			if (asprintf(&(e->msg), "Invalid mode '%s' passed to file_open "
-						"for file '%s'", mode, filename) == -1)
-				e->code = OUT_OF_MEMORY;
+			exception_create_f(e, "Invalid mode '%s' passed to file_open "
+						"for file '%s'", mode, filename);
 			return NULL;
 	}
 
@@ -226,7 +224,7 @@ FILE *file_open(const char *filename, const char *mode, struct s_exception *e)
 	file = fopen(filename, mode);
 	if (file == NULL) {
 		if (errno == ENOENT) {
-			e->code = FILE_NOT_FOUND;
+			exception_raise(e, FILE_NOT_FOUND);
 		} else {
 			exception_create(e, strerror(errno));
 		}

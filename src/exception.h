@@ -56,6 +56,13 @@ extern char *error_strings[];
 			e->code = OUT_OF_MEMORY; \
 	} while(0)
 
+#define exception_create_f(e, fmt, ...) \
+	do { \
+		e->code = USER_DEFINED; \
+		if (asprintf(&(e->msg), fmt, __VA_ARGS__) == -1) \
+			e->code = OUT_OF_MEMORY; \
+	} while(0)
+
 #define exception_reraise(e, ce) \
 	do { \
 		e->code = ce.code; \

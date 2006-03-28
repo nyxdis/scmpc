@@ -67,14 +67,12 @@ static int server_connect(const char *host, int port, struct s_exception *e)
 			break;
 		case EAI_MEMORY:
 			freeaddrinfo(result);
-			e->code = OUT_OF_MEMORY;
+			exception_raise(e, OUT_OF_MEMORY);
 			return -1;
 		case EAI_AGAIN:
 		default:
-			e->code = USER_DEFINED;
-			if (asprintf(&(e->msg), "Could not get host information: %s",
-					gai_strerror(err)) == -1)
-				e->code = OUT_OF_MEMORY;
+			exception_create_f(e, "Could not get host information: %s",
+					gai_strerror(err));
 			freeaddrinfo(result);
 			return -1;
 	}
@@ -161,7 +159,7 @@ int mpd_response(mpd_connection *mpd_conn, buffer_t *buffer,
 				written = buffer_write(input_buffer, 1, bytes_recvd, 
 						(void *)buffer);
 				if (written < bytes_recvd) {
-					e->code = OUT_OF_MEMORY;
+					exception_raise(e, OUT_OF_MEMORY);
 					return 0;
 				}
 			}
@@ -181,7 +179,7 @@ int mpd_response(mpd_connection *mpd_conn, buffer_t *buffer,
 		}
 	}
 	if (ack != NULL) {
-		exception_create(e, ack+1);
+		exception_create(e, ack+5);
 		return 0;
 	}
 
@@ -279,7 +277,7 @@ int mpd_send_password(mpd_connection *mpd_conn, const char *password,
 	struct s_exception ce = EXCEPTION_INIT;
 
 	if ((buffer = buffer_alloc()) == NULL) {
-		e->code = OUT_OF_MEMORY;
+		exception_raise(e, OUT_OF_MEMORY);
 		return 0;
 	}
 
@@ -290,7 +288,7 @@ int mpd_send_password(mpd_connection *mpd_conn, const char *password,
 	/* 13 = strlen("password \"\"\n")+1; */
 	len += 13;
 	if ((command = malloc(len)) == NULL) {
-		e->code = OUT_OF_MEMORY;
+		exception_raise(e, OUT_OF_MEMORY);
 		goto mpd_send_password_error;
 	}
 	strlcpy(command, "password \"", len);
@@ -372,7 +370,7 @@ int mpd_connect(mpd_connection *mpd_conn, const char *hostname, int port,
 	
 	buffer = buffer_alloc();
 	if (buffer == NULL) {
-		e->code = OUT_OF_MEMORY;
+		exception_raise(e, OUT_OF_MEMORY);
 		return 0;
 	}
 	
@@ -391,10 +389,8 @@ int mpd_connect(mpd_connection *mpd_conn, const char *hostname, int port,
 			mpd_conn->error_count = 0;
 			return 1;
 		case USER_DEFINED:
-			e->code = USER_DEFINED;
-			if (asprintf(&(e->msg), "Error in connecting to the MPD server: "
-						"%s", buffer->buffer) == -1)
-				e->code = OUT_OF_MEMORY;
+			exception_create_f(e, "Error in connecting to the MPD server: "
+						"%s", buffer->buffer);
 			break;
 		case CONNECTION_TIMEOUT:
 			exception_create(e, "Connection timed out while waiting for a "
@@ -433,7 +429,7 @@ int mpd_check_server(mpd_connection *mpd_conn, struct s_exception *e)
 	
 	buffer = buffer_alloc();
 	if (buffer == NULL) {
-		e->code = OUT_OF_MEMORY;
+		exception_raise(e, OUT_OF_MEMORY);
 		return 0;
 	}
 	
