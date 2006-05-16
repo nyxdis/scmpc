@@ -122,8 +122,8 @@ static void as_set_password(struct as_connection *as_conn,
 	char tmp[3], password_challenge[65];
 	unsigned short int i;
 
-	memset(&password_challenge, '\0', 65);
-	memset(&(as_conn->password), '\0', 33);
+	memset(&password_challenge, '\0', sizeof(password_challenge));
+	memset(&(as_conn->password), '\0', sizeof(as_conn->password));
 	
 	md5_init(&state);
 	md5_append(&state, (const md5_byte_t *)password, strlen(password));
@@ -175,9 +175,12 @@ static int build_querystring(char **qs, struct as_connection *as_conn,
 		goto build_querystring_error;
 	}
 
+	/* Start off the query string with the username and password. */
 	ret = strlcpy(*qs, tmp, length);
 	free(tmp);
 	if (ret >= (int)length) {
+		/* You have a username more than 1024-38 characters long? Tough...
+		 * 38 is strlen("u=&s=<32-char password>\0"); */
 		scmpc_log(ERROR, "You cannot possibly have a username %d characters "
 				"long. Please fix it and restart this program.", ret-38);
 		as_conn->status = BADUSER;
@@ -230,7 +233,7 @@ static int build_querystring(char **qs, struct as_connection *as_conn,
 			ret = strlcat(*qs, tmp, length);
 			if (ret >= (int)length) {
 				scmpc_log(ERROR, "This song's information is unrealistically "
-						"large. Discarding.");
+						"long. Discarding.");
 				free(tmp);
 				song = song->next;
 				continue;
@@ -263,7 +266,7 @@ static void as_handshake(struct as_connection *as_conn)
 	char *handshake_url, *line, *s_buffer;
 	int ret;
 
-	if (strlen(prefs.as_username) == 0 || strlen(prefs.as_password) == 0) {
+	if (prefs.as_username[0] == '\0' || prefs.as_password[0] == '\0') {
 		scmpc_log(INFO, "No username or password specified. Not connecting to "
 				"audioscrobbler.");
 		as_conn->status = BADUSER;
@@ -374,7 +377,7 @@ static void as_submit_queue(struct as_connection *as_conn)
 	static char last_failed[512];
 
 	if (queue.first == NULL) {
-		scmpc_log(DEBUG, "Queue is empty.");
+		scmpc_log(DEBUG, "Queue is empty, but as_submit_queue was called.");
 		return;
 	}
 	
@@ -649,8 +652,7 @@ static void queue_save(void)
 {
 	FILE *cache_file;
 	struct queue_node *current_song;
-	static bool writeable_warned = FALSE;
-	enum loglevel warning_level = ERROR;
+	static enum loglevel warning_level = ERROR;
 	struct s_exception e = EXCEPTION_INIT;
 	
 	pthread_mutex_lock(&submission_queue_mutex);
@@ -660,6 +662,7 @@ static void queue_save(void)
 	cache_file = file_open(prefs.cache_file, "w", &e);
 	switch (e.code) {
 		case 0:
+			/* No error occurred. */
 			break;
 		case OUT_OF_MEMORY:
 			scmpc_log(ERROR, "Out of memory.");
@@ -667,13 +670,10 @@ static void queue_save(void)
 			end_program();
 			return;
 		case USER_DEFINED:
-			if (! writeable_warned)
-				writeable_warned = TRUE;
-			else
-				warning_level = INFO;
 			scmpc_log(warning_level,"Cache file (%s) cannot be opened for "
 					"writing: %s", prefs.cache_file, e.msg);
 			exception_clear(e);
+			warning_level = INFO; /* Only log an ERROR about this once. */
 			goto save_queue_exit;
 		default:
 			scmpc_log(DEBUG, "Unexpected error from file_open: %s", e.msg);
@@ -744,8 +744,9 @@ static void queue_load(void)
 			*p = '\0';
 
 		if (strncmp(line, "# BEGIN SONG", 12) == 0) {
-			/* Do nothing */
-			;
+			/* Free any information we might already have. */
+			free(artist); free(title); free(album); free(date);
+			artist = title = album = date = NULL;
 		} else if (strncmp(line, "artist: ", 8) == 0) {
 			free(artist);
 			artist = strdup(&line[8]);
