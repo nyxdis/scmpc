@@ -159,11 +159,11 @@ static int build_querystring(char **qs, struct as_connection *as_conn,
 		struct queue_node **last_song)
 {
 	char *username, *artist, *title, *album, *time, *nqs, *tmp;
-	size_t length = 1024;
+	size_t buffer_length = 1024, current_str_length = 0;
 	int ret, num = 0;
 	struct queue_node *song = queue.first;
 	
-	if ((*qs = malloc(length)) == NULL)
+	if ((*qs = malloc(buffer_length)) == NULL)
 		return -1;
 	
 	if ((username = curl_escape(prefs.as_username, 0)) == NULL)
@@ -175,10 +175,8 @@ static int build_querystring(char **qs, struct as_connection *as_conn,
 		goto build_querystring_error;
 	}
 
-	/* Start off the query string with the username and password. */
-	ret = strlcpy(*qs, tmp, length);
-	free(tmp);
-	if (ret >= (int)length) {
+	current_str_length = ret + 1; /* Remember the NUL byte */
+	if (current_str_length > buffer_length) {
 		/* You have a username more than 1024-38 characters long? Tough...
 		 * 38 is strlen("u=&s=<32-char password>\0"); */
 		scmpc_log(ERROR, "You cannot possibly have a username %d characters "
@@ -186,6 +184,11 @@ static int build_querystring(char **qs, struct as_connection *as_conn,
 		as_conn->status = BADUSER;
 		goto build_querystring_error;
 	}
+
+	/* Start off the query string with the username and password.
+	 * No need to check for truncation - it's already been done above. */
+	ret = strlcpy(*qs, tmp, buffer_length);
+	free(tmp);
 	
 	while (song != NULL && num < 8) {
 		artist = curl_escape(song->artist, 0);
@@ -201,43 +204,29 @@ static int build_querystring(char **qs, struct as_connection *as_conn,
 			goto build_querystring_error;
 		}
 
-		ret = strlcat(*qs, tmp, length);
-		if (ret >= (int)length) {
-			/* Find the beginning of the truncated string... */
-			char *end, *tmp2;
-			if (asprintf(&tmp2, "&a[%d]", num) == -1) {
-				free(tmp);
-				goto build_querystring_error;
-			}
-			end = strstr(*qs, tmp2);
-			/* ... and overwrite it so we can put the whole string there. */
-			if (end == NULL) {
-				scmpc_log(DEBUG, "Cannot find the start of the truncated "
-						"string in build_querystring. Looking for %s in %s.",
-						tmp2, *qs);
-				free(tmp2); free(tmp);
-				goto build_querystring_error;
-			} else {
-				*end = '\0';
-				free(tmp2);
-			}
-			
-			length *= 2;
-			if ((nqs = realloc(*qs, length)) == NULL) {
+		current_str_length += ret; /* The NUL byte is already accounted for. */
+		scmpc_log(DEBUG, "current_str_length = %d", current_str_length);
+
+		if (current_str_length > buffer_length) {
+			/* Time to expand the buffer. */
+			scmpc_log(DEBUG, "Expanding querystring buffer.");
+			buffer_length *= 2;
+			if ((nqs = realloc(*qs, buffer_length)) == NULL) {
 				free(tmp);
 				goto build_querystring_error;
 			} else {
 				*qs = nqs;
 			}
-			
-			ret = strlcat(*qs, tmp, length);
-			if (ret >= (int)length) {
-				scmpc_log(ERROR, "This song's information is unrealistically "
-						"long. Discarding.");
-				free(tmp);
-				song = song->next;
-				continue;
-			}
+		}
+		
+		ret = strlcat(*qs, tmp, buffer_length);
+		if (ret >= (int)buffer_length) {
+			/* We tried, but the song is still too large for the buffer. */
+			scmpc_log(ERROR, "This song's information is unrealistically "
+					"long. Discarding.");
+			free(tmp);
+			song = song->next;
+			continue;
 		}
 		free(tmp);
 		num++;
