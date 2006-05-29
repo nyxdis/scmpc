@@ -260,7 +260,7 @@ size_t mpd_escape(char **escaped, const char *string)
 			dest++;
 		}
 		*dest = *src;
-		*dest++; *src++;
+		dest++; src++;
 	}
 	*dest = '\0';
 
