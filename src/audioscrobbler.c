@@ -268,7 +268,7 @@ static void as_handshake(struct as_connection *as_conn)
 
 	if (prefs.as_username[0] == '\0' || prefs.as_password[0] == '\0') {
 		scmpc_log(INFO, "No username or password specified. Not connecting to "
-				"audioscrobbler.");
+				"Audioscrobbler.");
 		as_conn->status = BADUSER;
 		return;
 	}
@@ -301,14 +301,14 @@ static void as_handshake(struct as_connection *as_conn)
 	free(handshake_url);
 	
 	if (ret != 0) {
-		scmpc_log(ERROR, "Could not connect to the audioscrobbler server: %s",
+		scmpc_log(ERROR, "Could not connect to the Audioscrobbler server: %s",
 				curl_easy_strerror(ret));
 		goto as_handshake_error;
 	}
 
 	line = strtok_r(buffer->buffer, "\n", &s_buffer);
 	if (line == NULL) {
-		scmpc_log(DEBUG, "Could not parse audioscrobbler handshake response.");
+		scmpc_log(DEBUG, "Could not parse Audioscrobbler handshake response.");
 		goto as_handshake_error;
 	}
 
@@ -319,7 +319,7 @@ static void as_handshake(struct as_connection *as_conn)
 			scmpc_log(INFO, "There is a new version of the scmpc client "
 					"available. See %s for more details.", &line[7]);
 		} else if (strncmp(line, "UPTODATE", 8) != 0) {
-			scmpc_log(DEBUG, "Could not parse audioscrobbler handshake "
+			scmpc_log(DEBUG, "Could not parse Audioscrobbler handshake "
 					"response.");
 			goto as_handshake_error;
 		}
@@ -354,7 +354,7 @@ static void as_handshake(struct as_connection *as_conn)
 				"Audioscrobbler. Please correct them and restart this program.");
 		as_conn->status = BADUSER;
 	} else {
-		scmpc_log(DEBUG, "Could not parse audioscrobbler handshake response.");
+		scmpc_log(DEBUG, "Could not parse Audioscrobbler handshake response.");
 	}
 
 as_handshake_error:
@@ -425,7 +425,7 @@ static void as_submit_queue(struct as_connection *as_conn)
 		last_failed[0] = '\0';
 		/* TODO: "May need to re-handshake"... */
 		as_conn->status = BADUSER;
-		scmpc_log(ERROR, "Your user details were not accepted by audioscrobbler."
+		scmpc_log(ERROR, "Your user details were not accepted by Audioscrobbler."
 				" Please correct them and restart this program.");
 	} else if (strncmp(line, "OK", 2) == 0) {
 		last_failed[0] = '\0';
@@ -601,7 +601,7 @@ void queue_add(const char *artist, const char *title, const char *album,
 		queue_remove_songs(queue.first, new_first_song);
 		queue.first = new_first_song;
 		scmpc_log(INFO, "The queue of songs to be submitted is too long. "
-				"Removing the first item.");
+				"The oldest song has been removed.");
 	}
 	(queue.last)->next = new_song;
 	queue.last = new_song;
