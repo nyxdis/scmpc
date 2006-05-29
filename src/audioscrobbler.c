@@ -205,11 +205,8 @@ static int build_querystring(char **qs, struct as_connection *as_conn,
 		}
 
 		current_str_length += ret; /* The NUL byte is already accounted for. */
-		scmpc_log(DEBUG, "current_str_length = %d", current_str_length);
-
 		if (current_str_length > buffer_length) {
 			/* Time to expand the buffer. */
-			scmpc_log(DEBUG, "Expanding querystring buffer.");
 			buffer_length *= 2;
 			if ((nqs = realloc(*qs, buffer_length)) == NULL) {
 				free(tmp);
