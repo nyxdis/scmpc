@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([scmpc], [0.2.0], [jcoome@gmail.com])
+AC_INIT([scmpc], [0.2.1], [jcoome@gmail.com])
 
 AC_CONFIG_SRCDIR([src/scmpc.h])
 AC_CONFIG_HEADER([src/config.h])
