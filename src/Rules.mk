@@ -32,7 +32,7 @@ depend: $(SRC_FILES) $(SRC_HEADERS)
 	$(srcdir)/depends.sh 'src_b' $(SRC_FILES) > $(DEPENDS)
 
 $(PROGRAM): $(OBJS)
-	$(CC) $(LDFLAGS) $(LDLIBS) $(OBJS) -o $@
+	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $@
 
 $(PROGRAM)_install: $(PROGRAM)
 	$(INSTALL) -d $(DESTDIR)$(bindir)

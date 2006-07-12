@@ -50,7 +50,7 @@ check:
 
 # Linking single objects
 %: %.o
-	$(CC) $(LDFLAGS) $(LDLIBS) -c $< -o $@
+	$(CC) $(LDFLAGS) -c $< $(LDLIBS) -o $@
 
 # Subdirectories
 include $(srcdir)/src/Rules.mk
