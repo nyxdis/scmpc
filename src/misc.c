@@ -73,7 +73,8 @@ void open_log(const char *filename)
 					filename, e.msg);
 			exception_clear(e);
 		default:
-			fprintf(stderr, "Unexpected error from file_open: %s\n", e.msg);
+			fprintf(stderr, "Unexpected error from file_open(%s): %s\n", 
+					filename, e.msg);
 			break;
 	}
 }
