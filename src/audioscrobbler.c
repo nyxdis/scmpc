@@ -114,8 +114,32 @@ static void as_connection_cleanup(struct as_connection *as_conn)
 	free(as_conn);
 }
 
+static const char *as_get_password_challenge(void)
+{
+	md5_state_t state;
+	md5_byte_t digest[16];
+	char psc[65], *tmp = psc;
+	int i;
+
+	if (prefs.as_password_hash && prefs.as_password_hash[0])
+		return prefs.as_password_hash;
+
+	md5_init(&state);
+	md5_append(&state, (const md5_byte_t *)prefs.as_password, 
+			strlen(prefs.as_password));
+	md5_finish(&state, digest);
+	for (i = 0; i < 16; i++) {
+		snprintf(tmp, 3, "%02x", digest[i]);
+		tmp += 2;
+	}
+
+	prefs.as_password_hash = strdup(psc);
+
+	return prefs.as_password_hash;
+}
+
 static void as_set_password(struct as_connection *as_conn, 
-		const char *challenge, const char *password)
+		const char *challenge, const char *password_hash)
 {
 	md5_state_t state;
 	md5_byte_t digest[16];
@@ -125,14 +149,7 @@ static void as_set_password(struct as_connection *as_conn,
 	memset(&password_challenge, '\0', sizeof(password_challenge));
 	memset(&(as_conn->password), '\0', sizeof(as_conn->password));
 	
-	md5_init(&state);
-	md5_append(&state, (const md5_byte_t *)password, strlen(password));
-	md5_finish(&state, digest);
-	for (i = 0; i < 16; i++) {
-		sprintf(tmp, "%02x", digest[i]);
-		strcat(password_challenge, tmp);
-	}
-
+	strcpy(password_challenge, password_hash);
 	strcat(password_challenge, challenge);
 
 	md5_init(&state);
@@ -250,9 +267,10 @@ static void as_handshake(struct as_connection *as_conn)
 	unsigned long retry_time;
 	buffer_t *buffer;
 	char *handshake_url, *line, *s_buffer;
+	const char *asc = as_get_password_challenge();
 	int ret;
 
-	if (prefs.as_username[0] == '\0' || prefs.as_password[0] == '\0') {
+	if (prefs.as_username[0] == '\0' || asc == NULL || asc[0] == '\0') {
 		scmpc_log(INFO, "No username or password specified. Not connecting to "
 				"Audioscrobbler.");
 		as_conn->status = BADUSER;
@@ -312,7 +330,7 @@ static void as_handshake(struct as_connection *as_conn)
 		while ((line = strtok_r(NULL, "\n", &s_buffer)) != NULL) {
 			line_no++; /* Because /I/ don't count from 0. ;-) */
 			if (line_no == 2) {
-				as_set_password(as_conn, line, prefs.as_password);
+				as_set_password(as_conn, line, asc);
 			} else if (line_no == 3) {
 				free(as_conn->submit_url);
 				as_conn->submit_url = strdup(line);
@@ -662,7 +680,7 @@ static void queue_save(void)
 			warning_level = INFO; /* Only log an ERROR about this once. */
 			goto save_queue_exit;
 		default:
-			scmpc_log(DEBUG, "Unexpected error from file_open: %s", e.msg);
+			scmpc_log(DEBUG, "Unexpected error from file_open(%s): %s\n", prefs.cache_file, e.msg);
 			goto save_queue_exit;
 	}
 	

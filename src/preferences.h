@@ -34,6 +34,7 @@ struct preferences {
 	char *pid_file;
 	char *as_username;
 	char *as_password;
+	char *as_password_hash;
 	char *cache_file;
 	int queue_length;
 	int cache_interval;

@@ -185,6 +185,7 @@ static void parse_config_file(void)
 	cfg_opt_t as_opts[] = {
 		CFG_STR("username", "", CFGF_NONE),
 		CFG_STR("password", "", CFGF_NONE),
+		CFG_STR("password_hash", "", CFGF_NONE),
 		CFG_END()
 	};
 	cfg_opt_t opts[] = {
@@ -232,6 +233,7 @@ static void parse_config_file(void)
 	sec_as = cfg_getsec(cfg, "audioscrobbler");
 	prefs.as_username = strdup(cfg_getstr(sec_as, "username"));
 	prefs.as_password = strdup(cfg_getstr(sec_as, "password"));
+	prefs.as_password_hash = strdup(cfg_getstr(sec_as, "password_hash"));
 	
 parse_config_files_exit:
 	cfg_free(cfg);
@@ -334,4 +336,5 @@ void clear_preferences(void)
 	free(prefs.cache_file);
 	free(prefs.as_username);
 	free(prefs.as_password);
+	free(prefs.as_password_hash);
 }
