@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 	sigset_t signal_set;
 	pthread_attr_t attr_j, attr_d;
 	
-	/* Set indetification string for the daemon for both syslog and PID file */
+	/* Set identification string for the daemon for both syslog and PID file */
 	daemon_log_ident = daemon_ident_from_argv0(argv[0]);
 
 	/* Used by some libdaemon functions internally. */
