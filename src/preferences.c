@@ -294,7 +294,7 @@ static void parse_command_line(int argc, char **argv)
 		}
 		if (pid_file->count > 0) {
 			free(prefs.pid_file);
-			prefs.pid_file = strdup(conf_file->filename[0]);
+			prefs.pid_file = strdup(pid_file->filename[0]);
 		}
 		if (quiet->count > 0 && debug->count > 0) {
 			fprintf(stderr, "Specifying --debug and --quiet at the same time "
