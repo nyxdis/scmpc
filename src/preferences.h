@@ -3,8 +3,12 @@
  *
  * Copyright (c) 2008 Christoph Mende <angelos@unkreativ.org>
  * All rights reserved. Released under the 2-clause BSD license.
+ *
+ * Based on Jonathan Coome's work on scmpc
  */
 
+
+#include <stdbool.h>
 
 struct preferences {
         char *mpd_hostname;
