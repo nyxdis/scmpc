@@ -21,6 +21,8 @@ PKG_CHECK_MODULES([libcurl], [libcurl >= 7.10.0])
 AC_SUBST(libdaemon_LIBS)
 AC_SUBST(libdaemon_CFLAGS)
 
+AM_PATH_LIBGCRYPT(1.4.0)
+
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h unistd.h])
 
