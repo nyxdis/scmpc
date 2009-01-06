@@ -3,6 +3,8 @@
  *
  * Copyright (c) 2008 Christoph Mende <angelos@unkreativ.org>
  * All rights reserved. Released under the 2-clause BSD license.
+ *
+ * Based on Jonathan Coome's work on scmpc
  */
 
 
@@ -16,7 +18,6 @@
 
 #include "misc.h"
 #include "audioscrobbler.h"
-#include "mpd.h"
 #include "preferences.h"
 
 /* Static function prototypes */
@@ -34,6 +35,7 @@ extern struct preferences prefs;
 
 int main(int argc, char *argv[])
 {
+	int mpd_sockfd;
 	fd_set read_flags;
 	pid_t pid;
 	struct sigaction sa;
@@ -64,7 +66,7 @@ int main(int argc, char *argv[])
 	sigaction(SIGQUIT,&sa,NULL);
 
 	as_connection_init();
-	mpd_connect();
+	//mpd_connect();
 
 	while(1)
 	{
