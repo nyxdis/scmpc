@@ -33,6 +33,7 @@ void as_connection_init(void)
 	as_conn->last_handshake = 0;
 	as_conn->status = DISCONNECTED;
 	as_conn->handle = curl_easy_init();
+	if(as_conn->handle == NULL) return;
 	as_conn->headers = curl_slist_append(as_conn->headers, 
 			"User-Agent: scmpc/" PACKAGE_VERSION);
 	
@@ -73,15 +74,16 @@ void as_handshake(void)
 		return;
 	}
 
-	asprintf(&tmp,"%s%u",md5_hash(prefs.as_password),timestamp);
+	if(asprintf(&tmp,"%s%u",md5_hash(prefs.as_password),timestamp) < 0) return;
 	auth_token = md5_hash(tmp);
 	free(tmp);
-	asprintf(&handshake_url,HANDSHAKE_URL,PACKAGE_VERSION,prefs.as_username,
-		timestamp,auth_token);
+	if(asprintf(&handshake_url,HANDSHAKE_URL,PACKAGE_VERSION,prefs.as_username,
+		timestamp,auth_token) < 0) return;
 
 	scmpc_log(DEBUG,"handshake_url = %s",handshake_url);
 
 	buffer = malloc(1024);
+	if(buffer == NULL) return;
 
 	curl_easy_setopt(as_conn->handle,CURLOPT_WRITEDATA,(void *)buffer);
 	curl_easy_setopt(as_conn->handle,CURLOPT_HTTPGET,1);
