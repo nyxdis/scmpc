@@ -59,7 +59,7 @@ void as_handshake(void)
 	time_t timestamp;
 	int ret;
 
-	if(prefs.as_username == NULL || prefs.as_password == NULL) {
+	if(prefs.as_username == NULL || (prefs.as_password == NULL && prefs.as_password_hash == NULL)) {
 		scmpc_log(INFO,"No username or password specified. "
 				"Not connecting to Audioscrobbler.");
 		as_conn->status = BADAUTH;
@@ -74,7 +74,11 @@ void as_handshake(void)
 		return;
 	}
 
-	if(asprintf(&tmp,"%s%u",md5_hash(prefs.as_password),timestamp) < 0) return;
+	if(prefs.as_password_hash) {
+		if(asprintf(&tmp,"%s%u",prefs.as_password_hash,timestamp) < 0) return;
+	} else {
+		if(asprintf(&tmp,"%s%u",md5_hash(prefs.as_password),timestamp) < 0) return;
+	}
 	auth_token = md5_hash(tmp);
 	free(tmp);
 	if(asprintf(&handshake_url,HANDSHAKE_URL,PACKAGE_VERSION,prefs.as_username,
