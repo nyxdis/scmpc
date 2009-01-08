@@ -10,10 +10,52 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <confuse.h>
 
 #include "misc.h"
 #include "preferences.h"
+
+static int cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
+{
+	if(strncmp(value,"off",3) == 0)
+		*(enum loglevel *)result = NONE;
+	else if(strncmp(value,"error",5) == 0)
+		*(enum loglevel *)result = ERROR;
+	else if(strncmp(value,"info",4) == 0)
+		*(enum loglevel *)result = INFO;
+	else if(strncmp(value,"debug",5) == 0)
+		*(enum loglevel *)result = DEBUG;
+	else {
+		cfg_error(cfg,"Invalid value for option '%s': '%s'",
+			cfg_opt_name(opt),value);
+			return -1;
+	}
+	return 0;
+}
+
+static int cf_validate_num(cfg_t *cfg, cfg_opt_t *opt)
+{
+	int value = cfg_opt_getnint(opt,0);
+	if(value <= 0) {
+		cfg_error(cfg,"'%s' in section '%s' cannot be a nagative value"
+			" or zero.",
+			cfg_opt_name(opt),cfg_name(cfg));
+		return -1;
+	}
+	return 0;
+}
+
+static int cf_validate_num_zero(cfg_t *cfg, cfg_opt_t *opt)
+{
+	int value = cfg_opt_getnint(opt,0);
+	if(value < 0) {
+		cfg_error(cfg,"'%s' in section '%s' cannot be a nagative value.",
+			cfg_opt_name(opt),cfg_name(cfg));
+		return -1;
+	}
+	return 0;
+}
 
 void init_preferences(int argc, char *argv[])
 {
