@@ -1,0 +1,8 @@
+== scmpc 0.14.0 ==
+- mpd idle support (mpd 0.14)
+- support for the Last.fm submission protocol v1.2
+- Last.fm Now Playing support
+- UNIX domain socket support (mpd 0.14)
+- a lot of code cleanup
+- use libgcrypt for hashing
+- use external libmpdclient instead of bundled code
