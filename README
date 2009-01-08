@@ -1,0 +1,6 @@
+The following packages are required to build and run scmpc:
+argtable	http://argtable.sourceforge.net/
+libconfuse	http://www.nongnu.org/confuse/
+libcurl		http://curl.haxx.se/libcurl
+libgcrypt	http://www.gnupg.org/
+libmpdclient	http://musicpd.org/
