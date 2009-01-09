@@ -16,8 +16,8 @@ AC_CHECK_LIB([argtable2], [arg_parse])
 AC_CHECK_LIB([mpdclient], [mpd_newConnection])
 
 PKG_CHECK_MODULES([confuse], [libconfuse])
-AC_SUBST(libconfuse_LIBS)
-AC_SUBST(libconfuse_CFLAGS)
+AC_SUBST(confuse_LIBS)
+AC_SUBST(confuse_CFLAGS)
 
 PKG_CHECK_MODULES([libcurl], [libcurl >= 7.10.0])
 AC_SUBST(libdaemon_LIBS)
