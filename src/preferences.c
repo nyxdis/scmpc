@@ -27,7 +27,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <argtable2.h>
 #include <confuse.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "misc.h"
 #include "preferences.h"
@@ -209,7 +214,7 @@ static void parse_command_line(int argc, char **argv)
 	void *argtable[] = {
 		debug, quiet, conf_file, pid_file, version, fork, help, end
 	};
-	int n_errors, exit_code;
+	int n_errors;
 
 	if (arg_nullcheck(argtable) != 0) {
 		fputs("Insufficient memory to parse command line options.",stderr);
@@ -259,7 +264,7 @@ static void parse_command_line(int argc, char **argv)
 			prefs.log_level = DEBUG;
 		}
 		if (fork->count > 0) {
-			prefs.fork = FALSE;
+			prefs.fork = 0;
 		}
 	}
 	arg_freetable(argtable,8);
