@@ -103,7 +103,7 @@ static int parse_files(cfg_t *cfg)
 			exit(EXIT_FAILURE);
 		}
 	}
-	config_files[2] = strdup(prefs.config_file);
+	config_files[2] = strdup(SYSCONFDIR "/scmpc.conf");
 
 	for(i=0;i<3;i++)
 	{
@@ -118,6 +118,8 @@ static int parse_files(cfg_t *cfg)
 				config_files[i]);
 				free_config_files(config_files);
 				exit(EXIT_FAILURE);
+			case CFG_FILE_ERROR:
+				break;
 			case CFG_SUCCESS:
 				free_config_files(config_files);
 				return 0;
