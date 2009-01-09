@@ -29,10 +29,13 @@
 #include <string.h>
 #include <curl/curl.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "misc.h"
 #include "preferences.h"
 #include "audioscrobbler.h"
-#include "config.h"
 
 char curl_error_buffer[CURL_ERROR_SIZE];
 
