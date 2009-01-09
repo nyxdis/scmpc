@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 	init_preferences(argc, argv);
 
 	/* Open the log file before forking, so that if there is an error, the
-	 * user will get some idea that there is not going to be any logging */
+	 * user will get some idea what is going on */
 	open_log(prefs.log_file);
 
 	/* Check if scmpc is already running */
