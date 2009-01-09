@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	struct timeval waitd;
 	time_t last_queue_save = 0;
 
-	init_preferences(argc, argv);
+	init_preferences(argc,argv);
 
 	/* Open the log file before forking, so that if there is an error, the
 	 * user will get some idea what is going on */
@@ -131,7 +131,7 @@ static int scmpc_is_running(void)
 			return -1;
 		} else {
 			/* Invalid PID file removed, start new instance */
-			printf("Invalid pid file %s removed.",prefs.pid_file);
+			printf("Invalid pid file %s removed.\n",prefs.pid_file);
 			return 0;
 		}
 	}
