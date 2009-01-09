@@ -45,3 +45,4 @@ struct preferences {
 } prefs;
 
 void init_preferences(int argc, char *argv[]);
+void clear_preferences(void);
