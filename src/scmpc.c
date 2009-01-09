@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 		if(FD_ISSET(mpd_sockfd,&read_flags)) {
 		}
 
-		if(time(NULL) >= last_queue_save + (prefs.cache_interval * 60))
+		if(difftime(time(NULL),last_queue_save) >= prefs.cache_interval * 60)
 		{
 			queue_save();
 			last_queue_save = time(NULL);
