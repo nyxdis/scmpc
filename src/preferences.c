@@ -197,6 +197,8 @@ static void parse_config_file(void)
 	prefs.as_username = strdup(cfg_getstr(sec_as,"username"));
 	prefs.as_password = strdup(cfg_getstr(sec_as,"password"));
 	prefs.as_password_hash = strdup(cfg_getstr(sec_as,"password_hash"));
+
+	prefs.fork = 1;
 }
 
 static void parse_command_line(int argc, char **argv)
