@@ -49,6 +49,9 @@ struct as_connection {
 void queue_add(const char *artist, const char *title, const char *album,
 		int length, const char *date);
 
+int as_now_playing(void);
+int as_submit(void);
+void as_connection_cleanup(struct as_connection *as_conn);
 void as_connection_init(void);
-
+void as_handshake(void);
 void queue_save(void);
