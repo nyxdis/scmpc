@@ -33,13 +33,12 @@
 
 void open_log(const char *filename)
 {
-	printf("%s\n",filename);
+	printf("THIS IS THE ALMIGHTY open_log FUNCTION OPENING %s... NOT\n",filename);
 }
 
 void scmpc_log(enum loglevel level, const char *format, ...)
 {
-	printf("%d\n",level);
-	printf("%s\n",format);
+	printf("%d | %s\n",level,format);
 }
 
 size_t buffer_write(void *input, size_t size, size_t nmemb, void *buf)
