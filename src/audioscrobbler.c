@@ -63,7 +63,7 @@ void as_connection_init(void)
 	curl_easy_setopt(as_conn->handle,CURLOPT_CONNECTTIMEOUT,5L);
 }
 
-void as_connection_cleanup(struct as_connection *as_conn)
+void as_cleanup(void)
 {
 	curl_slist_free_all(as_conn->headers);
 	curl_easy_cleanup(as_conn->handle);

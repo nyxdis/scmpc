@@ -1,5 +1,5 @@
 /**
- * audioscrobbler.h: Audioscrobbler backend.
+ * mpd.c: MPD backend.
  *
  * ==================================================================
  * Copyright (c) 2008 Christoph Mende <angelos@unkreativ.org>
@@ -24,35 +24,22 @@
  */
 
 
-#include <curl/curl.h>
+#include <stdio.h>
 
-struct queue_node {
-	struct queue_node *next;
-	char *artist;
-	char *title;
-	char *album;
-	int length;
-	time_t date;
-};
+#include <mpd/connection.h>
 
-struct as_connection {
-	char *submit_url;
-	char *np_url;
-	char password[33];
-	time_t last_handshake;
-	char *session_id;
-	enum connection_status status;
-	CURL *handle;
-	struct curl_slist *headers;
-} *as_conn;
+#include "misc.h"
+#include "preferences.h"
 
-char *buffer;
-void queue_add(const char *artist, const char *title, const char *album,
-		int length, const char *date);
+struct mpd_connection *mpd_conn;
 
-int as_now_playing(void);
-int as_submit(void);
-void as_cleanup(void);
-void as_connection_init(void);
-void as_handshake(void);
-void queue_save(void);
+void mpd_connect(void)
+{
+	mpd_conn = mpd_newConnection(prefs.mpd_hostname,prefs.mpd_port,
+		prefs.mpd_timeout);
+}
+
+void mpd_cleanup(void)
+{
+	mpd_closeConnection(mpd_conn);
+}
