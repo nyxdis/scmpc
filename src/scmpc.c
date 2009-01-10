@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 	open_log(prefs.log_file);
 
 	/* Check if scmpc is already running */
-	if((pid = scmpc_is_running()) >= 0) {
+	if((pid = scmpc_is_running()) > 0) {
 		fprintf(stderr,"Daemon is already running with PID: %u\n",pid);
 		exit(EXIT_FAILURE);
 	}
@@ -110,8 +110,10 @@ int main(int argc, char *argv[])
 
 static int scmpc_is_running(void)
 {
-	FILE *pid_file = fopen(prefs.pid_file,"w");
+	FILE *pid_file = fopen(prefs.pid_file,"a");
 	pid_t pid;
+
+	if(errno == ENOENT) return 0;
 
 	if(pid_file == NULL) {
 		/* Unable to open PID file, returning error */
