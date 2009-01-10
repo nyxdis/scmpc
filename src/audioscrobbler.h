@@ -46,6 +46,7 @@ struct as_connection {
 	struct curl_slist *headers;
 } *as_conn;
 
+char *buffer;
 void queue_add(const char *artist, const char *title, const char *album,
 		int length, const char *date);
 
