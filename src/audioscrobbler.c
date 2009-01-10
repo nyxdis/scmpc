@@ -37,7 +37,7 @@
 #include "preferences.h"
 #include "audioscrobbler.h"
 
-char curl_error_buffer[CURL_ERROR_SIZE];
+static char curl_error_buffer[CURL_ERROR_SIZE];
 
 #define HANDSHAKE_URL \
 	"http://post.audioscrobbler.com/?hs=true&p=1.2.1&c=spc&v=%s&u=%s&t=%u&a=%s"
@@ -74,11 +74,12 @@ void as_connection_cleanup(struct as_connection *as_conn)
 
 void as_handshake(void)
 {
-	char *auth_token, *buffer, *handshake_url, *line, *saveptr, *tmp;
+	char *auth_token, *handshake_url, *line, *saveptr, *tmp;
 	time_t timestamp;
 	int ret;
 
-	if(prefs.as_username == NULL || (prefs.as_password == NULL && prefs.as_password_hash == NULL)) {
+	if(strlen(prefs.as_username) == 0 || (strlen(prefs.as_password) == 0 &&
+		strlen(prefs.as_password_hash) == 0)) {
 		scmpc_log(INFO,"No username or password specified. "
 				"Not connecting to Audioscrobbler.");
 		as_conn->status = BADAUTH;
