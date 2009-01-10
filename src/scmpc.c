@@ -110,10 +110,10 @@ int main(int argc, char *argv[])
 
 static int scmpc_is_running(void)
 {
-	FILE *pid_file = fopen(prefs.pid_file,"a");
+	FILE *pid_file = fopen(prefs.pid_file,"r");
 	pid_t pid;
 
-	if(errno == ENOENT) return 0;
+	if(pid_file == NULL && errno == ENOENT) return 0;
 
 	if(pid_file == NULL) {
 		/* Unable to open PID file, returning error */
