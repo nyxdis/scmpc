@@ -32,15 +32,23 @@
 #include <gcrypt.h>
 
 #include "misc.h"
+#include "audioscrobbler.h"
 #include "preferences.h"
-
-#define TIME_BUF_LEN 22
 
 static FILE *log_file;
 
 void open_log(const char *filename)
 {
-	printf("THIS IS THE ALMIGHTY open_log FUNCTION OPENING %s... NOT\n",filename);
+	if(prefs.fork == 0) {
+		log_file = stdout;
+		return;
+	}
+
+	log_file = fopen(filename,"a");
+	if(log_file == NULL) {
+		fprintf(stderr,"Unable to open log file, logging to stdout\n");
+		log_file = stdout;
+	}
 }
 
 void scmpc_log(enum loglevel level, const char *format, ...)
@@ -63,13 +71,15 @@ void scmpc_log(enum loglevel level, const char *format, ...)
 
 	fputs("\n",log_file);
 	fflush(log_file);
-	printf("%d | %s\n",level,format);
 }
 
 size_t buffer_write(void *input, size_t size, size_t nmemb, void *buf)
 {
-	printf("%p%zd%zd%p",input,size,nmemb,buf);
-	return 0;
+	free(buf);
+	size_t len = size*nmemb;
+	if(realloc(buffer,len) == NULL) return -1;
+	strncpy(buffer,input,len);
+	return len;
 }
 
 char *md5_hash(char *text)
