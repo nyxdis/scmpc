@@ -25,11 +25,18 @@
 
 
 #include <stdio.h>
-#include <gcrypt.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#include <gcrypt.h>
 
 #include "misc.h"
+#include "preferences.h"
+
+#define TIME_BUF_LEN 22
+
+static FILE *log_file;
 
 void open_log(const char *filename)
 {
@@ -38,6 +45,24 @@ void open_log(const char *filename)
 
 void scmpc_log(enum loglevel level, const char *format, ...)
 {
+	char *ts;
+	time_t t;
+	va_list ap;
+
+	if(level > prefs.log_level)
+		return;
+	
+	t = time(NULL);
+	ts = malloc(22);
+	strftime(ts,22,"%F %T  ",localtime(&t));
+	fputs(ts,log_file);
+
+	va_start(ap,format);
+	vfprintf(log_file,format,ap);
+	va_end(ap);
+
+	fputs("\n",log_file);
+	fflush(log_file);
 	printf("%d | %s\n",level,format);
 }
 
