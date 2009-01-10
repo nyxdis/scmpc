@@ -87,7 +87,7 @@ void as_handshake(void)
 
 	timestamp = time(NULL);
 
-	if(difftime(as_conn->last_handshake,timestamp) < 1800) {
+	if(difftime(timestamp,as_conn->last_handshake) < 1800) {
 		scmpc_log(DEBUG,"Requested handshake, but last handshake was less than 30 "
 				"minutes ago.");
 		return;
