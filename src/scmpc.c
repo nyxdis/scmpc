@@ -51,7 +51,7 @@ extern struct preferences prefs;
 
 int main(int argc, char *argv[])
 {
-	int mpd_sockfd = 0;
+	int mpd_sockfd = -1;
 	fd_set read_flags;
 	pid_t pid;
 	struct sigaction sa;
@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
 	sigaction(SIGQUIT,&sa,NULL);
 
 	as_connection_init();
+	as_handshake();
 	//mpd_connect();
 
 	while(1)
