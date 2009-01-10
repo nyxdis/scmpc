@@ -1,0 +1,189 @@
+.\" Copyright 2006 Jonathan Coome (jcoome@gmail.com)
+.\" Copyright 2008 Christoph Mende (angelos@unkreativ.org)
+.\" Released under the GNU General Public License
+.TH scmpc 1 "20 December 2008" "" "scmpc User Guide"
+.SH NAME
+scmpc \- An Audioscrobbler client for MPD
+.SH SYNOPSIS
+.B scmpc
+.RB [ " -dqvnh " ]
+.RB [ " -f\ <config_file> " ]
+.RB [ " -i <pid_file> " ]
+.SH DESCRIPTION
+.B scmpc
+is a client for MPD (the Music Player Daemon) which submits your tracks to
+Audioscrobbler. It can be run as a daemon, which is the default behaviour, or
+it can be run in the foreground with the logs directed to standard out.
+.PP
+.B scmpc
+can be run without a connection to the internet as it stores songs in a queue
+if they can't be submitted immediately. The size of this queue can be limited
+in the configuration file so as to avoid scmpc taking up all your memory.  The
+queue is saved at another configurable interval so that if scmpc is stopped
+unexpectedly for some reason, such as a power failure, you should 'lose' as
+few songs as possible.
+.PP
+The program is also forgiving in terms of the connection to the MPD server. If
+it can't connect immediately it will wait for half an hour and then try again.
+If it discovers that the server exists but doesn't respond to requests for the
+current song it will assume the server is password protected and the correct
+password wasn't specified, and it will not attempt to reconnect. The program
+doesn't exit in case there is a queue that could be submitted to
+Audioscrobbler, but when that is done the program will do very little. Check
+the log if the program doesn't appear to be doing anything.
+.PP
+.B scmpc
+is able to pick up and submit songs if crossfading is enabled, and it is able
+to ignore internet streams. It will submit songs without an Album specified,
+but only if the Title and Artist are both set.
+.SH OPTIONS
+.TP
+.B -f or --config-file <file>
+The location of an alternative configuration file. This overrides the default
+search options, but is still overridden by any command line options.
+.TP
+.B -i or --pid-file <file>
+The location of the pid file, which essentially stores the process id and makes
+sure that only one copy of the daemon is running at once.
+.TP
+.B -d or --debug
+Sets the logging level to debug, which will log everything considered
+noteworthy while the program is being developed. Probably unnecessary for
+normal use.
+.TP
+.B -q or --quiet
+Sets the logging level to none, which disables logging completely.
+.TP
+.B -n or --foreground
+Runs the program in the foreground instead of immediately forking. It also
+redirects logging output to standard out, and doesn't create a pid file.
+.TP
+.B -h or --help
+Prints a summary of the available command line options.
+.TP
+.B -v or --version
+Prints the name and version of the program along with a brief copyright notice.
+
+.SH CONFIGURATION
+.B scmpc
+looks for its configuration file first at \fI~/.scmpcrc\fR, then at
+\fI~/.scmpc/scmpc.conf\fR, and finally at \fI@sysconfdir@/scmpc.conf\fR. If a
+config file is specified as a command line option that file will be used
+instead.
+.PP
+If 
+.B scmpc
+doesn't find a file at any of these locations it will silently use the
+compiled in defaults. This will mean that no tracks will be submitted to
+Audioscrobbler because no username or password will have been specified, but 
+.B scmpc
+will still add any valid songs to the unsubmitted song queue.
+.PP
+The format of the configuration file is fairly simple - strings must be quoted,
+but numbers and identifiers (such as the logging level) should not be. Comments
+start with a hash: #. There are also two sections, mpd and audioscrobbler,
+which consist of the section name, an opening brace {, the options specific to
+that section, and a closing brace. Whitespace outside the configuration names
+and options isn't significant.
+.PP
+.B Global Configuration Options
+.RS
+.TP
+.B log_level
+Select the amount of logging you would like scmpc to do. This is a choice of
+four identifiers, not a text string, so don't quote it. Valid options are:
+none, error, info and debug.
+.TP
+.B log_file
+The file that scmpc should write the log to. It will be created if necessary.
+.TP
+.B pid_file
+The file in which scmpc will store its process id, in order to check that it is
+only run once, and in order to send the daemon signals. This is only created if
+scmpc is run as a daemon.
+.TP
+.B cache_file
+The file in which scmpc will save the unsubmitted song queue for use when the
+program restarts. It will be read when scmpc starts, and saved when scmpc
+exists. The queue is also saved periodically (how often is controlled by the
+\fIcache_interval\fR option).
+.TP
+.B cache_interval
+The interval in minutes between saving the unsubmitted queue in case the
+program exits unexpectedly.
+.TP
+.B queue_length
+The maximum number of songs to hold in the unsubmitted songs queue at once. You
+are unlikely to need to lower this, but it's there in case.
+.RE
+.PP
+.B MPD Section
+.RS
+.TP
+.B host
+The hostname or IP address of the server on which MPD is running. Currently
+only supports IPv4.
+.TP
+.B port
+The port which MPD is listening on.
+.TP
+.B timeout
+The timeout in seconds before giving up on the MPD server.
+.TP
+.B password
+Set this if you need a password to read information from the MPD server.
+.PP
+.RE
+.B Audioscrobbler Section
+.RS
+.TP
+.B username
+Your Audioscrobbler username.
+.TP
+.B password
+Your plaintext Audioscrobbler password.
+
+.SH FILES
+.I ~/.scmpcrc
+.br
+.I ~/.scmpc/scmpc.conf
+.br
+.I @sysconfdir@/scmpc.conf
+.RS
+Configuration files
+.RE
+.PP
+.I /var/lib/scmpc/scmpc.cache
+.RS
+The default location of the cache file.
+.RE
+.PP
+.I /var/log/scmpc.log
+.RS
+The default location of the log file.
+.RE
+.PP
+.I /var/run/scmpc.pid
+.RS
+The default location of the pid file.
+.RE
+
+.SH BUGS
+The MPD connection code should work with IPv6, but I have no way of testing it.
+If libcurl was compiled with IPv6 support and Audioscrobbler supports it, it
+should work for communicating with Audioscrobbler, but like I say, I have no
+way of knowing.
+.PP
+There is no proxy support for communicating with MPD. However, if you use a
+proxy to connect to the internet and your \fIhttp_proxy\fR environment variable
+is set up correctly, \fBscmpc\fR should use that automatically when connecting
+to Audioscrobbler.
+.PP
+Currently, there is no support for translating scmpc, but that could be added
+at some point in the future if there is demand for it.
+.PP
+Please report any other bugs to Christoph Mende <angelos@unkreativ.org>.
+
+.SH CREDITS
+Current maintainer: Christoph Mende <angelos@unkreativ.org>
+Original author: Jonathan Coome <jcoome@gmail.com>
