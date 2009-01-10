@@ -53,9 +53,9 @@ void as_connection_init(void)
 	as_conn->status = DISCONNECTED;
 	as_conn->handle = curl_easy_init();
 	if(as_conn->handle == NULL) return;
-	as_conn->headers = curl_slist_append(as_conn->headers, 
+	as_conn->headers = curl_slist_append(as_conn->headers,
 			"User-Agent: scmpc/" PACKAGE_VERSION);
-	
+
 	curl_easy_setopt(as_conn->handle,CURLOPT_HTTPHEADER,as_conn->headers);
 	curl_easy_setopt(as_conn->handle,CURLOPT_WRITEFUNCTION,&buffer_write);
 	curl_easy_setopt(as_conn->handle,CURLOPT_ERRORBUFFER,curl_error_buffer);
