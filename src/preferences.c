@@ -276,9 +276,23 @@ static void parse_command_line(int argc, char **argv)
 
 void init_preferences(int argc, char **argv)
 {
-	/* Environment variables? MPD_HOST and MPD_PORT, in particular. */
+	char *tmp, *saveptr;
+
 	parse_config_file();
 	parse_command_line(argc,argv);
+
+	tmp = getenv("MPD_HOST");
+	if(tmp != NULL) {
+		if(strstr(tmp,"@")) {
+			prefs.mpd_password = strtok_r(tmp,"@",&saveptr);
+			prefs.mpd_hostname = strtok_r(NULL,"@",&saveptr);
+		} else {
+			prefs.mpd_password = strdup("");
+			prefs.mpd_hostname = tmp;
+		}
+	}
+	if(getenv("MPD_PORT") != NULL)
+		prefs.mpd_port = atoi(getenv("MPD_PORT"));
 }
 
 void clear_preferences(void)
