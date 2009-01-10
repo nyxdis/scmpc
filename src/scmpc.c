@@ -34,6 +34,7 @@
 
 #include "misc.h"
 #include "audioscrobbler.h"
+#include "mpd.h"
 #include "preferences.h"
 
 /* Static function prototypes */
@@ -217,4 +218,6 @@ static void cleanup(void)
 {
 	queue_save();
 	scmpc_pid_remove();
+	as_cleanup();
+	mpd_cleanup();
 }
