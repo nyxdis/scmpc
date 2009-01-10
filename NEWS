@@ -6,3 +6,4 @@
 - a lot of code cleanup
 - use libgcrypt for hashing
 - use external libmpdclient instead of bundled code
+- respect MPD_PORT/MPD_HOST from environment
