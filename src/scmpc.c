@@ -31,6 +31,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/select.h>
+#include <sys/stat.h>
 
 #include "misc.h"
 #include "audioscrobbler.h"
@@ -52,7 +53,7 @@ extern struct preferences prefs;
 
 int main(int argc, char *argv[])
 {
-	int mpd_sockfd = -1;
+	int mpd_sockfd = 0;
 	fd_set read_flags;
 	pid_t pid;
 	struct sigaction sa;
@@ -83,8 +84,8 @@ int main(int argc, char *argv[])
 	sigaction(SIGQUIT,&sa,NULL);
 
 	as_connection_init();
+	mpd_connect();
 	as_handshake();
-	//mpd_connect();
 
 	while(1)
 	{
@@ -105,6 +106,8 @@ int main(int argc, char *argv[])
 			queue_save();
 			last_queue_save = time(NULL);
 		}
+		sleep(1);
+		printf("still running\n");
 	}
 
 	exit(EXIT_SUCCESS);
@@ -204,20 +207,22 @@ static void daemonise(void)
 		exit(EXIT_FAILURE);
 	} else if(pid) { /* The parent */
 		exit(EXIT_SUCCESS);
-	} else { /* The daemon */
-		/* Unset the ridiculous umask
-		umask(027);*/
+	} else { /* The child */
+		/* Force sane umask */
+		umask(027);
 
 		/* Create the PID file */
-		if(scmpc_pid_create() < 0)
+		if(scmpc_pid_create() < 0) {
+			scmpc_log(ERROR,"Failed to create PID file");
 			exit(EXIT_FAILURE);
+		}
 	}
 }
 
 static void cleanup(void)
 {
 	queue_save();
-	scmpc_pid_remove();
+	if(prefs.fork == 1) scmpc_pid_remove();
 	as_cleanup();
 	mpd_cleanup();
 }
