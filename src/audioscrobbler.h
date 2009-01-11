@@ -36,11 +36,11 @@ struct queue_node {
 };
 
 struct as_connection {
+	char *session_id;
 	char *submit_url;
 	char *np_url;
 	char password[33];
 	time_t last_handshake;
-	char *session_id;
 	enum connection_status status;
 	CURL *handle;
 	struct curl_slist *headers;

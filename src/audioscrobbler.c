@@ -47,8 +47,6 @@ void as_connection_init(void)
 	as_conn = calloc(sizeof(struct as_connection),1);
 	if(as_conn == NULL) return;
 
-	as_conn->submit_url = NULL;
-	as_conn->np_url = NULL;
 	as_conn->last_handshake = 0;
 	as_conn->status = DISCONNECTED;
 	as_conn->handle = curl_easy_init();
@@ -67,8 +65,6 @@ void as_cleanup(void)
 {
 	curl_slist_free_all(as_conn->headers);
 	curl_easy_cleanup(as_conn->handle);
-	free(as_conn->submit_url);
-	free(as_conn->np_url);
 	free(as_conn);
 }
 
@@ -94,7 +90,8 @@ void as_handshake(void)
 		return;
 	}
 
-	if(prefs.as_password_hash) {
+	if(strlen(prefs.as_password_hash) > 0) {
+		printf("wwa\n");
 		if(asprintf(&tmp,"%s%u",prefs.as_password_hash,timestamp) < 0) return;
 	} else {
 		if(asprintf(&tmp,"%s%u",md5_hash(prefs.as_password),timestamp) < 0) return;
@@ -120,6 +117,7 @@ void as_handshake(void)
 		scmpc_log(ERROR,"Could not connect to the Audioscrobbler"
 			" server: %s",curl_easy_strerror(ret));
 		free(buffer);
+		return;
 	}
 
 	line = strtok_r(buffer,"\n",&saveptr);
@@ -134,13 +132,11 @@ void as_handshake(void)
 		while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
 			line_no++;
 			if(line_no == 2) {
-				as_conn->session_id = strdup(line);
+				as_conn->session_id = line;
 			} else if(line_no == 3) {
-				free(as_conn->np_url);
-				as_conn->np_url = strdup(line);
+				as_conn->np_url = line;
 			} else if(line_no == 4) {
-				free(as_conn->submit_url);
-				as_conn->submit_url = strdup(line);
+				as_conn->submit_url = line;
 				break;
 			}
 		}
