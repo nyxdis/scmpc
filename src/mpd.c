@@ -37,6 +37,8 @@ void mpd_connect(void)
 {
 	mpd_conn = mpd_newConnection(prefs.mpd_hostname,prefs.mpd_port,
 		prefs.mpd_timeout);
+	if(mpd_get_error(mpd_conn) > 0)
+		scmpc_log(ERROR,"[MPD] %s",mpd_get_error_string(mpd_conn));
 }
 
 void mpd_cleanup(void)
