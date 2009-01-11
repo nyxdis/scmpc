@@ -64,6 +64,7 @@ void scmpc_log(enum loglevel level, const char *format, ...)
 	ts = malloc(22);
 	strftime(ts,22,"%F %T  ",localtime(&t));
 	fputs(ts,log_file);
+	free(ts);
 
 	va_start(ap,format);
 	vfprintf(log_file,format,ap);
