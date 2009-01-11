@@ -77,7 +77,7 @@ size_t buffer_write(void *input, size_t size, size_t nmemb, void *buf)
 {
 	free(buf);
 	size_t len = size*nmemb;
-	if(realloc(buffer,len) == NULL) return -1;
+	if((buffer = malloc(len)) == NULL) return -1;
 	strncpy(buffer,input,len);
 	return len;
 }
