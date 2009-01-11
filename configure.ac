@@ -13,8 +13,6 @@ AC_PROG_CC
 # Checks for libraries.
 AC_CHECK_LIB([argtable2], [arg_parse])
 
-AC_CHECK_LIB([mpdclient], [mpd_newConnection])
-
 PKG_CHECK_MODULES([confuse], [libconfuse])
 AC_SUBST(confuse_LIBS)
 AC_SUBST(confuse_CFLAGS)

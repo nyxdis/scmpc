@@ -24,5 +24,6 @@
  */
 
 
+int mpd_sockfd;
 void mpd_connect(void);
 void mpd_cleanup(void);

@@ -53,7 +53,6 @@ extern struct preferences prefs;
 
 int main(int argc, char *argv[])
 {
-	int mpd_sockfd = 0;
 	fd_set read_flags;
 	pid_t pid;
 	struct sigaction sa;
