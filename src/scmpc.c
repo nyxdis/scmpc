@@ -112,8 +112,6 @@ int main(int argc, char *argv[])
 			last_queue_save = time(NULL);
 		}
 	}
-
-	exit(EXIT_SUCCESS);
 }
 
 static int scmpc_is_running(void)
@@ -226,6 +224,7 @@ static void cleanup(void)
 {
 	queue_save();
 	if(prefs.fork == 1) scmpc_pid_remove();
+	clear_preferences();
 	as_cleanup();
 	mpd_cleanup();
 }
