@@ -95,6 +95,11 @@ void mpd_connect(void)
 		exit(EXIT_FAILURE);
 }
 
+void mpd_parse(char *buf)
+{
+	printf("mpd said: %s",buf);
+}
+
 void mpd_cleanup(void)
 {
 	close(mpd_sockfd);

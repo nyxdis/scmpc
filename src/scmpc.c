@@ -53,6 +53,8 @@ extern struct preferences prefs;
 
 int main(int argc, char *argv[])
 {
+	int sr;
+	char buf[256];
 	fd_set read_flags;
 	pid_t pid;
 	struct sigaction sa;
@@ -98,6 +100,10 @@ int main(int argc, char *argv[])
 			continue;
 
 		if(FD_ISSET(mpd_sockfd,&read_flags)) {
+			sr = read(mpd_sockfd,buf,sizeof(buf));
+			buf[sr] = '\0';
+			if(sr > 0)
+				mpd_parse(buf);
 		}
 
 		if(difftime(time(NULL),last_queue_save) >= prefs.cache_interval * 60)
