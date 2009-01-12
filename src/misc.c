@@ -93,7 +93,6 @@ char *md5_hash(char *text)
 	gcry_md_open(&hd,GCRY_MD_MD5,0);
 	gcry_md_write(hd,text,strlen(text));
 	tmp = gcry_md_read(hd,GCRY_MD_MD5);
-	// XXX: find a better way, we leak 66 byte for every handshake
 	if((result = malloc(33)) == NULL) return NULL;
 	for(i=0;i<16;++i)
 		snprintf(result+i*2,3,"%02x",tmp[i]);
