@@ -308,4 +308,5 @@ void clear_preferences(void)
 	free(prefs.as_username);
 	free(prefs.as_password);
 	free(prefs.as_password_hash);
+	free(prefs.config_file);
 }
