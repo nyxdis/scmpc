@@ -59,7 +59,7 @@ void scmpc_log(enum loglevel level, const char *format, ...)
 
 	if(level > prefs.log_level)
 		return;
-	
+
 	t = time(NULL);
 	ts = malloc(22);
 	strftime(ts,22,"%F %T  ",localtime(&t));
