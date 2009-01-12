@@ -95,7 +95,8 @@ void mpd_connect(void)
 
 	if(strlen(prefs.mpd_password) > 0) {
 		asprintf(&tmp,"password %s\n",prefs.mpd_password);
-		write(mpd_sockfd,tmp,strlen(tmp));
+		if(write(mpd_sockfd,tmp,strlen(tmp)) < 0)
+			scmpc_log(ERROR,"Failed to write to MPD: %s",strerror(errno));
 		free(tmp);
 	}
 
