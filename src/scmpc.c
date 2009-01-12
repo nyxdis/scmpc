@@ -111,7 +111,6 @@ int main(int argc, char *argv[])
 			queue_save();
 			last_queue_save = time(NULL);
 		}
-		printf("still running\n");
 	}
 
 	exit(EXIT_SUCCESS);
