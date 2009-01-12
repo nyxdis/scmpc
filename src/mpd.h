@@ -24,6 +24,18 @@
  */
 
 
+typedef struct {
+	char *artist;
+	char *album;
+	char *title;
+	char *filename;
+	unsigned int length;
+	unsigned int current_post;
+	unsigned short track;
+	enum { STOPPED, PAUSED, PLAYING, UNKNOWN } mpd_state;
+	short crossfade;
+} mpd_song;
+
 int mpd_sockfd;
 void mpd_parse(char *buf);
 void mpd_connect(void);
