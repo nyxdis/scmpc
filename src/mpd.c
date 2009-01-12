@@ -81,6 +81,8 @@ static int server_connect_tcp(const char *host, int port)
 
 void mpd_connect(void)
 {
+	char *tmp;
+
 	if(strncmp(prefs.mpd_hostname,"/",1) == 0)
 		mpd_sockfd = server_connect_unix(prefs.mpd_hostname);
 	else
@@ -89,6 +91,12 @@ void mpd_connect(void)
 	if(mpd_sockfd < 0) {
 		scmpc_log(ERROR,"Failed to connect to MPD: %s",strerror(errno));
 		exit(EXIT_FAILURE);
+	}
+
+	if(prefs.mpd_password != NULL) {
+		asprintf(&tmp,"password %s\n",prefs.mpd_password);
+		write(mpd_sockfd,tmp,strlen(tmp));
+		free(tmp);
 	}
 
 	if(fcntl(mpd_sockfd,F_SETFL,fcntl(mpd_sockfd,F_GETFL,0) | O_NONBLOCK) < 0)
