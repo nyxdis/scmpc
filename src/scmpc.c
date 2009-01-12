@@ -104,6 +104,9 @@ int main(int argc, char *argv[])
 			buf[sr] = '\0';
 			if(sr > 0)
 				mpd_parse(buf);
+			else
+				scmpc_log(ERROR,"Failed to read from MPD: %s",
+					strerror(errno));
 		}
 
 		if(difftime(time(NULL),last_queue_save) >= prefs.cache_interval * 60)
