@@ -93,7 +93,7 @@ void mpd_connect(void)
 		exit(EXIT_FAILURE);
 	}
 
-	if(prefs.mpd_password != NULL) {
+	if(strlen(prefs.mpd_password) > 0) {
 		asprintf(&tmp,"password %s\n",prefs.mpd_password);
 		write(mpd_sockfd,tmp,strlen(tmp));
 		free(tmp);
