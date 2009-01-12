@@ -119,6 +119,6 @@ void mpd_parse(char *buf)
 
 void mpd_cleanup(void)
 {
-	free(mpd_info);
 	close(mpd_info->sockfd);
+	free(mpd_info);
 }
