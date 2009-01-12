@@ -36,7 +36,11 @@ typedef struct {
 	short crossfade;
 } mpd_song;
 
-int mpd_sockfd;
+struct mpd_info {
+	int sockfd;
+	int version[3];
+} *mpd_info;
+
 void mpd_parse(char *buf);
 void mpd_connect(void);
 void mpd_cleanup(void);
