@@ -25,5 +25,6 @@
 
 
 int mpd_sockfd;
+void mpd_parse(char *buf);
 void mpd_connect(void);
 void mpd_cleanup(void);
