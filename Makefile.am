@@ -13,6 +13,6 @@ scmpc_SOURCES =	src/audioscrobbler.c src/audioscrobbler.h \
 scmpc_LDADD = 	@libcurl_LIBS@ \
 		@confuse_LIBS@
 
-DEFS += -DSYSCONFDIR=\"$(sysconfdir)\"
+DEFS += -DSYSCONFDIR=\"$(sysconfdir)\" -D_GNU_SOURCE
 
 EXTRA_DIST = scmpc.conf.example
