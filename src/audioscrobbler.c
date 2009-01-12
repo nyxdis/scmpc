@@ -91,15 +91,17 @@ void as_handshake(void)
 	}
 
 	if(strlen(prefs.as_password_hash) > 0) {
-		printf("wwa\n");
 		if(asprintf(&tmp,"%s%u",prefs.as_password_hash,timestamp) < 0) return;
 	} else {
-		if(asprintf(&tmp,"%s%u",md5_hash(prefs.as_password),timestamp) < 0) return;
+		auth_token = md5_hash(prefs.as_password);
+		if(asprintf(&tmp,"%s%u",auth_token,timestamp) < 0) return;
+		free(auth_token);
 	}
 	auth_token = md5_hash(tmp);
 	free(tmp);
 	if(asprintf(&handshake_url,HANDSHAKE_URL,PACKAGE_VERSION,prefs.as_username,
 		timestamp,auth_token) < 0) return;
+	free(auth_token);
 
 	scmpc_log(DEBUG,"handshake_url = %s",handshake_url);
 
