@@ -106,7 +106,15 @@ void mpd_connect(void)
 
 void mpd_parse(char *buf)
 {
-	printf("mpd said: %s",buf);
+	char *saveptr, *line;
+	int version[3];
+
+	line = strtok_r(buf,"\n",&saveptr);
+	do {
+		if(strncmp(line,"OK MPD",6) == 0)
+			sscanf(line,"%*s %*s %d.%d.%d",&version[0],&version[1],&version[2]);
+		printf("mpd said: %s\n",line);
+	} while((line = strtok_r(NULL,"\n",&saveptr)) != NULL);
 }
 
 void mpd_cleanup(void)
