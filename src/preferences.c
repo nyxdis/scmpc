@@ -287,11 +287,11 @@ void init_preferences(int argc, char **argv)
 	tmp = getenv("MPD_HOST");
 	if(tmp != NULL) {
 		if(strstr(tmp,"@")) {
-			prefs.mpd_password = strtok_r(tmp,"@",&saveptr);
-			prefs.mpd_hostname = strtok_r(NULL,"@",&saveptr);
+			prefs.mpd_password = strdup(strtok_r(tmp,"@",&saveptr));
+			prefs.mpd_hostname = strdup(strtok_r(NULL,"@",&saveptr));
 		} else {
 			prefs.mpd_password = strdup("");
-			prefs.mpd_hostname = tmp;
+			prefs.mpd_hostname = strdup(tmp);
 		}
 	}
 	if(getenv("MPD_PORT") != NULL)
@@ -309,5 +309,4 @@ void clear_preferences(void)
 	free(prefs.as_username);
 	free(prefs.as_password);
 	free(prefs.as_password_hash);
-	free(prefs.config_file);
 }
