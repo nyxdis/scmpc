@@ -83,41 +83,42 @@ void mpd_connect(void)
 {
 	char *tmp;
 
+	mpd_info = calloc(sizeof(struct mpd_info),1);
 	if(strncmp(prefs.mpd_hostname,"/",1) == 0)
-		mpd_sockfd = server_connect_unix(prefs.mpd_hostname);
+		mpd_info->sockfd = server_connect_unix(prefs.mpd_hostname);
 	else
-		mpd_sockfd = server_connect_tcp(prefs.mpd_hostname,prefs.mpd_port);
+		mpd_info->sockfd = server_connect_tcp(prefs.mpd_hostname,prefs.mpd_port);
 
-	if(mpd_sockfd < 0) {
+	if(mpd_info->sockfd < 0) {
 		scmpc_log(ERROR,"Failed to connect to MPD: %s",strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	if(strlen(prefs.mpd_password) > 0) {
 		asprintf(&tmp,"password %s\n",prefs.mpd_password);
-		if(write(mpd_sockfd,tmp,strlen(tmp)) < 0)
+		if(write(mpd_info->sockfd,tmp,strlen(tmp)) < 0)
 			scmpc_log(ERROR,"Failed to write to MPD: %s",strerror(errno));
 		free(tmp);
 	}
 
-	if(fcntl(mpd_sockfd,F_SETFL,fcntl(mpd_sockfd,F_GETFL,0) | O_NONBLOCK) < 0)
+	if(fcntl(mpd_info->sockfd,F_SETFL,fcntl(mpd_info->sockfd,F_GETFL,0) | O_NONBLOCK) < 0)
 		exit(EXIT_FAILURE);
 }
 
 void mpd_parse(char *buf)
 {
 	char *saveptr, *line;
-	int version[3];
 
 	line = strtok_r(buf,"\n",&saveptr);
 	do {
 		if(strncmp(line,"OK MPD",6) == 0)
-			sscanf(line,"%*s %*s %d.%d.%d",&version[0],&version[1],&version[2]);
+			sscanf(line,"%*s %*s %d.%d.%d",&mpd_info->version[0],&mpd_info->version[1],&mpd_info->version[2]);
 		printf("mpd said: %s\n",line);
 	} while((line = strtok_r(NULL,"\n",&saveptr)) != NULL);
 }
 
 void mpd_cleanup(void)
 {
-	close(mpd_sockfd);
+	free(mpd_info);
+	close(mpd_info->sockfd);
 }

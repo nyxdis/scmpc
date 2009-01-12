@@ -94,13 +94,13 @@ int main(int argc, char *argv[])
 		waitd.tv_usec = 0;
 
 		FD_ZERO(&read_flags);
-		FD_SET(mpd_sockfd,&read_flags);
+		FD_SET(mpd_info->sockfd,&read_flags);
 
-		if(select(mpd_sockfd+1,&read_flags,NULL,NULL,&waitd) < 0)
+		if(select(mpd_info->sockfd+1,&read_flags,NULL,NULL,&waitd) < 0)
 			continue;
 
-		if(FD_ISSET(mpd_sockfd,&read_flags)) {
-			sr = read(mpd_sockfd,buf,sizeof(buf));
+		if(FD_ISSET(mpd_info->sockfd,&read_flags)) {
+			sr = read(mpd_info->sockfd,buf,sizeof(buf));
 			buf[sr] = '\0';
 			if(sr > 0)
 				mpd_parse(buf);
