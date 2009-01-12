@@ -286,6 +286,8 @@ void init_preferences(int argc, char **argv)
 
 	tmp = getenv("MPD_HOST");
 	if(tmp != NULL) {
+		free(prefs.mpd_password);
+		free(prefs.mpd_hostname);
 		if(strstr(tmp,"@")) {
 			prefs.mpd_password = strdup(strtok_r(tmp,"@",&saveptr));
 			prefs.mpd_hostname = strdup(strtok_r(NULL,"@",&saveptr));
