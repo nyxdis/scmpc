@@ -24,7 +24,7 @@ AC_SUBST(libdaemon_CFLAGS)
 AM_PATH_LIBGCRYPT(1.4.0)
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([fcntl.h netdb.h netinet/in.h stdlib.h string.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -35,7 +35,7 @@ AC_TYPE_SIZE_T
 AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([select strdup strerror strstr])
+AC_CHECK_FUNCS([gethostbyname select socket strdup strerror strstr])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
