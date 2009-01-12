@@ -40,7 +40,7 @@
 static char curl_error_buffer[CURL_ERROR_SIZE];
 
 #define HANDSHAKE_URL \
-	"http://post.audioscrobbler.com/?hs=true&p=1.2.1&c=spc&v=%s&u=%s&t=%u&a=%s"
+	"http://post.audioscrobbler.com/?hs=true&p=1.2.1&c=spc&v=%s&u=%s&t=%ld&a=%s"
 
 void as_connection_init(void)
 {
@@ -91,10 +91,10 @@ void as_handshake(void)
 	}
 
 	if(strlen(prefs.as_password_hash) > 0) {
-		if(asprintf(&tmp,"%s%u",prefs.as_password_hash,timestamp) < 0) return;
+		if(asprintf(&tmp,"%s%ld",prefs.as_password_hash,timestamp) < 0) return;
 	} else {
 		auth_token = md5_hash(prefs.as_password);
-		if(asprintf(&tmp,"%s%u",auth_token,timestamp) < 0) return;
+		if(asprintf(&tmp,"%s%ld",auth_token,timestamp) < 0) return;
 		free(auth_token);
 	}
 	auth_token = md5_hash(tmp);
