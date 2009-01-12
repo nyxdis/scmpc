@@ -124,6 +124,7 @@ static int parse_files(cfg_t *cfg)
 				free_config_files(config_files);
 				return 0;
 			default:
+				free_config_files(config_files);
 				return 1;
 		}
 	}
