@@ -156,8 +156,10 @@ void mpd_parse(char *buf)
 			sscanf(line,"%*s %*s %d.%d.%d",&mpd_info->version[0],
 				&mpd_info->version[1],&mpd_info->version[2]);
 			scmpc_log(INFO,"Connected to MPD.");
-			if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
+			if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14) {
+				write(mpd_info->sockfd,"idle\n",5);
 				scmpc_log(INFO,"MPD >= 0.14, using idle");
+			}
 		}
 	} while((line = strtok_r(NULL,"\n",&saveptr)) != NULL);
 }
