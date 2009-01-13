@@ -2,7 +2,7 @@
  * preferences.c: Preferences parsing
  *
  * ==================================================================
- * Copyright (c) 2008 Christoph Mende <angelos@unkreativ.org>
+ * Copyright (c) 2009 Christoph Mende <angelos@unkreativ.org>
  * Based on Jonathan Coome's work on scmpc
  *
  * This file is part of scmpc.
@@ -240,7 +240,7 @@ static void parse_command_line(int argc, char **argv)
 	} else if (version->count > 0) {
 		printf("%s\n",PACKAGE_STRING);
 		printf("A multithreaded audioscrobbler client for MPD.\n");
-		printf("Copyright 2008 Christoph Mende <angelos@unkreativ.org>\n");
+		printf("Copyright 2009 Christoph Mende <angelos@unkreativ.org>\n");
 		printf("Based on Jonathan Coome's work on scmpc\n");
 		arg_freetable(argtable,8);
 		exit(EXIT_SUCCESS);
