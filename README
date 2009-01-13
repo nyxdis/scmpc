@@ -1,3 +1,5 @@
+scmpc is a client for MPD that submits your tracks to last.fm
+
 The following packages are required to build and run scmpc:
 argtable	http://argtable.sourceforge.net/
 libconfuse	http://www.nongnu.org/confuse/
