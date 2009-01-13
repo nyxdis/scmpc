@@ -32,6 +32,7 @@
 #include <gcrypt.h>
 
 #include "misc.h"
+#include "md5.h"
 #include "audioscrobbler.h"
 #include "preferences.h"
 
@@ -85,18 +86,19 @@ size_t buffer_write(void *input, size_t size, size_t nmemb, void *buf)
 
 char *md5_hash(char *text)
 {
+	md5_state_t state;
+	md5_byte_t digest[16];
 	char *result;
-	gcry_md_hd_t hd;
 	int i;
-	unsigned char *tmp;
 
-	gcry_md_open(&hd,GCRY_MD_MD5,0);
-	gcry_md_write(hd,text,strlen(text));
-	if((tmp = gcry_md_read(hd,GCRY_MD_MD5)) == NULL) return NULL;
-	if((result = malloc(33)) == NULL) return NULL;
-	for(i=0;i<16;++i)
-		snprintf(result+i*2,3,"%02x",tmp[i]);
-	gcry_md_close(hd);
+	md5_init(&state);
+	md5_append(&state, (const md5_byte_t *)text, strlen(text));
+	md5_finish(&state, digest);
+
+	result = malloc(33);
+
+	for(i=0;i<16;i++)
+		snprintf(result+i*2,3,"%02x",digest[i]);
 
 	return result;
 }
