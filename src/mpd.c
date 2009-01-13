@@ -2,7 +2,7 @@
  * mpd.c: MPD backend.
  *
  * ==================================================================
- * Copyright (c) 2008 Christoph Mende <angelos@unkreativ.org>
+ * Copyright (c) 2009 Christoph Mende <angelos@unkreativ.org>
  * Based on Jonathan Coome's work on scmpc
  *
  * This file is part of scmpc.
@@ -126,7 +126,7 @@ void mpd_parse(char *buf)
 				&mpd_info->version[1],&mpd_info->version[2]);
 			scmpc_log(INFO,"Connected to MPD.");
 			if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
-				scmpc_log(INFO,"MPD >= 0.14");
+				scmpc_log(INFO,"MPD >= 0.14, using idle");
 		}
 	} while((line = strtok_r(NULL,"\n",&saveptr)) != NULL);
 }

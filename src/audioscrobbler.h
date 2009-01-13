@@ -2,7 +2,7 @@
  * audioscrobbler.h: Audioscrobbler backend.
  *
  * ==================================================================
- * Copyright (c) 2008 Christoph Mende <angelos@unkreativ.org>
+ * Copyright (c) 2009 Christoph Mende <angelos@unkreativ.org>
  * Based on Jonathan Coome's work on scmpc
  *
  * This file is part of scmpc.
