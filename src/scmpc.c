@@ -35,6 +35,7 @@
 
 #include "misc.h"
 #include "audioscrobbler.h"
+#include "scmpc.h"
 #include "mpd.h"
 #include "preferences.h"
 
@@ -45,7 +46,6 @@ static int scmpc_pid_remove(void);
 
 static void sighandler(int sig);
 static void daemonise(void);
-static void cleanup(void);
 const char *pid_filename(void);
 
 /* Declared in preferences.h */
@@ -223,7 +223,7 @@ static void daemonise(void)
 	}
 }
 
-static void cleanup(void)
+void cleanup(void)
 {
 	queue_save();
 	if(prefs.fork == 1) scmpc_pid_remove();
