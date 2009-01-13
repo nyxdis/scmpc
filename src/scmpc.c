@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
 	/* Check if scmpc is already running */
 	if((pid = scmpc_is_running()) > 0) {
 		fprintf(stderr,"Daemon is already running with PID: %u\n",pid);
+		clear_preferences();
 		exit(EXIT_FAILURE);
 	}
 
@@ -208,6 +209,7 @@ static void daemonise(void)
 	if((pid = fork()) < 0) {
 		/* Something went wrong... */
 		fprintf(stderr,"Could not fork process.\n");
+		clear_preferences();
 		exit(EXIT_FAILURE);
 	} else if(pid) { /* The parent */
 		exit(EXIT_SUCCESS);
@@ -218,6 +220,7 @@ static void daemonise(void)
 		/* Create the PID file */
 		if(scmpc_pid_create() < 0) {
 			scmpc_log(ERROR,"Failed to create PID file");
+			clear_preferences();
 			exit(EXIT_FAILURE);
 		}
 	}
