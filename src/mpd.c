@@ -44,13 +44,16 @@ static int server_connect_unix(const char *path)
 	struct sockaddr_un addr;
 	unsigned int len;
 
-	sockfd = socket(AF_UNIX,SOCK_STREAM,0);
-	if(sockfd < 0)
+	if((sockfd = socket(AF_UNIX,SOCK_STREAM,0))  < 0)
 		return -1;
 
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path,path,strlen(path) + 1);
 	len = strlen(addr.sun_path) + sizeof(addr.sun_family);
+
+	if(fcntl(sockfd,F_SETFL,fcntl(sockfd,F_GETFL,0) | O_NONBLOCK) < 0)
+		return -1;
+
 	if(connect(sockfd,(struct sockaddr *)&addr,len) < 0)
 		return -1;
 
@@ -59,13 +62,18 @@ static int server_connect_unix(const char *path)
 
 static int server_connect_tcp(const char *host, int port)
 {
-	int sockfd;
-	struct sockaddr_in addr;
+	fd_set write_flags;
+	int sockfd, valopt;
+	socklen_t lon;
 	struct hostent *he;
+	struct sockaddr_in addr;
+	struct timeval timeout;
 	unsigned int len;
 
-	sockfd = socket(AF_INET,SOCK_STREAM,0);
-	if(sockfd < 0)
+	if((sockfd = socket(AF_INET,SOCK_STREAM,0)) < 0)
+		return -1;
+
+	if(fcntl(sockfd,F_SETFL,fcntl(sockfd,F_GETFL,0) | O_NONBLOCK) < 0)
 		return -1;
 
 	he = gethostbyname(host);
@@ -73,9 +81,32 @@ static int server_connect_tcp(const char *host, int port)
 	addr.sin_port = htons(port);
 	memcpy((char *)&addr.sin_addr.s_addr,(char *)he->h_addr,he->h_length);
 	len = sizeof(addr);
-	if(connect(sockfd,(struct sockaddr *)&addr,len) < 0)
-		return -1;
 
+	if(connect(sockfd,(struct sockaddr *)&addr,len) < 0) {
+		if(errno == EINPROGRESS) {
+			timeout.tv_sec = prefs.mpd_timeout;
+			timeout.tv_usec = 0;
+
+			FD_ZERO(&write_flags);
+			FD_SET(sockfd,&write_flags);
+			if(select(sockfd+1,NULL,&write_flags,NULL,&timeout) > 0) {
+				lon = sizeof(int);
+				getsockopt(sockfd,SOL_SOCKET,SO_ERROR,(void*)(&valopt),&lon);
+				if(valopt) {
+					errno = valopt;
+					return -1;
+				}
+			}
+			else {
+				errno = ETIMEDOUT;
+				return -1;
+			}
+		}
+		else
+			return -1;
+	}
+
+	errno = 0;
 	return sockfd;
 }
 
@@ -100,9 +131,6 @@ void mpd_connect(void)
 			scmpc_log(ERROR,"Failed to write to MPD: %s",strerror(errno));
 		free(tmp);
 	}
-
-	if(fcntl(mpd_info->sockfd,F_SETFL,fcntl(mpd_info->sockfd,F_GETFL,0) | O_NONBLOCK) < 0)
-		exit(EXIT_FAILURE);
 }
 
 void mpd_parse(char *buf)
