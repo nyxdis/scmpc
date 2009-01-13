@@ -35,6 +35,7 @@
 #include <netinet/in.h>
 
 #include "misc.h"
+#include "scmpc.h"
 #include "mpd.h"
 #include "preferences.h"
 
@@ -122,6 +123,7 @@ void mpd_connect(void)
 
 	if(mpd_info->sockfd < 0) {
 		scmpc_log(ERROR,"Failed to connect to MPD: %s",strerror(errno));
+		cleanup();
 		exit(EXIT_FAILURE);
 	}
 
@@ -143,6 +145,7 @@ void mpd_parse(char *buf)
 		if(strncmp(line,"ACK",3) == 0) {
 			if(strstr(line,"incorrect password")) {
 				scmpc_log(ERROR,"[MPD] Incorrect password");
+				cleanup();
 				exit(EXIT_FAILURE);
 			} else {
 				/* Unknown error */
