@@ -111,9 +111,23 @@ void mpd_parse(char *buf)
 
 	line = strtok_r(buf,"\n",&saveptr);
 	do {
-		if(strncmp(line,"OK MPD",6) == 0)
-			sscanf(line,"%*s %*s %d.%d.%d",&mpd_info->version[0],&mpd_info->version[1],&mpd_info->version[2]);
-		printf("mpd said: %s\n",line);
+		scmpc_log(DEBUG,"mpd said: %s",line);
+		if(strncmp(line,"ACK",3) == 0) {
+			if(strstr(line,"incorrect password")) {
+				scmpc_log(ERROR,"[MPD] Incorrect password");
+				exit(EXIT_FAILURE);
+			} else {
+				/* Unknown error */
+				scmpc_log(ERROR,"Received ACK error from MPD");
+			}
+		}
+		else if(strncmp(line,"OK MPD",6) == 0) {
+			sscanf(line,"%*s %*s %d.%d.%d",&mpd_info->version[0],
+				&mpd_info->version[1],&mpd_info->version[2]);
+			scmpc_log(INFO,"Connected to MPD.");
+			if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
+				scmpc_log(INFO,"MPD >= 0.14");
+		}
 	} while((line = strtok_r(NULL,"\n",&saveptr)) != NULL);
 }
 
