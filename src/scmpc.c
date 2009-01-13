@@ -91,7 +91,10 @@ int main(int argc, char *argv[])
 
 	while(1)
 	{
-		waitd.tv_sec = 1;
+		if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
+			waitd.tv_sec = 1;
+		else
+			waitd.tv_sec = 10;
 		waitd.tv_usec = 0;
 
 		FD_ZERO(&read_flags);
