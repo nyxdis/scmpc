@@ -85,8 +85,8 @@ void as_handshake(void)
 	timestamp = time(NULL);
 
 	if(difftime(timestamp,as_conn->last_handshake) < 1800) {
-		scmpc_log(DEBUG,"Requested handshake, but last handshake was less than 30 "
-				"minutes ago.");
+		scmpc_log(DEBUG,"Requested handshake, but last handshake "
+				"was less than 30 minutes ago.");
 		return;
 	}
 
@@ -116,8 +116,8 @@ void as_handshake(void)
 	free(handshake_url);
 
 	if(ret != 0) {
-		scmpc_log(ERROR,"Could not connect to the Audioscrobbler"
-			" server: %s",curl_easy_strerror(ret));
+		scmpc_log(ERROR,"Could not connect to the Audioscrobbler: %s",
+			curl_easy_strerror(ret));
 		free(buffer);
 		return;
 	}
