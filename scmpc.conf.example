@@ -52,12 +52,14 @@
 # 	socket as well.
 # port: The port that mpd is listening on.
 # timeout: The timeout in seconds for connecting to the server
+# interval: The interval used to check if there is a new song (mpd < 0.14 only).
 # password: Set this if you need a password to read information from the
 #           mpd server.
 #mpd {
 	#host = "localhost"
 	#port = 6600
 	#timeout = 5
+	#interval = 10
 	#password = 
 #}
 
