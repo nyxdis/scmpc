@@ -24,7 +24,7 @@
  */
 
 
-typedef struct {
+struct mpd_song {
 	char *artist;
 	char *album;
 	char *title;
@@ -34,7 +34,7 @@ typedef struct {
 	unsigned short track;
 	enum { STOPPED, PAUSED, PLAYING, UNKNOWN } mpd_state;
 	short crossfade;
-} mpd_song;
+} current_song;
 
 struct mpd_info {
 	int sockfd;

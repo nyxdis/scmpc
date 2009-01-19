@@ -35,6 +35,7 @@
 #include <netinet/in.h>
 
 #include "misc.h"
+#include "audioscrobbler.h"
 #include "scmpc.h"
 #include "mpd.h"
 #include "preferences.h"
@@ -117,6 +118,7 @@ int mpd_connect(void)
 	char *tmp;
 
 	mpd_info = calloc(sizeof(struct mpd_info),1);
+	current_song.filename = strdup("");
 	mpd_info->status = DISCONNECTED;
 	if(strncmp(prefs.mpd_hostname,"/",1) == 0)
 		mpd_info->sockfd = server_connect_unix(prefs.mpd_hostname);
@@ -165,6 +167,31 @@ void mpd_parse(char *buf)
 				write(mpd_info->sockfd,"currentsong\n",12);
 			}
 			write(mpd_info->sockfd,"idle\n",5);
+		}
+		else if(strncmp(line,"file: ",6) == 0) {
+			if(strncmp(current_song.filename,&line[6],strlen(&line[6]))) {
+				free(current_song.filename);
+				free(current_song.artist);
+				current_song.artist = NULL;
+				free(current_song.title);
+				current_song.artist = NULL;
+				free(current_song.album);
+				current_song.artist = NULL;
+				current_song.filename = strdup(&line[6]);
+				while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
+					if(strncmp(line,"Artist: ",8) == 0)
+						current_song.artist = strdup(&line[8]);
+					if(strncmp(line,"Album: ",7) == 0)
+						current_song.album = strdup(&line[7]);
+					if(strncmp(line,"Title: ",7) == 0)
+						current_song.title = strdup(&line[7]);
+					if(strncmp(line,"Time: ",6) == 0)
+						current_song.length = atoi(&line[6]);
+					if(strncmp(line,"Track: ",7) == 0)
+						current_song.track = atoi(strtok(&line[7],"/"));
+				}
+				as_now_playing();
+			}
 		}
 		else if(strncmp(line,"OK MPD",6) == 0) {
 			sscanf(line,"%*s %*s %d.%d.%d",&mpd_info->version[0],
