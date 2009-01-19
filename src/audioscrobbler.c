@@ -186,7 +186,6 @@ void as_now_playing(void)
 		scmpc_log(INFO,"Not sending Now Playing notification: not connected");
 		return;
 	}
-	scmpc_log(DEBUG,"Session id: %s",as_conn->session_id);
 
 	if(current_song.artist == NULL || current_song.album == NULL || current_song.title == NULL) {
 		scmpc_log(INFO,"Not submitting: file is not tagged properly.");
