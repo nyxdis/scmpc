@@ -242,7 +242,7 @@ static int parse_command_line(int argc, char **argv)
 		exit(EXIT_SUCCESS);
 	} else if (version->count > 0) {
 		printf("%s\n",PACKAGE_STRING);
-		printf("A multithreaded audioscrobbler client for MPD.\n");
+		printf("An Audioscrobbler client for MPD.\n");
 		printf("Copyright 2009 Christoph Mende <angelos@unkreativ.org>\n");
 		printf("Based on Jonathan Coome's work on scmpc\n");
 		arg_freetable(argtable,8);
