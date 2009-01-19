@@ -39,8 +39,9 @@ typedef struct {
 struct mpd_info {
 	int sockfd;
 	int version[3];
+	enum connection_status status;
 } *mpd_info;
 
 void mpd_parse(char *buf);
-void mpd_connect(void);
+int mpd_connect(void);
 void mpd_cleanup(void);

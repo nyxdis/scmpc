@@ -111,11 +111,12 @@ static int server_connect_tcp(const char *host, int port)
 	return sockfd;
 }
 
-void mpd_connect(void)
+int mpd_connect(void)
 {
 	char *tmp;
 
 	mpd_info = calloc(sizeof(struct mpd_info),1);
+	mpd_info->status = DISCONNECTED;
 	if(strncmp(prefs.mpd_hostname,"/",1) == 0)
 		mpd_info->sockfd = server_connect_unix(prefs.mpd_hostname);
 	else
@@ -123,16 +124,20 @@ void mpd_connect(void)
 
 	if(mpd_info->sockfd < 0) {
 		scmpc_log(ERROR,"Failed to connect to MPD: %s",strerror(errno));
-		cleanup();
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
 	if(strlen(prefs.mpd_password) > 0) {
 		asprintf(&tmp,"password %s\n",prefs.mpd_password);
-		if(write(mpd_info->sockfd,tmp,strlen(tmp)) < 0)
+		if(write(mpd_info->sockfd,tmp,strlen(tmp)) < 0) {
+			free(tmp);
 			scmpc_log(ERROR,"Failed to write to MPD: %s",strerror(errno));
+			return -1;
+		}
 		free(tmp);
 	}
+	mpd_info->status = CONNECTED;
+	return 0;
 }
 
 void mpd_parse(char *buf)
@@ -145,8 +150,7 @@ void mpd_parse(char *buf)
 		if(strncmp(line,"ACK",3) == 0) {
 			if(strstr(line,"incorrect password")) {
 				scmpc_log(ERROR,"[MPD] Incorrect password");
-				cleanup();
-				exit(EXIT_FAILURE);
+				mpd_info->status = BADAUTH;
 			} else {
 				/* Unknown error */
 				scmpc_log(ERROR,"Received ACK error from MPD");
