@@ -97,10 +97,10 @@ static int parse_files(cfg_t *cfg)
 		config_files[1] = strdup("");
 	} else {
 		if((asprintf(&(config_files[0]),"%s/.scmpcrc",home)) == -1)
-			exit(EXIT_FAILURE);
+			return -1;
 		if((asprintf(&(config_files[1]),"%s/.scmpc/scmpc.conf",home)) == -1){
 			free(config_files[0]);
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 	}
 	config_files[2] = strdup(SYSCONFDIR "/scmpc.conf");
@@ -108,7 +108,7 @@ static int parse_files(cfg_t *cfg)
 	for(i=0;i<3;i++)
 	{
 		if(config_files[i] == NULL)
-			exit(EXIT_FAILURE);
+			return -1;
 
 		switch(cfg_parse(cfg,config_files[i]))
 		{
@@ -117,7 +117,7 @@ static int parse_files(cfg_t *cfg)
 				"contains errors and cannot be parsed.\n",
 				config_files[i]);
 				free_config_files(config_files);
-				exit(EXIT_FAILURE);
+				return -1;
 			case CFG_FILE_ERROR:
 				break;
 			case CFG_SUCCESS:
@@ -125,14 +125,13 @@ static int parse_files(cfg_t *cfg)
 				return 0;
 			default:
 				free_config_files(config_files);
-				return 1;
+				return -1;
 		}
 	}
-	free_config_files(config_files);
 	return 0;
 }
 
-static void parse_config_file(void)
+static int parse_config_file(void)
 {
 	cfg_t *cfg, *sec_as, *sec_mpd;
 
@@ -167,9 +166,9 @@ static void parse_config_file(void)
 	cfg_set_validate_func(cfg,"mpd|port",cf_validate_num);
 	cfg_set_validate_func(cfg,"mpd|timeout",cf_validate_num);
 
-	if(parse_files(cfg) != 0) {
+	if(parse_files(cfg) < 0) {
 		cfg_free(cfg);
-		return;
+		return -1;
 	}
 
 	free(prefs.log_file);
@@ -202,9 +201,10 @@ static void parse_config_file(void)
 	prefs.fork = 1;
 
 	cfg_free(cfg);
+	return 0;
 }
 
-static void parse_command_line(int argc, char **argv)
+static int parse_command_line(int argc, char **argv)
 {
 	struct arg_lit *debug = arg_lit0("d","debug","Log everything.");
 	struct arg_lit *quiet = arg_lit0("q","quiet","Disable logging.");
@@ -226,7 +226,7 @@ static void parse_command_line(int argc, char **argv)
 	if (arg_nullcheck(argtable) != 0) {
 		fputs("Insufficient memory to parse command line options.",stderr);
 		arg_freetable(argtable,8);
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
 	n_errors = arg_parse(argc,argv,argtable);
@@ -248,14 +248,15 @@ static void parse_command_line(int argc, char **argv)
 		arg_print_errors(stderr,end,PACKAGE_NAME);
 		fputs("\nPlease see the --help option for more details.\n",stderr);
 		arg_freetable(argtable,8);
-		exit(EXIT_FAILURE);
+		return -1;
 	} else {
 		/* This must be at the top, to avoid any options specified in the
 		 * config file overriding those on the command line. */
 		if (conf_file->count > 0) {
 			free(prefs.config_file);
 			prefs.config_file = strdup(conf_file->filename[0]);
-			parse_config_file();
+			if(parse_config_file() < 0)
+				return -1;
 		}
 		if (pid_file->count > 0) {
 			free(prefs.pid_file);
@@ -264,7 +265,7 @@ static void parse_command_line(int argc, char **argv)
 		if (quiet->count > 0 && debug->count > 0) {
 			fprintf(stderr,"Specifying --debug and --quiet at the same time "
 					"makes no sense.\n");
-			exit(EXIT_FAILURE);
+			return -1;
 		} else if (quiet->count > 0) {
 			prefs.log_level = NONE;
 		} else if (debug->count > 0) {
@@ -275,14 +276,17 @@ static void parse_command_line(int argc, char **argv)
 		}
 	}
 	arg_freetable(argtable,8);
+	return 0;
 }
 
-void init_preferences(int argc, char **argv)
+int init_preferences(int argc, char **argv)
 {
 	char *tmp, *saveptr;
 
-	parse_config_file();
-	parse_command_line(argc,argv);
+	if(parse_config_file() < 0)
+		return -1;
+	if(parse_command_line(argc,argv) < 0)
+		return -1;
 
 	tmp = getenv("MPD_HOST");
 	if(tmp != NULL) {
@@ -298,6 +302,8 @@ void init_preferences(int argc, char **argv)
 	}
 	if(getenv("MPD_PORT") != NULL)
 		prefs.mpd_port = atoi(getenv("MPD_PORT"));
+
+	return 0;
 }
 
 void clear_preferences(void)

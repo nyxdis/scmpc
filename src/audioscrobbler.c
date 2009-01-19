@@ -42,15 +42,15 @@ static char curl_error_buffer[CURL_ERROR_SIZE];
 #define HANDSHAKE_URL \
 	"http://post.audioscrobbler.com/?hs=true&p=1.2.1&c=spc&v=%s&u=%s&t=%ld&a=%s"
 
-void as_connection_init(void)
+int as_connection_init(void)
 {
 	as_conn = calloc(sizeof(struct as_connection),1);
-	if(as_conn == NULL) return;
+	if(as_conn == NULL) return -1;
 
 	as_conn->last_handshake = 0;
 	as_conn->status = DISCONNECTED;
 	as_conn->handle = curl_easy_init();
-	if(as_conn->handle == NULL) return;
+	if(as_conn->handle == NULL) return -1;
 	as_conn->headers = curl_slist_append(as_conn->headers,
 			"User-Agent: scmpc/" PACKAGE_VERSION);
 
@@ -59,6 +59,7 @@ void as_connection_init(void)
 	curl_easy_setopt(as_conn->handle,CURLOPT_ERRORBUFFER,curl_error_buffer);
 	curl_easy_setopt(as_conn->handle,CURLOPT_NOSIGNAL,1L);
 	curl_easy_setopt(as_conn->handle,CURLOPT_CONNECTTIMEOUT,5L);
+	return 0;
 }
 
 void as_cleanup(void)

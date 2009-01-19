@@ -53,6 +53,6 @@ void queue_add(const char *artist, const char *title, const char *album,
 int as_now_playing(void);
 int as_submit(void);
 void as_cleanup(void);
-void as_connection_init(void);
+int as_connection_init(void);
 void as_handshake(void);
 void queue_save(void);

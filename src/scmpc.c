@@ -45,7 +45,7 @@ static int scmpc_pid_create(void);
 static int scmpc_pid_remove(void);
 
 static void sighandler(int sig);
-static void daemonise(void);
+static int daemonise(void);
 const char *pid_filename(void);
 
 /* Declared in preferences.h */
@@ -61,7 +61,8 @@ int main(int argc, char *argv[])
 	struct timeval waitd;
 	time_t last_queue_save = 0;
 
-	init_preferences(argc,argv);
+	if(init_preferences(argc,argv) < 0)
+		exit(EXIT_FAILURE);
 
 	/* Open the log file before forking, so that if there is an error, the
 	 * user will get some idea what is going on */
@@ -75,7 +76,12 @@ int main(int argc, char *argv[])
 	}
 
 	/* Daemonise if wanted */
-	if(prefs.fork) daemonise();
+	if(prefs.fork) {
+		if(daemonise() < 0) {
+			clear_preferences();
+			exit(EXIT_FAILURE);
+		}
+	}
 
 	/* Signal handler */
 	sa.sa_handler = sighandler;
@@ -85,8 +91,10 @@ int main(int argc, char *argv[])
 	sigaction(SIGTERM,&sa,NULL);
 	sigaction(SIGQUIT,&sa,NULL);
 
-	as_connection_init();
-	mpd_connect();
+	if(as_connection_init() < 0 || mpd_connect() < 0) {
+		cleanup();
+		exit(EXIT_FAILURE);
+	}
 	as_handshake();
 
 	while(1)
@@ -205,15 +213,14 @@ static void sighandler(int sig)
 	exit(EXIT_SUCCESS);
 }
 
-static void daemonise(void)
+static int daemonise(void)
 {
 	pid_t pid;
 
 	if((pid = fork()) < 0) {
 		/* Something went wrong... */
 		fprintf(stderr,"Could not fork process.\n");
-		clear_preferences();
-		exit(EXIT_FAILURE);
+		return -1;
 	} else if(pid) { /* The parent */
 		exit(EXIT_SUCCESS);
 	} else { /* The child */
@@ -223,10 +230,10 @@ static void daemonise(void)
 		/* Create the PID file */
 		if(scmpc_pid_create() < 0) {
 			scmpc_log(ERROR,"Failed to create PID file");
-			clear_preferences();
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 	}
+	return 0;
 }
 
 void cleanup(void)
