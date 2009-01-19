@@ -240,7 +240,3 @@ int as_submit(void)
 {
 	return 0;
 }
-
-void queue_save(void)
-{
-}

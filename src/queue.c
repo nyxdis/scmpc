@@ -1,5 +1,5 @@
 /**
- * audioscrobbler.h: Audioscrobbler backend.
+ * queue.c: Song queue handling.
  *
  * ==================================================================
  * Copyright (c) 2009 Christoph Mende <angelos@unkreativ.org>
@@ -24,32 +24,10 @@
  */
 
 
-#include <curl/curl.h>
+void queue_add()
+{
+}
 
-struct queue_node {
-	struct queue_node *next;
-	char *artist;
-	char *title;
-	char *album;
-	int length;
-	time_t date;
-};
-
-struct as_connection {
-	char *session_id;
-	char *submit_url;
-	char *np_url;
-	char password[33];
-	time_t last_handshake;
-	enum connection_status status;
-	CURL *handle;
-	struct curl_slist *headers;
-} *as_conn;
-
-char *buffer;
-
-int as_connection_init(void);
-int as_submit(void);
-void as_cleanup(void);
-void as_handshake(void);
-void as_now_playing(void);
+void queue_save(void)
+{
+}

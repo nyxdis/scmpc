@@ -35,9 +35,10 @@
 
 #include "misc.h"
 #include "audioscrobbler.h"
-#include "scmpc.h"
 #include "mpd.h"
 #include "preferences.h"
+#include "queue.h"
+#include "scmpc.h"
 
 /* Static function prototypes */
 static int scmpc_is_running(void);
