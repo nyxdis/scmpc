@@ -34,6 +34,7 @@
 #endif
 
 #include "misc.h"
+#include "mpd.h"
 #include "preferences.h"
 #include "audioscrobbler.h"
 
@@ -175,17 +176,28 @@ void as_handshake(void)
 	}
 }
 
-void as_now_playing(char *artist, char *album, char *title, int length, int track)
+void as_now_playing(void)
 {
-	char *querystring, *lartist, *lalbum, *ltitle, *line;
+	char *querystring, *artist, *album, *title, *line;
 	int ret;
 
-	lartist = curl_escape(artist,0);
-	lalbum = curl_escape(album,0);
-	ltitle = curl_escape(title,0);
+	if(as_conn->status != CONNECTED) {
+		scmpc_log(INFO,"Not sending Now Playing notification: not connected");
+		return;
+	}
+
+	if(current_song.artist == NULL || current_song.album == NULL || current_song.title == NULL) {
+		scmpc_log(INFO,"Not submitting: file is not tagged properly.");
+		return;
+	}
+
+	artist = curl_escape(current_song.artist,0);
+	album = curl_escape(current_song.album,0);
+	title = curl_escape(current_song.title,0);
 
 	asprintf(&querystring,"s=%s&a=%s&t=%s&b=%s&l=%d&n=%d&m=",
-		as_conn->session_id,lartist,ltitle,lalbum,length,track);
+		as_conn->session_id,artist,title,album,current_song.length,
+		current_song.track);
 
 	scmpc_log(DEBUG,"querystring = %s",querystring);
 
@@ -210,7 +222,7 @@ void as_now_playing(char *artist, char *album, char *title, int length, int trac
 		scmpc_log(INFO,"Received bad session response from "
 			"Audioscrobbler, re-handshaking.");
 		as_handshake();
-		as_now_playing(artist,album,title,length,track);
+		as_now_playing();
 	} else if(strncmp(line,"OK",2) == 0) {
 		scmpc_log(INFO,"Sent Now Playing notification.");
 	}
