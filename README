@@ -1,4 +1,4 @@
-scmpc is a client for MPD that submits your tracks to last.fm
+scmpc is a client for MPD that submits your tracks to Audioscrobbler
 
 The following packages are required to build and run scmpc:
 argtable	http://argtable.sourceforge.net/

@@ -65,9 +65,9 @@
 
 # audioscrobbler section
 #
-# username: Your last.fm username
-# password: Your last.fm password
-# password_hash: Your md5 hashed last.fm password
+# username: Your Audioscrobbler username
+# password: Your Audioscrobbler password
+# password_hash: Your md5 hashed Audioscrobbler password
 # password_hash will be preferred over password if it is set
 audioscrobbler {
 	username = ""
