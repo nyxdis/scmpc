@@ -92,7 +92,8 @@ static int server_connect_tcp(const char *host, int port)
 			FD_SET(sockfd,&write_flags);
 			if(select(sockfd+1,NULL,&write_flags,NULL,&timeout) > 0) {
 				lon = sizeof(int);
-				getsockopt(sockfd,SOL_SOCKET,SO_ERROR,(void*)(&valopt),&lon);
+				getsockopt(sockfd,SOL_SOCKET,SO_ERROR,
+					(void*)(&valopt),&lon);
 				if(valopt) {
 					errno = valopt;
 					return -1;
@@ -120,7 +121,8 @@ int mpd_connect(void)
 	if(strncmp(prefs.mpd_hostname,"/",1) == 0)
 		mpd_info->sockfd = server_connect_unix(prefs.mpd_hostname);
 	else
-		mpd_info->sockfd = server_connect_tcp(prefs.mpd_hostname,prefs.mpd_port);
+		mpd_info->sockfd = server_connect_tcp(prefs.mpd_hostname,
+			prefs.mpd_port);
 
 	if(mpd_info->sockfd < 0) {
 		scmpc_log(ERROR,"Failed to connect to MPD: %s",strerror(errno));
@@ -131,7 +133,8 @@ int mpd_connect(void)
 		asprintf(&tmp,"password %s\n",prefs.mpd_password);
 		if(write(mpd_info->sockfd,tmp,strlen(tmp)) < 0) {
 			free(tmp);
-			scmpc_log(ERROR,"Failed to write to MPD: %s",strerror(errno));
+			scmpc_log(ERROR,"Failed to write to MPD: %s",
+				strerror(errno));
 			return -1;
 		}
 		free(tmp);
@@ -153,8 +156,15 @@ void mpd_parse(char *buf)
 				mpd_info->status = BADAUTH;
 			} else {
 				/* Unknown error */
-				scmpc_log(ERROR,"Received ACK error from MPD");
+				scmpc_log(ERROR,"Received ACK error from MPD: "
+					"%s",&line[13]);
 			}
+		}
+		else if(strncmp(line,"changed: ",8) == 0) {
+			if(strncmp(line,"changed: player",14) == 0) {
+				write(mpd_info->sockfd,"currentsong\n",12);
+			}
+			write(mpd_info->sockfd,"idle\n",5);
 		}
 		else if(strncmp(line,"OK MPD",6) == 0) {
 			sscanf(line,"%*s %*s %d.%d.%d",&mpd_info->version[0],
