@@ -54,5 +54,5 @@ int as_connection_init(void);
 int as_submit(void);
 void as_cleanup(void);
 void as_handshake(void);
-void as_now_playing(char *artist, char *album, char *title, int length, int track);
+void as_now_playing(void);
 void queue_save(void);
