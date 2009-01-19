@@ -75,6 +75,13 @@ void as_handshake(void)
 	time_t timestamp;
 	int ret;
 
+	if(as_conn->status == BADAUTH) {
+		scmpc_log(INFO,"Refusing handshake, please check your "
+			"Audioscrobbler credentials and restart %s",
+			PACKAGE_NAME);
+		return;
+	}
+
 	if(strlen(prefs.as_username) == 0 || (strlen(prefs.as_password) == 0 &&
 		strlen(prefs.as_password_hash) == 0)) {
 		scmpc_log(INFO,"No username or password specified. "
@@ -179,7 +186,7 @@ void as_now_playing(char *artist, char *album, char *title, int length, int trac
 
 	asprintf(&querystring,"s=%s&a=%s&t=%s&b=%s&l=%d&n=%d&m=",
 		as_conn->session_id,lartist,ltitle,lalbum,length,track);
-	
+
 	scmpc_log(DEBUG,"querystring = %s",querystring);
 
 	curl_easy_setopt(as_conn->handle,CURLOPT_WRITEDATA,(void*)buffer);
@@ -188,7 +195,8 @@ void as_now_playing(char *artist, char *album, char *title, int length, int trac
 
 	ret = curl_easy_perform(as_conn->handle);
 	if(ret != 0) {
-		scmpc_log(ERROR,"Failed to connect to audioscrobbler: %s",curl_easy_strerror(ret));
+		scmpc_log(ERROR,"Failed to connect to audioscrobbler: %s",
+			curl_easy_strerror(ret));
 		free(querystring);
 		free(buffer);
 		return;
@@ -199,7 +207,8 @@ void as_now_playing(char *artist, char *album, char *title, int length, int trac
 	if(line == NULL)  {
 		scmpc_log(INFO,"Could not parse Audioscrobbler submit response.");
 	} else if(strncmp(line,"BADSESSION",10) == 0) {
-		scmpc_log(INFO,"Received bad session response from Audioscrobbler, re-handshaking.");
+		scmpc_log(INFO,"Received bad session response from "
+			"Audioscrobbler, re-handshaking.");
 		as_handshake();
 		as_now_playing(artist,album,title,length,track);
 	} else if(strncmp(line,"OK",2) == 0) {
