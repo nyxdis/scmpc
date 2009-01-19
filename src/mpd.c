@@ -177,6 +177,7 @@ void mpd_parse(char *buf)
 				current_song.artist = NULL;
 				free(current_song.album);
 				current_song.artist = NULL;
+				current_song.track = 0;
 				current_song.filename = strdup(&line[6]);
 				while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
 					if(strncmp(line,"Artist: ",8) == 0)
