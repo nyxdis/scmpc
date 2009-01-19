@@ -29,6 +29,7 @@
 struct preferences {
         char *mpd_hostname;
         int mpd_port;
+	int mpd_interval;
         int mpd_timeout;
         char *mpd_password;
         bool fork;
