@@ -24,5 +24,14 @@
  */
 
 
+struct queue_node {
+	struct queue_node *next;
+	char *artist;
+	char *title;
+	char *album;
+	int length;
+	time_t date;
+};
+
 void queue_add();
 void queue_save(void);

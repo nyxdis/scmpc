@@ -26,15 +26,6 @@
 
 #include <curl/curl.h>
 
-struct queue_node {
-	struct queue_node *next;
-	char *artist;
-	char *title;
-	char *album;
-	int length;
-	time_t date;
-};
-
 struct as_connection {
 	char *session_id;
 	char *submit_url;
