@@ -67,6 +67,9 @@ void as_cleanup(void)
 {
 	curl_slist_free_all(as_conn->headers);
 	curl_easy_cleanup(as_conn->handle);
+	free(as_conn->session_id);
+	free(as_conn->np_url);
+	free(as_conn->submit_url);
 	free(as_conn);
 }
 
@@ -127,14 +130,13 @@ void as_handshake(void)
 	if(ret != 0) {
 		scmpc_log(ERROR,"Could not connect to the Audioscrobbler: %s",
 			curl_easy_strerror(ret));
-		free(buffer);
 		return;
 	}
 
 	line = strtok_r(buffer,"\n",&saveptr);
 	if(line == NULL) {
 		scmpc_log(DEBUG,"Could not parse Audioscrobbler handshake response.");
-		free(buffer);
+		return;
 	}
 
 	if(strncmp(line,"OK",2) == 0) {
@@ -143,11 +145,11 @@ void as_handshake(void)
 		while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
 			line_no++;
 			if(line_no == 2) {
-				as_conn->session_id = line;
+				as_conn->session_id = strdup(line);
 			} else if(line_no == 3) {
-				as_conn->np_url = line;
+				as_conn->np_url = strdup(line);
 			} else if(line_no == 4) {
-				as_conn->submit_url = line;
+				as_conn->submit_url = strdup(line);
 				break;
 			}
 		}
@@ -158,7 +160,6 @@ void as_handshake(void)
 			scmpc_log(INFO,"Connected to Audioscrobbler.");
 			as_conn->status = CONNECTED;
 			as_conn->last_handshake = time(NULL);
-			free(buffer);
 		}
 	} else if(strncmp(line,"FAILED",6) == 0) {
 		scmpc_log(ERROR,"The Audioscrobbler handshake could not be "
@@ -185,6 +186,7 @@ void as_now_playing(void)
 		scmpc_log(INFO,"Not sending Now Playing notification: not connected");
 		return;
 	}
+	scmpc_log(DEBUG,"Session id: %s",as_conn->session_id);
 
 	if(current_song.artist == NULL || current_song.album == NULL || current_song.title == NULL) {
 		scmpc_log(INFO,"Not submitting: file is not tagged properly.");
@@ -199,6 +201,10 @@ void as_now_playing(void)
 		as_conn->session_id,artist,title,album,current_song.length,
 		current_song.track);
 
+	free(artist);
+	free(album);
+	free(title);
+
 	scmpc_log(DEBUG,"querystring = %s",querystring);
 
 	curl_easy_setopt(as_conn->handle,CURLOPT_WRITEDATA,(void*)buffer);
@@ -210,7 +216,6 @@ void as_now_playing(void)
 		scmpc_log(ERROR,"Failed to connect to audioscrobbler: %s",
 			curl_easy_strerror(ret));
 		free(querystring);
-		free(buffer);
 		return;
 	}
 	free(querystring);
@@ -225,9 +230,10 @@ void as_now_playing(void)
 		as_now_playing();
 	} else if(strncmp(line,"OK",2) == 0) {
 		scmpc_log(INFO,"Sent Now Playing notification.");
+	} else {
+		scmpc_log(DEBUG,"Unknown response from Audioscrobbler while "
+			"sending Now Playing notification.");
 	}
-
-	free(buffer);
 }
 
 int as_submit(void)
