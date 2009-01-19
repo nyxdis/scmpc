@@ -210,4 +210,8 @@ void mpd_cleanup(void)
 {
 	close(mpd_info->sockfd);
 	free(mpd_info);
+	free(current_song.filename);
+	free(current_song.artist);
+	free(current_song.title);
+	free(current_song.album);
 }
