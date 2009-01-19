@@ -168,9 +168,45 @@ void as_handshake(void)
 	}
 }
 
-int as_now_playing(void)
+void as_now_playing(char *artist, char *album, char *title, int length, int track)
 {
-	return 0;
+	char *querystring, *lartist, *lalbum, *ltitle, *line;
+	int ret;
+
+	lartist = curl_escape(artist,0);
+	lalbum = curl_escape(album,0);
+	ltitle = curl_escape(title,0);
+
+	asprintf(&querystring,"s=%s&a=%s&t=%s&b=%s&l=%d&n=%d&m=",
+		as_conn->session_id,lartist,ltitle,lalbum,length,track);
+	
+	scmpc_log(DEBUG,"querystring = %s",querystring);
+
+	curl_easy_setopt(as_conn->handle,CURLOPT_WRITEDATA,(void*)buffer);
+	curl_easy_setopt(as_conn->handle,CURLOPT_POSTFIELDS,querystring);
+	curl_easy_setopt(as_conn->handle,CURLOPT_URL,as_conn->np_url);
+
+	ret = curl_easy_perform(as_conn->handle);
+	if(ret != 0) {
+		scmpc_log(ERROR,"Failed to connect to audioscrobbler: %s",curl_easy_strerror(ret));
+		free(querystring);
+		free(buffer);
+		return;
+	}
+	free(querystring);
+
+	line = strtok(buffer,"\n");
+	if(line == NULL)  {
+		scmpc_log(INFO,"Could not parse Audioscrobbler submit response.");
+	} else if(strncmp(line,"BADSESSION",10) == 0) {
+		scmpc_log(INFO,"Received bad session response from Audioscrobbler, re-handshaking.");
+		as_handshake();
+		as_now_playing(artist,album,title,length,track);
+	} else if(strncmp(line,"OK",2) == 0) {
+		scmpc_log(INFO,"Sent Now Playing notification.");
+	}
+
+	free(buffer);
 }
 
 int as_submit(void)

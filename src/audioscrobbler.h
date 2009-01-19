@@ -50,9 +50,9 @@ char *buffer;
 void queue_add(const char *artist, const char *title, const char *album,
 		int length, const char *date);
 
-int as_now_playing(void);
+int as_connection_init(void);
 int as_submit(void);
 void as_cleanup(void);
-int as_connection_init(void);
 void as_handshake(void);
+void as_now_playing(char *artist, char *album, char *title, int length, int track);
 void queue_save(void);
