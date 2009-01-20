@@ -211,14 +211,13 @@ void as_now_playing(void)
 	curl_easy_setopt(as_conn->handle,CURLOPT_URL,as_conn->np_url);
 
 	ret = curl_easy_perform(as_conn->handle);
+	free(querystring);
 	if(ret != 0) {
 		scmpc_log(ERROR,"Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
 		free(buffer);
-		free(querystring);
 		return;
 	}
-	free(querystring);
 
 	line = strtok(buffer,"\n");
 	if(line == NULL)  {
