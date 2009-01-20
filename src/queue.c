@@ -24,10 +24,31 @@
  */
 
 
+#include <stdio.h>
+#include <time.h>
+
+#include "queue.h"
+
+static struct queue_t {
+	struct queue_node *first;
+	struct queue_node *last;
+	int length;
+} queue;
+
 void queue_add()
 {
 }
 
+void queue_load(void)
+{
+}
+
+void queue_remove_songs(struct queue_node *song, struct queue_node *keep_ptr)
+{
+	printf("%p %p\n",song,keep_ptr);
+}
+
 void queue_save(void)
 {
+	printf("%p\n",&queue);
 }
