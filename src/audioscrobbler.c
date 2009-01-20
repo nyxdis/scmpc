@@ -117,9 +117,6 @@ void as_handshake(void)
 
 	scmpc_log(DEBUG,"handshake_url = %s",handshake_url);
 
-	buffer = malloc(1024);
-	if(buffer == NULL) return;
-
 	curl_easy_setopt(as_conn->handle,CURLOPT_WRITEDATA,(void *)buffer);
 	curl_easy_setopt(as_conn->handle,CURLOPT_HTTPGET,1);
 	curl_easy_setopt(as_conn->handle,CURLOPT_URL,handshake_url);
@@ -130,12 +127,14 @@ void as_handshake(void)
 	if(ret != 0) {
 		scmpc_log(ERROR,"Could not connect to the Audioscrobbler: %s",
 			curl_easy_strerror(ret));
+		free(buffer);
 		return;
 	}
 
 	line = strtok_r(buffer,"\n",&saveptr);
 	if(line == NULL) {
 		scmpc_log(DEBUG,"Could not parse Audioscrobbler handshake response.");
+		free(buffer);
 		return;
 	}
 
@@ -175,6 +174,7 @@ void as_handshake(void)
 	} else {
 		scmpc_log(DEBUG,"Could not parse Audioscrobbler handshake response.");
 	}
+	free(buffer);
 }
 
 void as_now_playing(void)
@@ -212,8 +212,9 @@ void as_now_playing(void)
 
 	ret = curl_easy_perform(as_conn->handle);
 	if(ret != 0) {
-		scmpc_log(ERROR,"Failed to connect to audioscrobbler: %s",
+		scmpc_log(ERROR,"Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
+		free(buffer);
 		free(querystring);
 		return;
 	}
@@ -233,6 +234,7 @@ void as_now_playing(void)
 		scmpc_log(DEBUG,"Unknown response from Audioscrobbler while "
 			"sending Now Playing notification.");
 	}
+	free(buffer);
 }
 
 int as_submit(void)

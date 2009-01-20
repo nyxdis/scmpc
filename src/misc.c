@@ -77,10 +77,9 @@ void scmpc_log(enum loglevel level, const char *format, ...)
 
 size_t buffer_write(void *input, size_t size, size_t nmemb, void *buf)
 {
-	free(buf);
+	buf = NULL; /* suppress warnings about buf being unused */
 	size_t len = size*nmemb;
-	if((buffer = malloc(len)) == NULL) return -1;
-	strncpy(buffer,input,len);
+	buffer = strdup(input);
 	return len;
 }
 
