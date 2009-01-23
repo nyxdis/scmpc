@@ -63,7 +63,7 @@ void scmpc_log(enum loglevel level, const char *format, ...)
 
 	t = time(NULL);
 	ts = malloc(22);
-	strftime(ts,22,"%F %T  ",localtime(&t));
+	strftime(ts,22,"%Y-%m-%d %H:%M:%S  ",localtime(&t));
 	fputs(ts,log_file);
 	free(ts);
 
@@ -77,8 +77,8 @@ void scmpc_log(enum loglevel level, const char *format, ...)
 
 size_t buffer_write(void *input, size_t size, size_t nmemb, void *buf)
 {
-	buf = NULL; /* suppress warnings about buf being unused */
 	size_t len = size*nmemb;
+	buf = NULL; /* suppress warnings about buf being unused */
 	buffer = strdup(input);
 	return len;
 }
