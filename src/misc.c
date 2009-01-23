@@ -83,7 +83,7 @@ size_t buffer_write(void *input, size_t size, size_t nmemb, void *buf)
 	return len;
 }
 
-char *md5_hash(char *text)
+char *md5_hash(const char *text)
 {
 	md5_state_t state;
 	md5_byte_t digest[16];
