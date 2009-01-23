@@ -44,7 +44,7 @@ void scmpc_log(enum loglevel, const char *format, ...);
 /* used by curl */
 size_t buffer_write(void *input, size_t size, size_t nmemb, void *buf);
 
-char *md5_hash(char *text);
+char *md5_hash(const char *text);
 
 #ifndef HAVE_ASPRINTF
 int asprintf(char **ret, const char *format, ...);
