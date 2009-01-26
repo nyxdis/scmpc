@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 
 		if(FD_ISSET(mpd_info->sockfd,&read_flags)) {
 			memset(buf,0,sizeof(buf));
-			sr = read(mpd_info->sockfd,buf,sizeof(buf));
+			sr = read(mpd_info->sockfd,buf,sizeof(buf)-1);
 			if(sr > 0)
 				mpd_parse(buf);
 			else
