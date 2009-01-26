@@ -105,7 +105,8 @@ void queue_load(void)
 	scmpc_log(DEBUG,"Loading queue.");
 
 	if((cache_file = fopen(prefs.cache_file,"r")) == NULL) {
-		scmpc_log(INFO,"Loading queue failed: %s",strerror(errno));
+		scmpc_log(INFO,"Failed to open cache file for reading: %s",
+			strerror(errno));
 		return;
 	}
 	
@@ -144,10 +145,49 @@ void queue_load(void)
 
 void queue_remove_songs(struct queue_node *song, struct queue_node *keep_ptr)
 {
-	printf("%p %p\n",song,keep_ptr);
+	struct queue_node *next_song;
+
+	while(song != NULL && song != keep_ptr) {
+		free(song->title);
+		free(song->artist);
+		free(song->album);
+		next_song = song->next;
+		free(song);
+		song = next_song;
+		queue.length--;
+	}
+
+	if(queue.length == 0)
+		queue.first = queue.last = NULL;
 }
 
 void queue_save(void)
 {
-	printf("%p\n",&queue);
+	FILE *cache_file;
+	struct queue_node *current_song;
+
+	current_song = queue.first;
+
+	if((cache_file = fopen(prefs.cache_file,"w")) == NULL) {
+		scmpc_log(ERROR,"Failed to open cache file for writing: %s",
+			strerror(errno));
+		return;
+	}
+
+	while(current_song != NULL) {
+		fprintf(cache_file,"# BEGIN SONG\n"
+			"artist: %s\n"
+			"title: %s\n"
+			"album: %s\n"
+			"length: %d\n"
+			"track: %d\n"
+			"date: %ld\n"
+			"# END SONG\n\n",current_song->artist,
+			current_song->title,current_song->album,
+			current_song->length,current_song->track,
+			current_song->date);
+		current_song = current_song->next;
+	}
+	fclose(cache_file);
+	scmpc_log(DEBUG,"Cache saved.");
 }
