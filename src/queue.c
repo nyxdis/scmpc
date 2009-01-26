@@ -25,9 +25,13 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
+#include "misc.h"
 #include "queue.h"
+#include "preferences.h"
 
 static struct queue_t {
 	struct queue_node *first;
@@ -35,8 +39,54 @@ static struct queue_t {
 	int length;
 } queue;
 
-void queue_add()
+void queue_add(const char *artist, const char *title, const char *album,
+	unsigned int length, unsigned short track)
 {
+	struct queue_node *new_song;
+
+	if(artist == NULL || title == NULL || length < 30) {
+		scmpc_log(DEBUG,"Invalid song passed to queue_add(). Rejecting.");
+		return;
+	}
+
+	if((new_song = malloc(sizeof(struct queue_node))) == NULL) return;
+
+	new_song->title = strdup(title);
+	new_song->artist = strdup(artist);
+	if(album != NULL)
+		new_song->album = strdup(album);
+	else
+		new_song->album = strdup("");
+	new_song->length = length;
+	new_song->track = track;
+	new_song->next = NULL;
+	new_song->date = time(NULL);
+
+	/* Queue is empty */
+	if(queue.first == NULL) {
+		queue.first = queue.last = new_song;
+		queue.length = 1;
+		scmpc_log(DEBUG,"Song added to queue. Queue length: 1");
+		return;
+	}
+
+	/* Queue is full, remove the first item and add the new one */
+	if(queue.length == prefs.queue_length) {
+		struct queue_node *new_first_song = queue.first->next;
+		if(new_first_song == NULL) {
+			scmpc_log(DEBUG,"Queue is too long, but there is only "
+				"one accessible song in the list. New song not added.");
+			return;
+		}
+		queue_remove_songs(queue.first, new_first_song);
+		queue.first = new_first_song;
+		scmpc_log(INFO,"The queue of songs to be submitted is too long."
+				"The oldest song has been removed.");
+	}
+	queue.last->next = new_song;
+	queue.last = new_song;
+	queue.length++;
+	scmpc_log(DEBUG,"Song added to queue. Queue length: %d",queue.length);
 }
 
 void queue_load(void)
