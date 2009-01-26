@@ -176,7 +176,7 @@ static int scmpc_is_running(void)
 			return -1;
 		} else {
 			/* Old pid file removed, starting new instance */
-			printf("Old pid file removed.\n");
+			puts("Old pid file removed.");
 			return 0;
 		}
 	}
@@ -221,7 +221,7 @@ static int daemonise(void)
 
 	if((pid = fork()) < 0) {
 		/* Something went wrong... */
-		fprintf(stderr,"Could not fork process.\n");
+		fputs("Could not fork process.",stderr);
 		return -1;
 	} else if(pid) { /* The parent */
 		exit(EXIT_SUCCESS);
