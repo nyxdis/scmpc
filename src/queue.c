@@ -170,11 +170,9 @@ void queue_save(void)
 	current_song = queue.first;
 
 	if((cache_file = fopen(prefs.cache_file,"w")) == NULL) {
-		if(errno != ENOENT) {
-			scmpc_log(ERROR,"Failed to open cache file for writing: %s",
-				strerror(errno));
-			return;
-		}
+		scmpc_log(ERROR,"Failed to open cache file for writing: %s",
+			strerror(errno));
+		return;
 	}
 
 	while(current_song != NULL) {
