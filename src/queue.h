@@ -34,6 +34,12 @@ struct queue_node {
 	time_t date;
 };
 
+struct queue_t {
+	struct queue_node *first;
+	struct queue_node *last;
+	int length;
+} queue;
+
 void queue_add(const char *artist, const char *title, const char *album,
 	unsigned int length, unsigned short track, time_t date);
 void queue_load(void);

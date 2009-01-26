@@ -37,6 +37,7 @@
 #include "mpd.h"
 #include "preferences.h"
 #include "audioscrobbler.h"
+#include "queue.h"
 
 static char curl_error_buffer[CURL_ERROR_SIZE];
 
@@ -238,5 +239,52 @@ void as_now_playing(void)
 
 int as_submit(void)
 {
-	return 0;
+	char *querystring, *line, *saveptr;
+	struct queue_node *last_added;
+	int ret, num_songs;
+	static char last_failed[512];
+
+	if(queue.first == NULL)
+		return -1;
+	
+	num_songs = build_querystring(&querystring, &last_added);
+	if(num_songs <= 0) {
+		free(querystring);
+		return -1;
+	}
+
+	scmpc_log(DEBUG,"querystring = %s",querystring);
+
+	curl_easy_setopt(as_conn->handle, CURLOPT_WRITEDATA, (void *)buffer);
+	curl_easy_setopt(as_conn->handle, CURLOPT_POSTFIELDS, querystring);
+	curl_easy_setopt(as_conn->handle, CURLOPT_URL, as_conn->submit_url);
+
+	if((ret = curl_easy_perform(as_conn->handle)) != 0) {
+		scmpc_log(INFO,"Failed to connect to Audioscrobbler: %s",
+			curl_easy_strerror(ret));
+	}
+
+	line = strtok_r(buffer,"\n",&saveptr);
+	if(line == NULL)
+		scmpc_log(INFO,"Could not parse Audioscrobbler submit response.");
+	else if(strncmp(line,"FAILED",6) == 0) {
+		if(strcmp(last_failed,&line[7]) != 0) {
+			memset(last_failed,0,sizeof(last_failed));
+			strncpy(last_failed,&line[7],sizeof(last_failed));
+			scmpc_log(INFO,"Audioscrobbler returned FAILED: %s",
+				&line[7]);
+		}
+	} else if(strncmp(line,"BADSESSION",10) == 0) {
+		last_failed[0] = '\0';
+		scmpc_log(INFO,"Received bad session from Audioscrobbler, re-handshaking.");
+		as_handshake();
+	} else if(strncmp(line,"OK",2) == 0) {
+		last_failed[0] = '\0';
+		if(num_songs == 1)
+			scmpc_log(INFO,"1 song submitted.");
+		else
+			scmpc_log(INFO,"%d songs submitted.",num_songs);
+		queue_remove_songs(queue.first, last_added);
+		queue.first = last_added;
+	}
 }
