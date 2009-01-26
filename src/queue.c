@@ -24,6 +24,7 @@
  */
 
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,7 +41,7 @@ static struct queue_t {
 } queue;
 
 void queue_add(const char *artist, const char *title, const char *album,
-	unsigned int length, unsigned short track)
+	unsigned int length, unsigned short track, time_t date)
 {
 	struct queue_node *new_song;
 
@@ -60,7 +61,10 @@ void queue_add(const char *artist, const char *title, const char *album,
 	new_song->length = length;
 	new_song->track = track;
 	new_song->next = NULL;
-	new_song->date = time(NULL);
+	if(date == 0)
+		new_song->date = time(NULL);
+	else
+		new_song->date = date;
 
 	/* Queue is empty */
 	if(queue.first == NULL) {
@@ -91,6 +95,51 @@ void queue_add(const char *artist, const char *title, const char *album,
 
 void queue_load(void)
 {
+	char *line, *artist, *album, *title;
+	unsigned int length = 0;
+	unsigned short track = 0;
+	FILE *cache_file;
+	time_t date = 0;
+
+	artist = title = album = NULL;
+	scmpc_log(DEBUG,"Loading queue.");
+
+	if((cache_file = fopen(prefs.cache_file,"r")) == NULL) {
+		scmpc_log(INFO,"Loading queue failed: %s",strerror(errno));
+		return;
+	}
+	
+	while(getline(&line,NULL,cache_file) >= 0) {
+		if(strncmp(line,"# BEGIN SONG",12) == 0) {
+			free(artist); free(title); free(album);
+			artist = title = album = NULL;
+			length = track = 0;
+		} else if(strncmp(line,"artist: ",8) == 0) {
+			free(artist);
+			artist = strdup(&line[8]);
+		} else if(strncmp(line,"title: ",7) == 0) {
+			free(title);
+			title = strdup(&line[7]);
+		} else if(strncmp(line,"album: ",7) == 0) {
+			free(album);
+			album = strdup(&line[7]);
+		} else if(strncmp(line,"date: ",6) == 0) {
+			date = atoi(&line[6]);
+		} else if(strncmp(line,"length: ",8) == 0) {
+			length = atoi(&line[8]);
+		} else if(strncmp(line,"track: ",7) == 0) {
+			track = atoi(&line[7]);
+		} else if(strncmp(line,"# END SONG",10) == 0) {
+			queue_add(artist,title,album,length,track,date);
+			free(artist); free(title); free(album);
+			artist = title = album = NULL;
+		}
+		free(line);
+		line = NULL;
+	}
+	free(line);
+	free(artist); free(title); free(album);
+	fclose(cache_file);
 }
 
 void queue_remove_songs(struct queue_node *song, struct queue_node *keep_ptr)
