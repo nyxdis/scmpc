@@ -47,7 +47,7 @@ void open_log(const char *filename)
 
 	log_file = fopen(filename,"a");
 	if(log_file == NULL) {
-		fprintf(stderr,"Unable to open log file, logging to stdout\n");
+		fputs("Unable to open log file, logging to stdout",stderr);
 		log_file = stdout;
 	}
 }

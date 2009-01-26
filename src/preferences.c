@@ -235,16 +235,16 @@ static int parse_command_line(int argc, char **argv)
 	n_errors = arg_parse(argc,argv,argtable);
 
 	if (help->count > 0) {
-		fprintf(stdout,"Usage: %s ",PACKAGE_NAME);
+		printf("Usage: %s",PACKAGE_NAME);
 		arg_print_syntax(stdout,argtable,"\n\n");
 		arg_print_glossary(stdout,argtable,"%s\n\t%s\n");
 		arg_freetable(argtable,8);
 		exit(EXIT_SUCCESS);
 	} else if (version->count > 0) {
 		printf("%s\n",PACKAGE_STRING);
-		printf("An Audioscrobbler client for MPD.\n");
-		printf("Copyright 2009 Christoph Mende <angelos@unkreativ.org>\n");
-		printf("Based on Jonathan Coome's work on scmpc\n");
+		puts("An Audioscrobbler client for MPD.");
+		puts("Copyright 2009 Christoph Mende <angelos@unkreativ.org>");
+		puts("Based on Jonathan Coome's work on scmpc");
 		arg_freetable(argtable,8);
 		exit(EXIT_SUCCESS);
 	} else if (n_errors > 0) {
@@ -266,8 +266,8 @@ static int parse_command_line(int argc, char **argv)
 			prefs.pid_file = strdup(pid_file->filename[0]);
 		}
 		if (quiet->count > 0 && debug->count > 0) {
-			fprintf(stderr,"Specifying --debug and --quiet at the same time "
-					"makes no sense.\n");
+			fputs("Specifying --debug and --quiet at the same time"
+					" makes no sense.",stderr);
 			return -1;
 		} else if (quiet->count > 0) {
 			prefs.log_level = NONE;
