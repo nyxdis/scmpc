@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 	as_handshake();
 	queue_load();
 
-	while(1)
+	for(;;)
 	{
 		if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
 			waitd.tv_sec = 1;

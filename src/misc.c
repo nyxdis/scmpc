@@ -114,7 +114,8 @@ int asprintf(char **ret, const char *format, ...)
 		return -1;
 	}
 
-	while (1) {
+	for(;;)
+	{
 		/* Try to print in the allocated space. */
 		va_start(ap, format);
 		n = vsnprintf(p, (size_t)size, format, ap);

@@ -65,26 +65,33 @@ static int server_connect_unix(const char *path)
 static int server_connect_tcp(const char *host, int port)
 {
 	fd_set write_flags;
-	int sockfd, valopt;
-	socklen_t lon;
-	struct hostent *he;
-	struct sockaddr_in addr;
+	int sockfd, valopt, ret;
+	char service[5];
+	socklen_t len;
+	struct addrinfo hints, *result, *rp;
 	struct timeval timeout;
-	unsigned int len;
 
-	if((sockfd = socket(AF_INET,SOCK_STREAM,0)) < 0)
+	memset(&hints,0,sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	sprintf(service,"%d",port);
+
+	if((ret = getaddrinfo(host,service,&hints,&result)) != 0) {
+		scmpc_log(ERROR,"getaddrinfo: %s",gai_strerror(ret));
 		return -1;
+	}
+
+	for(rp = result;rp != NULL;rp = rp->ai_next) {
+		if((sockfd = socket(rp->ai_family,rp->ai_socktype,
+			rp->ai_protocol)) >= 0) break;
+
+		close(sockfd);
+	}
 
 	if(fcntl(sockfd,F_SETFL,fcntl(sockfd,F_GETFL,0) | O_NONBLOCK) < 0)
 		return -1;
 
-	he = gethostbyname(host);
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(port);
-	memcpy((char *)&addr.sin_addr.s_addr,(char *)he->h_addr,he->h_length);
-	len = sizeof(addr);
-
-	if(connect(sockfd,(struct sockaddr *)&addr,len) < 0) {
+	if(connect(sockfd,rp->ai_addr,rp->ai_addrlen) < 0) {
 		if(errno == EINPROGRESS) {
 			timeout.tv_sec = prefs.mpd_timeout;
 			timeout.tv_usec = 0;
@@ -92,9 +99,9 @@ static int server_connect_tcp(const char *host, int port)
 			FD_ZERO(&write_flags);
 			FD_SET(sockfd,&write_flags);
 			if(select(sockfd+1,NULL,&write_flags,NULL,&timeout) > 0) {
-				lon = sizeof(int);
+				len = sizeof(int);
 				getsockopt(sockfd,SOL_SOCKET,SO_ERROR,
-					(void*)(&valopt),&lon);
+					(void*)(&valopt),&len);
 				if(valopt) {
 					errno = valopt;
 					return -1;
