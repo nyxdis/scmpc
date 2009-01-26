@@ -98,6 +98,7 @@ int main(int argc, char *argv[])
 	}
 	as_handshake();
 	queue_load();
+	last_queue_save = time(NULL);
 
 	for(;;)
 	{
