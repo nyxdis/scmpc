@@ -105,8 +105,9 @@ void queue_load(void)
 	scmpc_log(DEBUG,"Loading queue.");
 
 	if((cache_file = fopen(prefs.cache_file,"r")) == NULL) {
-		scmpc_log(INFO,"Failed to open cache file for reading: %s",
-			strerror(errno));
+		if(errno != ENOENT)
+			scmpc_log(INFO,"Failed to open cache file for reading: %s",
+				strerror(errno));
 		return;
 	}
 	
@@ -169,9 +170,11 @@ void queue_save(void)
 	current_song = queue.first;
 
 	if((cache_file = fopen(prefs.cache_file,"w")) == NULL) {
-		scmpc_log(ERROR,"Failed to open cache file for writing: %s",
-			strerror(errno));
-		return;
+		if(errno != ENOENT) {
+			scmpc_log(ERROR,"Failed to open cache file for writing: %s",
+				strerror(errno));
+			return;
+		}
 	}
 
 	while(current_song != NULL) {
