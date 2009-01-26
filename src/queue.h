@@ -35,7 +35,7 @@ struct queue_node {
 };
 
 void queue_add(const char *artist, const char *title, const char *album,
-	unsigned int length, unsigned short track);
+	unsigned int length, unsigned short track, time_t date);
 void queue_load(void);
 void queue_remove_songs(struct queue_node *song, struct queue_node *keep_ptr);
 void queue_save(void);
