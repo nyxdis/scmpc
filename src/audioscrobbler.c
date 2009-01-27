@@ -237,6 +237,66 @@ void as_now_playing(void)
 	free(buffer);
 }
 
+static int build_querystring(char **qs, struct queue_node **last_song)
+{
+	char *artist, *title, *album, *nqs, *tmp;
+	int ret, num = 0;
+	size_t buffer_length = 1024, current_length = 0;
+	struct queue_node *song = queue.first;
+
+	if((*qs = malloc(buffer_length)) == NULL)
+		return -1;
+
+	asprintf(&tmp,"s=%s",as_conn->session_id);
+	strcpy(*qs,tmp);
+	free(tmp);
+
+	while(song != NULL && num < 10) {
+		artist = curl_escape(song->artist,0);
+		title = curl_escape(song->title,0);
+		album = curl_escape(song->album,0);
+
+		ret = asprintf(&tmp,"&a[%d]=%s&t[%d]=%s&i[%d]=%ld&o[%d]=P"
+			"&r[%d]=&l[%d]=%d&b[%d]=%s&n[%d]=&m[%d]=",num,artist,
+			num,title,num,song->date,num,num,num,song->length,num,
+			album,num,num);
+		curl_free(artist); curl_free(title); curl_free(album);
+		if(ret < 0) {
+			free(*qs);
+			*qs = NULL;
+			return -1;
+		}
+
+		current_length += ret;
+
+		if(current_length > buffer_length) {
+			buffer_length *= 2;
+			if((nqs = realloc(*qs,buffer_length)) == NULL) {
+				free(tmp);
+				free(*qs);
+				*qs = NULL;
+				return -1;
+			} else {
+				*qs = nqs;
+			}
+		}
+
+		if(strlen(*qs) + strlen(tmp) > buffer_length) {
+			scmpc_log(ERROR,"This song's information is too long."
+				"Discarding.");
+			free(tmp);
+			song = song->next;
+			continue;
+		}
+		free(tmp);
+		num++;
+		song = song->next;
+	}
+
+	*last_song = song;
+	return num;
+}
+
 int as_submit(void)
 {
 	char *querystring, *line, *saveptr;
@@ -287,4 +347,5 @@ int as_submit(void)
 		queue_remove_songs(queue.first, last_added);
 		queue.first = last_added;
 	}
+	return 0;
 }
