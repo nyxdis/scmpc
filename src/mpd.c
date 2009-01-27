@@ -137,11 +137,12 @@ void mpd_write(const char *string)
 		write(mpd_info->sockfd,"noidle\n",7);
 
 	asprintf(&tmp,"%s\n",string);
-	write(mpd_info->sockfd,string,strlen(string));
+	write(mpd_info->sockfd,string,strlen(tmp));
+	free(tmp);
 
 	/* re-enter idle mode */
 	if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
-		write(mpd_info->sockfd,"noidle\n",7);
+		write(mpd_info->sockfd,"idle\n",7);
 }
 
 int mpd_connect(void)
@@ -224,8 +225,11 @@ void mpd_parse(char *buf)
 				}
 				current_song.date = time(NULL);
 				as_now_playing();
-				continue;
 			}
+			continue;
+		}
+		else if(strncmp(line,"volume: ",8) == 0) {
+			
 		}
 		else if(strncmp(line,"OK MPD",6) == 0) {
 			sscanf(line,"%*s %*s %d.%d.%d",&mpd_info->version[0],
