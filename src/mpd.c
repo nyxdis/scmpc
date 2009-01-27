@@ -128,6 +128,22 @@ static int server_connect_tcp(const char *host, int port)
 	return sockfd;
 }
 
+void mpd_write(const char *string)
+{
+	char *tmp;
+
+	/* exit idle mode before sending commands */
+	if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
+		write(mpd_info->sockfd,"noidle\n",7);
+
+	asprintf(&tmp,"%s\n",string);
+	write(mpd_info->sockfd,string,strlen(string));
+
+	/* re-enter idle mode */
+	if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
+		write(mpd_info->sockfd,"noidle\n",7);
+}
+
 int mpd_connect(void)
 {
 	char *tmp;
@@ -206,7 +222,9 @@ void mpd_parse(char *buf)
 					if(strncmp(line,"Track: ",7) == 0)
 						current_song.track = atoi(strtok(&line[7],"/"));
 				}
+				current_song.date = time(NULL);
 				as_now_playing();
+				continue;
 			}
 		}
 		else if(strncmp(line,"OK MPD",6) == 0) {
