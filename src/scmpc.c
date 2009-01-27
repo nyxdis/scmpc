@@ -102,10 +102,7 @@ int main(int argc, char *argv[])
 
 	for(;;)
 	{
-		if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
-			waitd.tv_sec = 1;
-		else
-			waitd.tv_sec = prefs.mpd_interval;
+		waitd.tv_sec = prefs.mpd_interval;
 		waitd.tv_usec = 0;
 
 		FD_ZERO(&read_flags);
@@ -124,10 +121,14 @@ int main(int argc, char *argv[])
 					strerror(errno));
 		}
 
-		if(difftime(time(NULL),last_queue_save) >= prefs.cache_interval * 60)
-		{
+		if(difftime(time(NULL),last_queue_save) >= prefs.cache_interval * 60) {
 			queue_save();
 			last_queue_save = time(NULL);
+		}
+
+		if(current_song.date + (current_song.length / 2) <= time(NULL) /* current position >= 50% */
+			|| current_song.date + 240 <= time(NULL)) {		/* played for more than 240 seconds */
+			mpd_write("status"); /* check if there was no skipping */
 		}
 	}
 }
@@ -241,7 +242,7 @@ static int daemonise(void)
 
 void cleanup(void)
 {
-	queue_save();
+	if(queue.length > 0) queue_save();
 	if(prefs.fork == 1) scmpc_pid_remove();
 	clear_preferences();
 	as_cleanup();
