@@ -17,7 +17,7 @@ PKG_CHECK_MODULES([confuse], [libconfuse])
 AC_SUBST(confuse_LIBS)
 AC_SUBST(confuse_CFLAGS)
 
-PKG_CHECK_MODULES([libcurl], [libcurl >= 7.10.0])
+PKG_CHECK_MODULES([libcurl], [libcurl >= 7.15.4])
 AC_SUBST(libdaemon_LIBS)
 AC_SUBST(libdaemon_CFLAGS)
 

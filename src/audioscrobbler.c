@@ -193,9 +193,9 @@ void as_now_playing(void)
 		return;
 	}
 
-	artist = curl_escape(current_song.artist,0);
-	album = curl_escape(current_song.album,0);
-	title = curl_escape(current_song.title,0);
+	artist = curl_easy_escape(as_conn->handle,current_song.artist,0);
+	album = curl_easy_escape(as_conn->handle,current_song.album,0);
+	title = curl_easy_escape(as_conn->handle,current_song.title,0);
 
 	asprintf(&querystring,"s=%s&a=%s&t=%s&b=%s&l=%d&n=%d&m=",
 		as_conn->session_id,artist,title,album,current_song.length,
@@ -252,9 +252,9 @@ static int build_querystring(char **qs, struct queue_node **last_song)
 	free(tmp);
 
 	while(song != NULL && num < 10) {
-		artist = curl_escape(song->artist,0);
-		title = curl_escape(song->title,0);
-		album = curl_escape(song->album,0);
+		artist = curl_easy_escape(as_conn->handle,song->artist,0);
+		title = curl_easy_escape(as_conn->handle,song->title,0);
+		album = curl_easy_escape(as_conn->handle,song->album,0);
 
 		ret = asprintf(&tmp,"&a[%d]=%s&t[%d]=%s&i[%d]=%ld&o[%d]=P"
 			"&r[%d]=&l[%d]=%d&b[%d]=%s&n[%d]=&m[%d]=",num,artist,
