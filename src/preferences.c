@@ -235,13 +235,13 @@ static int parse_command_line(int argc, char **argv)
 	n_errors = arg_parse(argc,argv,argtable);
 
 	if (help->count > 0) {
-		printf("Usage: %s",PACKAGE_NAME);
+		fputs("Usage: " PACKAGE_NAME,stdout);
 		arg_print_syntax(stdout,argtable,"\n\n");
 		arg_print_glossary(stdout,argtable,"%s\n\t%s\n");
 		arg_freetable(argtable,8);
 		exit(EXIT_SUCCESS);
 	} else if (version->count > 0) {
-		printf("%s\n",PACKAGE_STRING);
+		puts(PACKAGE_STRING);
 		puts("An Audioscrobbler client for MPD.");
 		puts("Copyright 2009 Christoph Mende <angelos@unkreativ.org>");
 		puts("Based on Jonathan Coome's work on scmpc");
