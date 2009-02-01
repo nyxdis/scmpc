@@ -11,7 +11,11 @@ AM_INIT_AUTOMAKE([dist-bzip2])
 AC_PROG_CC
 
 # Checks for libraries.
-AC_CHECK_LIB([argtable2], [arg_parse])
+AC_SEARCH_LIBS([arg_parse], [argtable2], [have_argtable2=yes], [have_argtable2=no])
+if test x$have_argtable2 = xno; then
+	echo "error: You need to install argtable2 (http://argtable.sourceforge.net/)"
+	exit 1
+fi
 
 PKG_CHECK_MODULES([confuse], [libconfuse])
 AC_SUBST(confuse_LIBS)
