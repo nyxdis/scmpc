@@ -180,7 +180,7 @@ void queue_save(void)
 			"# END SONG\n\n",current_song->artist,
 			current_song->title,current_song->album,
 			current_song->length,current_song->track,
-			current_song->date);
+			(long)current_song->date);
 		current_song = current_song->next;
 	}
 	fclose(cache_file);
