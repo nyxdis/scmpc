@@ -201,7 +201,7 @@ void mpd_parse(char *buf)
 			write(mpd_info->sockfd,"idle\n",5);
 		}
 		else if(strncmp(line,"file: ",6) == 0) {
-			if(strncmp(current_song.filename,&line[6],strlen(&line[6]))) {
+			if(strcmp(current_song.filename,&line[6])) {
 				free(current_song.filename);
 				free(current_song.artist);
 				current_song.artist = NULL;
@@ -235,6 +235,8 @@ void mpd_parse(char *buf)
 			sscanf(line,"%*s %*s %d.%d.%d",&mpd_info->version[0],
 				&mpd_info->version[1],&mpd_info->version[2]);
 			scmpc_log(INFO,"Connected to MPD.");
+			//write(mpd_info->sockfd,"currentsong\n",12);
+			write(mpd_info->sockfd,"status\n",7);
 			if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14) {
 				write(mpd_info->sockfd,"idle\n",5);
 				scmpc_log(INFO,"MPD >= 0.14, using idle");

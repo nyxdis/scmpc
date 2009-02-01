@@ -89,7 +89,7 @@ void queue_add(const char *artist, const char *title, const char *album,
 
 void queue_load(void)
 {
-	char *line, *artist, *album, *title;
+	char *line = NULL, *artist, *album, *title;
 	unsigned int length = 0;
 	unsigned short track = 0;
 	FILE *cache_file;
