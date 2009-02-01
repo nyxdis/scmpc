@@ -81,6 +81,7 @@ static int server_connect_tcp(const char *host, int port)
 		freeaddrinfo(result);
 		return -1;
 	}
+	if(result == NULL) return -1;
 
 	for(rp = result;rp != NULL;rp = rp->ai_next) {
 		if((sockfd = socket(rp->ai_family,rp->ai_socktype,
