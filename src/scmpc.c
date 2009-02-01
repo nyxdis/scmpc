@@ -126,10 +126,10 @@ int main(int argc, char *argv[])
 			last_queue_save = time(NULL);
 		}
 
-		if(current_song.date + (current_song.length / 2) <= time(NULL) /* current position >= 50% */
-			|| current_song.date + 240 <= time(NULL)) {		/* played for more than 240 seconds */
-			mpd_write("status"); /* check if there was no skipping */
-		}
+		//if(current_song.date + (current_song.length / 2) <= time(NULL) /* current position >= 50% */
+		//	|| current_song.date + 240 <= time(NULL)) {		/* played for more than 240 seconds */
+		//	mpd_write("status"); /* check if there was no skipping */
+		//}
 	}
 }
 
