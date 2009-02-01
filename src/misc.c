@@ -29,8 +29,6 @@
 #include <string.h>
 #include <time.h>
 
-#include <gcrypt.h>
-
 #include "misc.h"
 #include "md5.h"
 #include "audioscrobbler.h"
