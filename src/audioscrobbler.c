@@ -197,9 +197,9 @@ void as_now_playing(void)
 	album = curl_easy_escape(as_conn->handle,current_song.album,0);
 	title = curl_easy_escape(as_conn->handle,current_song.title,0);
 
-	asprintf(&querystring,"s=%s&a=%s&t=%s&b=%s&l=%d&n=%d&m=",
+	if(asprintf(&querystring,"s=%s&a=%s&t=%s&b=%s&l=%d&n=%d&m=",
 		as_conn->session_id,artist,title,album,current_song.length,
-		current_song.track);
+		current_song.track) < 0) return;
 
 	free(artist);
 	free(album);
@@ -247,7 +247,7 @@ static int build_querystring(char **qs, struct queue_node **last_song)
 	if((*qs = malloc(buffer_length)) == NULL)
 		return -1;
 
-	asprintf(&tmp,"s=%s",as_conn->session_id);
+	if(asprintf(&tmp,"s=%s",as_conn->session_id) < 0) return -1;
 	strcpy(*qs,tmp);
 	free(tmp);
 

@@ -135,15 +135,15 @@ void mpd_write(const char *string)
 
 	/* exit idle mode before sending commands */
 	if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
-		write(mpd_info->sockfd,"noidle\n",7);
+		if(write(mpd_info->sockfd,"noidle\n",7) < 0) return;
 
-	asprintf(&tmp,"%s\n",string);
-	write(mpd_info->sockfd,string,strlen(tmp));
+	if(asprintf(&tmp,"%s\n",string)) return;
+	if(write(mpd_info->sockfd,string,strlen(tmp)) < 0) return;
 	free(tmp);
 
 	/* re-enter idle mode */
 	if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
-		write(mpd_info->sockfd,"idle\n",7);
+		if(write(mpd_info->sockfd,"idle\n",7) < 0) return;
 }
 
 int mpd_connect(void)
@@ -165,7 +165,7 @@ int mpd_connect(void)
 	}
 
 	if(strlen(prefs.mpd_password) > 0) {
-		asprintf(&tmp,"password %s\n",prefs.mpd_password);
+		if(asprintf(&tmp,"password %s\n",prefs.mpd_password) < 0) return -1;
 		if(write(mpd_info->sockfd,tmp,strlen(tmp)) < 0) {
 			free(tmp);
 			scmpc_log(ERROR,"Failed to write to MPD: %s",
@@ -197,9 +197,9 @@ void mpd_parse(char *buf)
 		}
 		else if(strncmp(line,"changed: ",8) == 0) {
 			if(strncmp(line,"changed: player",14) == 0) {
-				write(mpd_info->sockfd,"currentsong\n",12);
+				if(write(mpd_info->sockfd,"currentsong\n",12) < 0) return;
 			}
-			write(mpd_info->sockfd,"idle\n",5);
+			if(write(mpd_info->sockfd,"idle\n",5) < 0) return;
 		}
 		else if(strncmp(line,"file: ",6) == 0) {
 			if(strcmp(current_song.filename,&line[6])) {
@@ -237,9 +237,9 @@ void mpd_parse(char *buf)
 				&mpd_info->version[1],&mpd_info->version[2]);
 			scmpc_log(INFO,"Connected to MPD.");
 			//write(mpd_info->sockfd,"currentsong\n",12);
-			write(mpd_info->sockfd,"status\n",7);
+			if(write(mpd_info->sockfd,"status\n",7) < 0) return;
 			if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14) {
-				write(mpd_info->sockfd,"idle\n",5);
+				if(write(mpd_info->sockfd,"idle\n",5) < 0) return;
 				scmpc_log(INFO,"MPD >= 0.14, using idle");
 			}
 		}
