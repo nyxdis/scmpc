@@ -89,7 +89,7 @@ void queue_add(const char *artist, const char *title, const char *album,
 
 void queue_load(void)
 {
-	char *line = NULL, *artist, *album, *title;
+	char line[256], *artist, *album, *title;
 	unsigned int length = 0;
 	unsigned short track = 0;
 	FILE *cache_file;
@@ -105,7 +105,7 @@ void queue_load(void)
 		return;
 	}
 	
-	while(getline(&line,NULL,cache_file) >= 0) {
+	while(fgets(line,sizeof line,cache_file)) {
 		if(strncmp(line,"# BEGIN SONG",12) == 0) {
 			free(artist); free(title); free(album);
 			artist = title = album = NULL;
@@ -130,10 +130,7 @@ void queue_load(void)
 			free(artist); free(title); free(album);
 			artist = title = album = NULL;
 		}
-		free(line);
-		line = NULL;
 	}
-	free(line);
 	free(artist); free(title); free(album);
 	fclose(cache_file);
 }
