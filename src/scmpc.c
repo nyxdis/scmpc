@@ -244,7 +244,7 @@ static int daemonise(void)
 void cleanup(void)
 {
 	if(queue.length > 0) queue_save();
-	if(prefs.fork == 1) scmpc_pid_remove();
+	if(prefs.fork) scmpc_pid_remove();
 	clear_preferences();
 	as_cleanup();
 	mpd_cleanup();
