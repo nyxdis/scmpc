@@ -210,6 +210,7 @@ static int parse_config_file(void)
 static int parse_command_line(int argc, char **argv)
 {
 	struct arg_lit *debug = arg_lit0("d","debug","Log everything.");
+	struct arg_lit *kill = arg_lit0("k","kill","Kill the running scmpc");
 	struct arg_lit *quiet = arg_lit0("q","quiet","Disable logging.");
 	struct arg_file *conf_file = arg_file0("f","config-file","<config_file>",
 			"The location of the configuration file.");
@@ -222,7 +223,7 @@ static int parse_command_line(int argc, char **argv)
 	struct arg_lit *help = arg_lit0("h","help","Print this help and exit.");
 	struct arg_end *end = arg_end(10);
 	void *argtable[] = {
-		debug, quiet, conf_file, pid_file, version, fork, help, end
+		debug, kill, quiet, conf_file, pid_file, version, fork, help, end
 	};
 	int n_errors;
 
@@ -277,6 +278,8 @@ static int parse_command_line(int argc, char **argv)
 		if (fork->count > 0) {
 			prefs.fork = 0;
 		}
+		if (kill->count > 0)
+			kill_scmpc();
 	}
 	arg_freetable(argtable,8);
 	return 0;
