@@ -249,3 +249,25 @@ void cleanup(void)
 	as_cleanup();
 	mpd_cleanup();
 }
+
+void kill_scmpc(void)
+{
+	FILE *pid_file = fopen(prefs.pid_file,"r");
+	pid_t pid;
+
+	if(pid_file == NULL) {
+		fputs("Unable to open PID file\n",stderr);
+		exit(EXIT_FAILURE);
+	}
+
+	if(fscanf(pid_file,"%u",&pid) < 1) {
+		fputs("Invalid PID file\n",stderr);
+		exit(EXIT_FAILURE);
+	}
+	
+	if(kill(pid,SIGTERM) < 0) {
+		fputs("Cannot kill running scmpc\n",stderr);
+		exit(EXIT_FAILURE);
+	}
+	exit(EXIT_SUCCESS);
+}

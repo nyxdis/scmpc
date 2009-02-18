@@ -25,3 +25,4 @@
 
 
 void cleanup(void);
+void kill_scmpc(void);
