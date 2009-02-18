@@ -39,7 +39,7 @@ static FILE *log_file;
 
 void open_log(const char *filename)
 {
-	if(prefs.fork == 0) {
+	if(!prefs.fork) {
 		log_file = stdout;
 		return;
 	}

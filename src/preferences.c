@@ -201,7 +201,7 @@ static int parse_config_file(void)
 	prefs.as_password = strdup(cfg_getstr(sec_as,"password"));
 	prefs.as_password_hash = strdup(cfg_getstr(sec_as,"password_hash"));
 
-	prefs.fork = 1;
+	prefs.fork = true;
 
 	cfg_free(cfg);
 	return 0;
@@ -270,14 +270,12 @@ static int parse_command_line(int argc, char **argv)
 			fputs("Specifying --debug and --quiet at the same time"
 					" makes no sense.",stderr);
 			return -1;
-		} else if (quiet->count > 0) {
+		} else if (quiet->count > 0)
 			prefs.log_level = NONE;
-		} else if (debug->count > 0) {
+		else if (debug->count > 0)
 			prefs.log_level = DEBUG;
-		}
-		if (fork->count > 0) {
-			prefs.fork = 0;
-		}
+		if (fork->count > 0)
+			prefs.fork = false;
 		if (kill->count > 0)
 			kill_scmpc();
 	}
