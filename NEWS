@@ -4,4 +4,4 @@
 - a lot of code cleanup
 - mpd idle support (mpd 0.14)
 - respect MPD_PORT/MPD_HOST from environment
-- support for the Last.fm submission protocol v1.2
+- support for the Last.fm submission protocol v1.2.1
