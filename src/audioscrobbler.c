@@ -188,11 +188,6 @@ void as_now_playing(void)
 		return;
 	}
 
-	if(current_song.artist == NULL || current_song.title == NULL) {
-		scmpc_log(INFO,"Not submitting: file is not tagged properly.");
-		return;
-	}
-
 	artist = curl_easy_escape(as_conn->handle,current_song.artist,0);
 	album = curl_easy_escape(as_conn->handle,current_song.album,0);
 	title = curl_easy_escape(as_conn->handle,current_song.title,0);
