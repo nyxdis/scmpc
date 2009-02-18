@@ -127,8 +127,9 @@ int main(int argc, char *argv[])
 		}
 
 		/* second condition checks if the song was played halfway through, third if it was played for more than 240 seconds */
-		if(current_song.date > 0 && (difftime(time(NULL),current_song.date) >= (current_song.length / 2) || difftime(time(NULL),current_song.date) >= 240)) {
-			mpd_write("status"); /* check if there was no skipping */
+		if(current_song.date > 0 && current_song.song_state == NEW && (difftime(time(NULL),current_song.date) >= (current_song.length / 2) || difftime(time(NULL),current_song.date) >= 240)) {
+			if(mpd_write("status") < 0) /* check if there was no skipping */
+				perror("MPD write failed:");
 		}
 	}
 }
