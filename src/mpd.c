@@ -229,8 +229,10 @@ void mpd_parse(char *buf)
 				if(current_song.artist != NULL && current_song.title != NULL) {
 					current_song.song_state = NEW;
 					as_now_playing();
-				} else
+				} else {
+					scmpc_log(INFO,"File is not tagged properly.");
 					current_song.song_state = INVALID;
+				}
 			}
 			continue;
 		}
