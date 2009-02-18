@@ -186,7 +186,6 @@ void mpd_parse(char *buf)
 
 	line = strtok_r(buf,"\n",&saveptr);
 	do {
-		scmpc_log(DEBUG,"mpd said: %s",line);
 		if(strncmp(line,"ACK",3) == 0) {
 			if(strstr(line,"incorrect password")) {
 				scmpc_log(ERROR,"[MPD] Incorrect password");
