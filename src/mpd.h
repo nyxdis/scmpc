@@ -33,6 +33,7 @@ struct mpd_song {
 	unsigned int current_post;
 	unsigned short track;
 	enum { STOPPED, PAUSED, PLAYING, UNKNOWN } mpd_state;
+	enum { NEW, INVALID, CHECK, SUBMITTED } song_state;
 	short crossfade;
 	time_t date;
 } current_song;
@@ -46,4 +47,4 @@ struct mpd_info {
 void mpd_parse(char *buf);
 int mpd_connect(void);
 void mpd_cleanup(void);
-void mpd_write(const char *string);
+int mpd_write(const char *string);

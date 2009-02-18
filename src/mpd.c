@@ -129,21 +129,23 @@ static int server_connect_tcp(const char *host, int port)
 	return sockfd;
 }
 
-void mpd_write(const char *string)
+int mpd_write(const char *string)
 {
-	char *tmp;
+	char tmp[256];
 
 	/* exit idle mode before sending commands */
 	if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
-		if(write(mpd_info->sockfd,"noidle\n",7) < 0) return;
+		sprintf(tmp,"noidle\n");
 
-	if(asprintf(&tmp,"%s\n",string)) return;
-	if(write(mpd_info->sockfd,string,strlen(tmp)) < 0) return;
-	free(tmp);
+	strncat(tmp,string,240);
+	strcat(tmp,"\n");
 
 	/* re-enter idle mode */
 	if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
-		if(write(mpd_info->sockfd,"idle\n",7) < 0) return;
+		strcat(tmp,"idle\n");
+
+	if(write(mpd_info->sockfd,tmp,strlen(tmp)) < 0) return -1;
+	return 0;
 }
 
 int mpd_connect(void)
@@ -225,18 +227,26 @@ void mpd_parse(char *buf)
 						current_song.track = atoi(strtok(&line[7],"/"));
 				}
 				current_song.date = time(NULL);
-				as_now_playing();
+				if(current_song.artist != NULL && current_song.title != NULL) {
+					current_song.song_state = NEW;
+					as_now_playing();
+				} else
+					current_song.song_state = INVALID;
 			}
 			continue;
 		}
-		else if(strncmp(line,"volume: ",8) == 0) {
-			
+		else if(strncmp(line,"time: ",6) == 0) {
+			/* check if the song has really been played for at least 240 seconds or more than 50% */
+			if(current_song.length > 0 && (strtol(&line[6],NULL,10) > 240 || strtol(&line[6],NULL,10) > current_song.length / 2)) {
+				queue_add(current_song.artist,current_song.title,current_song.album,current_song.length,current_song.track,current_song.date);
+				current_song.song_state = SUBMITTED;
+			} else
+				current_song.song_state = CHECK;
 		}
 		else if(strncmp(line,"OK MPD",6) == 0) {
 			sscanf(line,"%*s %*s %d.%d.%d",&mpd_info->version[0],
 				&mpd_info->version[1],&mpd_info->version[2]);
 			scmpc_log(INFO,"Connected to MPD.");
-			//write(mpd_info->sockfd,"currentsong\n",12);
 			if(write(mpd_info->sockfd,"status\n",7) < 0) return;
 			if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14) {
 				if(write(mpd_info->sockfd,"idle\n",5) < 0) return;
