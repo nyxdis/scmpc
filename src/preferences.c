@@ -229,7 +229,7 @@ static int parse_command_line(int argc, char **argv)
 
 	if (arg_nullcheck(argtable) != 0) {
 		fputs("Insufficient memory to parse command line options.",stderr);
-		arg_freetable(argtable,8);
+		arg_freetable(argtable,9);
 		return -1;
 	}
 
@@ -239,19 +239,19 @@ static int parse_command_line(int argc, char **argv)
 		fputs("Usage: " PACKAGE_NAME,stdout);
 		arg_print_syntax(stdout,argtable,"\n\n");
 		arg_print_glossary(stdout,argtable,"%s\n\t%s\n");
-		arg_freetable(argtable,8);
+		arg_freetable(argtable,9);
 		exit(EXIT_SUCCESS);
 	} else if (version->count > 0) {
 		puts(PACKAGE_STRING);
 		puts("An Audioscrobbler client for MPD.");
 		puts("Copyright 2009 Christoph Mende <angelos@unkreativ.org>");
 		puts("Based on Jonathan Coome's work on scmpc");
-		arg_freetable(argtable,8);
+		arg_freetable(argtable,9);
 		exit(EXIT_SUCCESS);
 	} else if (n_errors > 0) {
 		arg_print_errors(stderr,end,PACKAGE_NAME);
 		fputs("\nPlease see the --help option for more details.\n",stderr);
-		arg_freetable(argtable,8);
+		arg_freetable(argtable,9);
 		return -1;
 	} else {
 		/* This must be at the top, to avoid any options specified in the
@@ -279,7 +279,7 @@ static int parse_command_line(int argc, char **argv)
 		if (kill->count > 0)
 			kill_scmpc();
 	}
-	arg_freetable(argtable,8);
+	arg_freetable(argtable,9);
 	return 0;
 }
 
