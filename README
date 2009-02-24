@@ -1,6 +1,6 @@
 scmpc is a client for MPD that submits your tracks to Audioscrobbler
 
 The following packages are required to build and run scmpc:
-argtable	http://argtable.sourceforge.net/
+glib-2		http://www.gtk.org
 libconfuse	http://www.nongnu.org/confuse/
 libcurl		http://curl.haxx.se/libcurl (requires >= 7.15.4)

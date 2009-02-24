@@ -27,7 +27,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <argtable2.h>
+
+#include <glib.h>
 #include <confuse.h>
 
 #ifdef HAVE_CONFIG_H
@@ -209,77 +210,61 @@ static int parse_config_file(void)
 
 static int parse_command_line(int argc, char **argv)
 {
-	struct arg_lit *debug = arg_lit0("d","debug","Log everything.");
-	struct arg_lit *kill = arg_lit0("k","kill","Kill the running scmpc");
-	struct arg_lit *quiet = arg_lit0("q","quiet","Disable logging.");
-	struct arg_file *conf_file = arg_file0("f","config-file","<config_file>",
-			"The location of the configuration file.");
-	struct arg_file *pid_file = arg_file0("i","pid-file","<pid_file>",
-			"The location of the pid file.");
-	struct arg_lit *version = arg_lit0("v","version","Print the program "
-			"version.");
-	struct arg_lit *fork = arg_lit0("n","foreground","Run the program in the "
-			"foreground rather than as a daemon.");
-	struct arg_lit *help = arg_lit0("h","help","Print this help and exit.");
-	struct arg_end *end = arg_end(10);
-	void *argtable[] = {
-		debug, kill, quiet, conf_file, pid_file, version, fork, help, end
+	GError *error = NULL;
+	gchar *pid_file = NULL, *conf_file = NULL;
+	gboolean kill = FALSE, debug = FALSE, quiet = FALSE, version = FALSE, foreground = FALSE;
+	GOptionEntry entries[] = {
+		{ "debug", 'd', 0, G_OPTION_ARG_NONE, &debug, "Log everything.", NULL },
+		{ "kill", 'k', 0, G_OPTION_ARG_NONE, &kill, "Kill the running scmpc", NULL },
+		{ "quiet", 'q', 0, G_OPTION_ARG_NONE, &quiet, "Disable logging.", NULL },
+		{ "config-file", 'f', 0, G_OPTION_ARG_FILENAME, &conf_file, "The location of the configuration file.", "<config_file>" },
+		{ "pid-file", 'i', 0, G_OPTION_ARG_FILENAME, &pid_file, "The location of the pid file.", "<pid_file>" },
+		{ "version", 'v', 0, G_OPTION_ARG_NONE, &version, "Print the program version.", NULL },
+		{ "foreground", 'n', 0, G_OPTION_ARG_NONE, &foreground, "Run the program in the foreground rather than as a daemon.", NULL },
+		{ NULL }
 	};
-	int n_errors;
 
-	if (arg_nullcheck(argtable) != 0) {
-		fputs("Insufficient memory to parse command line options.",stderr);
-		arg_freetable(argtable,9);
+	GOptionContext *context = g_option_context_new("");
+	g_option_context_add_main_entries(context,entries,NULL);
+	if(!g_option_context_parse(context,&argc,&argv,&error)) {
+		g_print("%s\n",error->message);
+		g_option_context_free(context);
 		return -1;
 	}
 
-	n_errors = arg_parse(argc,argv,argtable);
-
-	if (help->count > 0) {
-		fputs("Usage: " PACKAGE_NAME,stdout);
-		arg_print_syntax(stdout,argtable,"\n\n");
-		arg_print_glossary(stdout,argtable,"%s\n\t%s\n");
-		arg_freetable(argtable,9);
-		exit(EXIT_SUCCESS);
-	} else if (version->count > 0) {
+	if (version) {
 		puts(PACKAGE_STRING);
 		puts("An Audioscrobbler client for MPD.");
 		puts("Copyright 2009 Christoph Mende <angelos@unkreativ.org>");
 		puts("Based on Jonathan Coome's work on scmpc");
-		arg_freetable(argtable,9);
 		exit(EXIT_SUCCESS);
-	} else if (n_errors > 0) {
-		arg_print_errors(stderr,end,PACKAGE_NAME);
-		fputs("\nPlease see the --help option for more details.\n",stderr);
-		arg_freetable(argtable,9);
-		return -1;
 	} else {
 		/* This must be at the top, to avoid any options specified in the
 		 * config file overriding those on the command line. */
-		if (conf_file->count > 0) {
+		if (conf_file != NULL) {
 			free(prefs.config_file);
-			prefs.config_file = strdup(conf_file->filename[0]);
+			prefs.config_file = strdup(conf_file);
 			if(parse_config_file() < 0)
 				return -1;
 		}
-		if (pid_file->count > 0) {
+		if (pid_file != NULL) {
 			free(prefs.pid_file);
-			prefs.pid_file = strdup(pid_file->filename[0]);
+			prefs.pid_file = strdup(pid_file);
 		}
-		if (quiet->count > 0 && debug->count > 0) {
+		if (quiet && debug) {
 			fputs("Specifying --debug and --quiet at the same time"
 					" makes no sense.",stderr);
 			return -1;
-		} else if (quiet->count > 0)
+		} else if (quiet)
 			prefs.log_level = NONE;
-		else if (debug->count > 0)
+		else if (debug)
 			prefs.log_level = DEBUG;
-		if (fork->count > 0)
+		if (!foreground)
 			prefs.fork = false;
-		if (kill->count > 0)
+		if (kill)
 			kill_scmpc();
 	}
-	arg_freetable(argtable,9);
+	g_option_context_free(context);
 	return 0;
 }
 
