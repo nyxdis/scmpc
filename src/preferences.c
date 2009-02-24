@@ -212,7 +212,7 @@ static int parse_command_line(int argc, char **argv)
 {
 	GError *error = NULL;
 	gchar *pid_file = NULL, *conf_file = NULL;
-	gboolean kill = FALSE, debug = FALSE, quiet = FALSE, version = FALSE, foreground = FALSE;
+	gboolean kill = FALSE, debug = FALSE, quiet = FALSE, version = FALSE, fork = TRUE;
 	GOptionEntry entries[] = {
 		{ "debug", 'd', 0, G_OPTION_ARG_NONE, &debug, "Log everything.", NULL },
 		{ "kill", 'k', 0, G_OPTION_ARG_NONE, &kill, "Kill the running scmpc", NULL },
@@ -220,7 +220,7 @@ static int parse_command_line(int argc, char **argv)
 		{ "config-file", 'f', 0, G_OPTION_ARG_FILENAME, &conf_file, "The location of the configuration file.", "<config_file>" },
 		{ "pid-file", 'i', 0, G_OPTION_ARG_FILENAME, &pid_file, "The location of the pid file.", "<pid_file>" },
 		{ "version", 'v', 0, G_OPTION_ARG_NONE, &version, "Print the program version.", NULL },
-		{ "foreground", 'n', 0, G_OPTION_ARG_NONE, &foreground, "Run the program in the foreground rather than as a daemon.", NULL },
+		{ "foreground", 'n', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &fork, "Run the program in the foreground rather than as a daemon.", NULL },
 		{ NULL }
 	};
 
@@ -259,7 +259,7 @@ static int parse_command_line(int argc, char **argv)
 			prefs.log_level = NONE;
 		else if (debug)
 			prefs.log_level = DEBUG;
-		if (!foreground)
+		if (!fork)
 			prefs.fork = false;
 		if (kill)
 			kill_scmpc();
