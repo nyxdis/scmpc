@@ -265,6 +265,8 @@ static int parse_command_line(int argc, char **argv)
 			kill_scmpc();
 	}
 	g_option_context_free(context);
+	g_free(pid_file);
+	g_free(conf_file);
 	return 0;
 }
 
