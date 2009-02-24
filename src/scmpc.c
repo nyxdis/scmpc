@@ -121,16 +121,22 @@ int main(int argc, char *argv[])
 					strerror(errno));
 		}
 
+		/* save queue */
 		if(difftime(time(NULL),last_queue_save) >= prefs.cache_interval * 60) {
 			queue_save();
 			last_queue_save = time(NULL);
 		}
 
-		/* second condition checks if the song was played halfway through, third if it was played for more than 240 seconds */
+		/* Check if song is eligible for submission
+		 * second condition checks if the song was played halfway through, third if it was played for more than 240 seconds */
 		if(current_song.date > 0 && current_song.song_state == NEW && (difftime(time(NULL),current_song.date) >= (current_song.length / 2) || difftime(time(NULL),current_song.date) >= 240)) {
 			if(mpd_write("status") < 0) /* check if there was no skipping */
 				perror("MPD write failed:");
 		}
+
+		/* submit queue */
+		if(queue.length > 0)
+			as_submit();
 	}
 }
 

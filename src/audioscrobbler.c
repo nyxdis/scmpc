@@ -276,13 +276,7 @@ static int build_querystring(char **qs, struct queue_node **last_song)
 			}
 		}
 
-		if(strlen(*qs) + strlen(tmp) > buffer_length) {
-			scmpc_log(ERROR,"This song's information is too long."
-				"Discarding.");
-			free(tmp);
-			song = song->next;
-			continue;
-		}
+		strncat(*qs,tmp,buffer_length-current_length);
 		free(tmp);
 		num++;
 		song = song->next;
