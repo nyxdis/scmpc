@@ -32,7 +32,7 @@ struct as_connection {
 	gchar *submit_url;
 	gchar *np_url;
 	gchar password[33];
-	time_t last_handshake;
+	glong last_handshake;
 	enum connection_status status;
 	CURL *handle;
 	struct curl_slist *headers;
