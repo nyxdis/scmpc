@@ -104,17 +104,17 @@ void as_handshake(void)
 	}
 
 	if(strlen(prefs.as_password_hash) > 0) {
-		if(asprintf(&tmp,"%s%ld",prefs.as_password_hash,timestamp) < 0) return;
+		tmp = g_strdup_printf("%s%ld",prefs.as_password_hash,timestamp);
 	} else {
-		auth_token = md5_hash(prefs.as_password);
-		if(asprintf(&tmp,"%s%ld",auth_token,timestamp) < 0) return;
-		free(auth_token);
+		auth_token = g_compute_checksum_for_string(G_CHECKSUM_MD5,prefs.as_password,-1);
+		tmp = g_strdup_printf("%s%ld",auth_token,timestamp);
+		g_free(auth_token);
 	}
-	auth_token = md5_hash(tmp);
-	free(tmp);
-	if(asprintf(&handshake_url,HANDSHAKE_URL,PACKAGE_VERSION,prefs.as_username,
-		timestamp,auth_token) < 0) return;
-	free(auth_token);
+	auth_token = g_compute_checksum_for_string(G_CHECKSUM_MD5,tmp,-1);
+	g_free(tmp);
+	handshake_url = g_strdup_printf(HANDSHAKE_URL,PACKAGE_VERSION,
+		prefs.as_username,timestamp,auth_token);
+	g_free(auth_token);
 
 	scmpc_log(DEBUG,"handshake_url = %s",handshake_url);
 
@@ -123,7 +123,7 @@ void as_handshake(void)
 	curl_easy_setopt(as_conn->handle,CURLOPT_URL,handshake_url);
 
 	ret = curl_easy_perform(as_conn->handle);
-	free(handshake_url);
+	g_free(handshake_url);
 
 	if(ret != 0) {
 		scmpc_log(ERROR,"Could not connect to the Audioscrobbler: %s",
@@ -192,9 +192,9 @@ void as_now_playing(void)
 	album = curl_easy_escape(as_conn->handle,current_song.album,0);
 	title = curl_easy_escape(as_conn->handle,current_song.title,0);
 
-	if(asprintf(&querystring,"s=%s&a=%s&t=%s&b=%s&l=%d&n=%d&m=",
+	querystring = g_strdup_printf("s=%s&a=%s&t=%s&b=%s&l=%d&n=%d&m=",
 		as_conn->session_id,artist,title,album,current_song.length,
-		current_song.track) < 0) return;
+		current_song.track);
 
 	free(artist);
 	free(album);
@@ -207,7 +207,7 @@ void as_now_playing(void)
 	curl_easy_setopt(as_conn->handle,CURLOPT_URL,as_conn->np_url);
 
 	ret = curl_easy_perform(as_conn->handle);
-	free(querystring);
+	g_free(querystring);
 	if(ret != 0) {
 		scmpc_log(ERROR,"Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
@@ -236,33 +236,28 @@ static int build_querystring(char **qs, struct queue_node **last_song)
 {
 	char *artist, *title, *album, *nqs, *tmp;
 	int ret, num = 0;
-	size_t buffer_length = 1024, current_length = 0;
+	gsize buffer_length = 1024, current_length = 0;
 	struct queue_node *song = queue.first;
 
 	if((*qs = malloc(buffer_length)) == NULL)
 		return -1;
 
-	if(asprintf(&tmp,"s=%s",as_conn->session_id) < 0) return -1;
+	tmp = g_strdup_printf("s=%s",as_conn->session_id);
 	strcpy(*qs,tmp);
-	free(tmp);
+	g_free(tmp);
 
 	while(song != NULL && num < 10) {
 		artist = curl_easy_escape(as_conn->handle,song->artist,0);
 		title = curl_easy_escape(as_conn->handle,song->title,0);
 		album = curl_easy_escape(as_conn->handle,song->album,0);
 
-		ret = asprintf(&tmp,"&a[%d]=%s&t[%d]=%s&i[%d]=%ld&o[%d]=P"
+		tmp = g_strdup_printf("&a[%d]=%s&t[%d]=%s&i[%d]=%ld&o[%d]=P"
 			"&r[%d]=&l[%d]=%d&b[%d]=%s&n[%d]=&m[%d]=",num,artist,
 			num,title,num,song->date,num,num,num,song->length,num,
 			album,num,num);
 		curl_free(artist); curl_free(title); curl_free(album);
-		if(ret < 0) {
-			free(*qs);
-			*qs = NULL;
-			return -1;
-		}
 
-		current_length += ret;
+		current_length += strlen(tmp);;
 
 		if(current_length > buffer_length) {
 			buffer_length *= 2;
@@ -277,6 +272,14 @@ static int build_querystring(char **qs, struct queue_node **last_song)
 		}
 
 		strncat(*qs,tmp,buffer_length-current_length);
+		if(g_strlcat(*qs,tmp,buffer_length) >= (int)buffer_length) {
+			/* We tried, but the song is still too large for the buffer. */
+			scmpc_log(ERROR, "This song's information is unrealistically "
+				"long. Discarding.");
+			free(tmp);
+			song = song->next;
+			continue;
+		}
 		free(tmp);
 		num++;
 		song = song->next;
@@ -319,7 +322,7 @@ int as_submit(void)
 	else if(strncmp(line,"FAILED",6) == 0) {
 		if(strcmp(last_failed,&line[7]) != 0) {
 			memset(last_failed,0,sizeof(last_failed));
-			strncpy(last_failed,&line[7],sizeof(last_failed));
+			g_strlcpy(last_failed,&line[7],sizeof(last_failed));
 			scmpc_log(INFO,"Audioscrobbler returned FAILED: %s",
 				&line[7]);
 		}

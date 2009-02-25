@@ -101,7 +101,7 @@ void queue_load(void)
 	if((cache_file = fopen(prefs.cache_file,"r")) == NULL) {
 		if(errno != ENOENT)
 			scmpc_log(INFO,"Failed to open cache file for reading: %s",
-				strerror(errno));
+				g_strerror(errno));
 		return;
 	}
 	
@@ -162,7 +162,7 @@ void queue_save(void)
 
 	if((cache_file = fopen(prefs.cache_file,"w")) == NULL) {
 		scmpc_log(ERROR,"Failed to open cache file for writing: %s",
-			strerror(errno));
+			g_strerror(errno));
 		return;
 	}
 
