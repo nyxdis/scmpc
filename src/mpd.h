@@ -24,6 +24,8 @@
  */
 
 
+#include <glib.h>
+
 struct mpd_song {
 	gchar *artist;
 	gchar *album;

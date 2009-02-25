@@ -24,6 +24,8 @@
  */
 
 
+#include <glib.h>
+
 struct queue_node {
 	struct queue_node *next;
 	gchar *artist;

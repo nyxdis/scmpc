@@ -25,12 +25,8 @@
 
 
 #include <errno.h>
-#include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
-#include <sys/select.h>
 #include <sys/stat.h>
 
 #include "misc.h"
@@ -46,7 +42,7 @@ static gint scmpc_pid_create(void);
 static gint scmpc_pid_remove(void);
 
 static void sighandler(gint sig);
-static gint daemonise(void);
+static void daemonise(void);
 gconstpointer pid_filename(void);
 
 int main(int argc, char *argv[])
@@ -60,7 +56,7 @@ int main(int argc, char *argv[])
 	time_t last_queue_save = 0;
 
 	if(init_preferences(argc,argv) < 0)
-		exit(EXIT_FAILURE);
+		g_error("Config file parsing failed");
 
 	/* Open the log file before forking, so that if there is an error, the
 	 * user will get some idea what is going on */
@@ -68,18 +64,13 @@ int main(int argc, char *argv[])
 
 	/* Check if scmpc is already running */
 	if((pid = scmpc_is_running()) > 0) {
-		fprintf(stderr,"Daemon is already running with PID: %u\n",pid);
 		clear_preferences();
-		exit(EXIT_FAILURE);
+		g_error("Daemon is already running with PID: %u",pid);
 	}
 
 	/* Daemonise if wanted */
-	if(prefs.fork) {
-		if(daemonise() < 0) {
-			clear_preferences();
-			exit(EXIT_FAILURE);
-		}
-	}
+	if(prefs.fork)
+		daemonise();
 
 	/* Signal handler */
 	sa.sa_handler = sighandler;
@@ -222,14 +213,14 @@ static void sighandler(gint sig)
 	exit(EXIT_SUCCESS);
 }
 
-static gint daemonise(void)
+static void daemonise(void)
 {
 	pid_t pid;
 
 	if((pid = fork()) < 0) {
 		/* Something went wrong... */
-		fputs("Could not fork process.",stderr);
-		return -1;
+		clear_preferences();
+		g_error("Could not fork process.");
 	} else if(pid) { /* The parent */
 		exit(EXIT_SUCCESS);
 	} else { /* The child */
@@ -238,11 +229,10 @@ static gint daemonise(void)
 
 		/* Create the PID file */
 		if(scmpc_pid_create() < 0) {
-			scmpc_log(ERROR,"Failed to create PID file");
-			return -1;
+			clear_preferences();
+			g_error("Failed to create PID file");
 		}
 	}
-	return 0;
 }
 
 void cleanup(void)
@@ -259,19 +249,14 @@ void kill_scmpc(void)
 	FILE *pid_file = fopen(prefs.pid_file,"r");
 	pid_t pid;
 
-	if(pid_file == NULL) {
-		fputs("Unable to open PID file\n",stderr);
-		exit(EXIT_FAILURE);
-	}
+	if(pid_file == NULL)
+		g_error("Unable to open PID file");
 
-	if(fscanf(pid_file,"%u",&pid) < 1) {
-		fputs("Invalid PID file\n",stderr);
-		exit(EXIT_FAILURE);
-	}
+	if(fscanf(pid_file,"%u",&pid) < 1)
+		g_error("Invalid PID file");
 	
-	if(kill(pid,SIGTERM) < 0) {
-		fputs("Cannot kill running scmpc\n",stderr);
-		exit(EXIT_FAILURE);
-	}
+	if(kill(pid,SIGTERM) < 0)
+		g_error("Cannot kill running scmpc");
+
 	exit(EXIT_SUCCESS);
 }

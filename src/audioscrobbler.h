@@ -25,6 +25,7 @@
 
 
 #include <curl/curl.h>
+#include <glib.h>
 
 struct as_connection {
 	gchar *session_id;
