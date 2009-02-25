@@ -32,7 +32,7 @@ AC_TYPE_PID_T
 # Checks for library functions.
 AC_FUNC_FORK
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([memset select socket strstr strtol])
+AC_CHECK_FUNCS([memset select socket strtol])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

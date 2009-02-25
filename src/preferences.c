@@ -277,7 +277,7 @@ gint init_preferences(gint argc, gchar **argv)
 	if(tmp != NULL) {
 		g_free(prefs.mpd_password);
 		g_free(prefs.mpd_hostname);
-		if(strstr(tmp,"@")) {
+		if(g_strrstr(tmp,"@")) {
 			prefs.mpd_password = g_strdup(strtok_r(tmp,"@",&saveptr));
 			prefs.mpd_hostname = g_strdup(strtok_r(NULL,"@",&saveptr));
 		} else {
