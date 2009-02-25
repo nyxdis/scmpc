@@ -202,7 +202,7 @@ static int parse_config_file(void)
 	prefs.as_password = strdup(cfg_getstr(sec_as,"password"));
 	prefs.as_password_hash = strdup(cfg_getstr(sec_as,"password_hash"));
 
-	prefs.fork = true;
+	prefs.fork = TRUE;
 
 	cfg_free(cfg);
 	return 0;
@@ -261,7 +261,7 @@ static int parse_command_line(int argc, char **argv)
 		else if (debug)
 			prefs.log_level = DEBUG;
 		if (!fork)
-			prefs.fork = false;
+			prefs.fork = FALSE;
 		if (kill)
 			kill_scmpc();
 	}
