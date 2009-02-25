@@ -45,5 +45,3 @@ void scmpc_log(enum loglevel, const char *format, ...);
 
 /* used by curl */
 gsize buffer_write(void *input, gsize size, gsize nmemb, void *buf);
-
-char *md5_hash(const char *text);

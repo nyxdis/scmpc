@@ -153,7 +153,7 @@ int mpd_connect(void)
 	char *tmp;
 
 	mpd_info = calloc(sizeof(struct mpd_info),1);
-	current_song.filename = strdup("");
+	current_song.filename = g_strdup("");
 	mpd_info->status = DISCONNECTED;
 	if(strncmp(prefs.mpd_hostname,"/",1) == 0)
 		mpd_info->sockfd = server_connect_unix(prefs.mpd_hostname);
@@ -169,12 +169,12 @@ int mpd_connect(void)
 	if(strlen(prefs.mpd_password) > 0) {
 		tmp = g_strdup_printf("password %s\n",prefs.mpd_password);
 		if(write(mpd_info->sockfd,tmp,strlen(tmp)) < 0) {
-			free(tmp);
+			g_free(tmp);
 			scmpc_log(ERROR,"Failed to write to MPD: %s",
 				g_strerror(errno));
 			return -1;
 		}
-		free(tmp);
+		g_free(tmp);
 	}
 	mpd_info->status = CONNECTED;
 	return 0;
@@ -204,22 +204,22 @@ void mpd_parse(char *buf)
 		}
 		else if(strncmp(line,"file: ",6) == 0) {
 			if(strcmp(current_song.filename,&line[6])) {
-				free(current_song.filename);
-				free(current_song.artist);
+				g_free(current_song.filename);
+				g_free(current_song.artist);
 				current_song.artist = NULL;
-				free(current_song.title);
+				g_free(current_song.title);
 				current_song.artist = NULL;
-				free(current_song.album);
+				g_free(current_song.album);
 				current_song.artist = NULL;
 				current_song.track = 0;
-				current_song.filename = strdup(&line[6]);
+				current_song.filename = g_strdup(&line[6]);
 				while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
 					if(strncmp(line,"Artist: ",8) == 0)
-						current_song.artist = strdup(&line[8]);
+						current_song.artist = g_strdup(&line[8]);
 					if(strncmp(line,"Album: ",7) == 0)
-						current_song.album = strdup(&line[7]);
+						current_song.album = g_strdup(&line[7]);
 					if(strncmp(line,"Title: ",7) == 0)
-						current_song.title = strdup(&line[7]);
+						current_song.title = g_strdup(&line[7]);
 					if(strncmp(line,"Time: ",6) == 0)
 						current_song.length = atoi(&line[6]);
 					if(strncmp(line,"Track: ",7) == 0)
@@ -261,8 +261,8 @@ void mpd_cleanup(void)
 {
 	close(mpd_info->sockfd);
 	free(mpd_info);
-	free(current_song.filename);
-	free(current_song.artist);
-	free(current_song.title);
-	free(current_song.album);
+	g_free(current_song.filename);
+	g_free(current_song.artist);
+	g_free(current_song.title);
+	g_free(current_song.album);
 }

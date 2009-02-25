@@ -55,7 +55,7 @@ extern struct preferences prefs;
 int main(int argc, char *argv[])
 {
 	int sr;
-	char buf[256];
+	gchar *buf;
 	fd_set read_flags;
 	pid_t pid;
 	struct sigaction sa;
@@ -112,13 +112,14 @@ int main(int argc, char *argv[])
 			continue;
 
 		if(FD_ISSET(mpd_info->sockfd,&read_flags)) {
-			memset(buf,0,sizeof(buf));
-			sr = read(mpd_info->sockfd,buf,sizeof(buf)-1);
+			buf = g_malloc0(256);
+			sr = read(mpd_info->sockfd,buf,255);
 			if(sr > 0)
 				mpd_parse(buf);
 			else
 				scmpc_log(ERROR,"Failed to read from MPD: %s",
 					g_strerror(errno));
+			g_free(buf);
 		}
 
 		/* save queue */
