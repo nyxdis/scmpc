@@ -36,7 +36,7 @@
 
 static FILE *log_file;
 
-void open_log(const char *filename)
+void open_log(gconstpointer filename)
 {
 	if(!prefs.fork) {
 		log_file = stdout;
@@ -50,9 +50,9 @@ void open_log(const char *filename)
 	}
 }
 
-void scmpc_log(enum loglevel level, const char *format, ...)
+void scmpc_log(enum loglevel level, gconstpointer format, ...)
 {
-	char *ts;
+	gchar *ts;
 	time_t t;
 	va_list ap;
 

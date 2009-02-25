@@ -41,17 +41,17 @@
 #include "scmpc.h"
 
 /* Static function prototypes */
-static int scmpc_is_running(void);
-static int scmpc_pid_create(void);
-static int scmpc_pid_remove(void);
+static gint scmpc_is_running(void);
+static gint scmpc_pid_create(void);
+static gint scmpc_pid_remove(void);
 
-static void sighandler(int sig);
-static int daemonise(void);
-const char *pid_filename(void);
+static void sighandler(gint sig);
+static gint daemonise(void);
+gconstpointer pid_filename(void);
 
 int main(int argc, char *argv[])
 {
-	int sr;
+	gint sr;
 	gchar *buf;
 	fd_set read_flags;
 	pid_t pid;
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 	}
 }
 
-static int scmpc_is_running(void)
+static gint scmpc_is_running(void)
 {
 	FILE *pid_file = fopen(prefs.pid_file,"r");
 	pid_t pid;
@@ -191,7 +191,7 @@ static int scmpc_is_running(void)
 	return 0;
 }
 
-static int scmpc_pid_create(void)
+static gint scmpc_pid_create(void)
 {
 	FILE *pid_file = fopen(prefs.pid_file,"w");
 	if(pid_file == NULL) {
@@ -205,7 +205,7 @@ static int scmpc_pid_create(void)
 	return 0;
 }
 
-static int scmpc_pid_remove(void)
+static gint scmpc_pid_remove(void)
 {
         if(unlink(prefs.pid_file) < 0) {
                 scmpc_log(ERROR,"Could not remove pid file: %s",g_strerror(errno));
@@ -215,14 +215,14 @@ static int scmpc_pid_remove(void)
 
 }
 
-static void sighandler(int sig)
+static void sighandler(gint sig)
 {
 	scmpc_log(INFO,"Caught signal %d, exiting.",sig);
 	cleanup();
 	exit(EXIT_SUCCESS);
 }
 
-static int daemonise(void)
+static gint daemonise(void)
 {
 	pid_t pid;
 

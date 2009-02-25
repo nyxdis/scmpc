@@ -27,23 +27,23 @@
 #include <glib.h>
 
 struct preferences {
-        char *mpd_hostname;
-        int mpd_port;
-	int mpd_interval;
-        int mpd_timeout;
-        char *mpd_password;
-        gboolean fork;
-        enum loglevel log_level;
-        char *config_file;
-        char *log_file;
-        char *pid_file;
-        char *as_username;
-        char *as_password;
-        char *as_password_hash;
-        char *cache_file;
-        int queue_length;
-        int cache_interval;
+	gchar *mpd_hostname;
+	gint mpd_port;
+	gint mpd_interval;
+	gint mpd_timeout;
+	gchar *mpd_password;
+	gboolean fork;
+	enum loglevel log_level;
+	gchar *config_file;
+	gchar *log_file;
+	gchar *pid_file;
+	gchar *as_username;
+	gchar *as_password;
+	gchar *as_password_hash;
+	gchar *cache_file;
+	gint queue_length;
+	gint cache_interval;
 } prefs;
 
-int init_preferences(int argc, char *argv[]);
+gint init_preferences(gint argc, gchar *argv[]);
 void clear_preferences(void);

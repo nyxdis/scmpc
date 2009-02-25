@@ -40,8 +40,8 @@ enum connection_status {
 	BADAUTH
 };
 
-void open_log(const char *filename);
-void scmpc_log(enum loglevel, const char *format, ...);
+void open_log(gconstpointer filename);
+void scmpc_log(enum loglevel, gconstpointer format, ...);
 
 /* used by curl */
 gsize buffer_write(void *input, gsize size, gsize nmemb, void *buf);

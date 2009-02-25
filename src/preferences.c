@@ -39,7 +39,7 @@
 #include "misc.h"
 #include "preferences.h"
 
-static int cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
+static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
 	if(strncmp(value,"off",3) == 0)
 		*(enum loglevel *)result = NONE;
@@ -57,9 +57,9 @@ static int cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *res
 	return 0;
 }
 
-static int cf_validate_num(cfg_t *cfg, cfg_opt_t *opt)
+static gint cf_validate_num(cfg_t *cfg, cfg_opt_t *opt)
 {
-	int value = cfg_opt_getnint(opt,0);
+	gint value = cfg_opt_getnint(opt,0);
 	if(value <= 0) {
 		cfg_error(cfg,"'%s' in section '%s' cannot be a negative value"
 			" or zero.",
@@ -69,9 +69,9 @@ static int cf_validate_num(cfg_t *cfg, cfg_opt_t *opt)
 	return 0;
 }
 
-static int cf_validate_num_zero(cfg_t *cfg, cfg_opt_t *opt)
+static gint cf_validate_num_zero(cfg_t *cfg, cfg_opt_t *opt)
 {
-	int value = cfg_opt_getnint(opt,0);
+	gint value = cfg_opt_getnint(opt,0);
 	if(value < 0) {
 		cfg_error(cfg,"'%s' in section '%s' cannot be a negative value.",
 			cfg_opt_name(opt),cfg_name(cfg));
@@ -80,17 +80,17 @@ static int cf_validate_num_zero(cfg_t *cfg, cfg_opt_t *opt)
 	return 0;
 }
 
-static void free_config_files(char **config_files)
+static void free_config_files(gchar **config_files)
 {
-	short int i;
+	gshort i;
 	for(i=0;i<3;i++)
 		g_free(config_files[i]);
 }
 
-static int parse_files(cfg_t *cfg)
+static gint parse_files(cfg_t *cfg)
 {
-	short int i;
-	char *config_files[3], *home;
+	gshort i;
+	gchar *config_files[3], *home;
 
 	home = getenv("HOME");
 
@@ -126,7 +126,7 @@ static int parse_files(cfg_t *cfg)
 	return 0;
 }
 
-static int parse_config_file(void)
+static gint parse_config_file(void)
 {
 	cfg_t *cfg, *sec_as, *sec_mpd;
 
@@ -202,7 +202,7 @@ static int parse_config_file(void)
 	return 0;
 }
 
-static int parse_command_line(int argc, char **argv)
+static gint parse_command_line(gint argc, gchar **argv)
 {
 	GError *error = NULL;
 	gchar *pid_file = NULL, *conf_file = NULL;
@@ -264,9 +264,9 @@ static int parse_command_line(int argc, char **argv)
 	return 0;
 }
 
-int init_preferences(int argc, char **argv)
+gint init_preferences(gint argc, gchar **argv)
 {
-	char *tmp, *saveptr;
+	gchar *tmp, *saveptr;
 
 	if(parse_config_file() < 0)
 		return -1;

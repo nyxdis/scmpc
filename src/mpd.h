@@ -25,26 +25,26 @@
 
 
 struct mpd_song {
-	char *artist;
-	char *album;
-	char *title;
-	char *filename;
-	unsigned int length;
-	unsigned int current_post;
-	unsigned short track;
+	gchar *artist;
+	gchar *album;
+	gchar *title;
+	gchar *filename;
+	guint length;
+	guint current_post;
+	gushort track;
 	enum { STOPPED, PAUSED, PLAYING, UNKNOWN } mpd_state;
 	enum { NEW, INVALID, CHECK, SUBMITTED } song_state;
-	short crossfade;
+	gshort crossfade;
 	time_t date;
 } current_song;
 
 struct mpd_info {
-	int sockfd;
-	int version[3];
+	gint sockfd;
+	guint8 version[3];
 	enum connection_status status;
 } *mpd_info;
 
-void mpd_parse(char *buf);
-int mpd_connect(void);
+void mpd_parse(gchar *buf);
+gint mpd_connect(void);
 void mpd_cleanup(void);
-int mpd_write(const char *string);
+gint mpd_write(gconstpointer string);
