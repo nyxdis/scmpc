@@ -162,16 +162,16 @@ int mpd_connect(void)
 			prefs.mpd_port);
 
 	if(mpd_info->sockfd < 0) {
-		scmpc_log(ERROR,"Failed to connect to MPD: %s",strerror(errno));
+		scmpc_log(ERROR,"Failed to connect to MPD: %s",g_strerror(errno));
 		return -1;
 	}
 
 	if(strlen(prefs.mpd_password) > 0) {
-		if(asprintf(&tmp,"password %s\n",prefs.mpd_password) < 0) return -1;
+		tmp = g_strdup_printf("password %s\n",prefs.mpd_password);
 		if(write(mpd_info->sockfd,tmp,strlen(tmp)) < 0) {
 			free(tmp);
 			scmpc_log(ERROR,"Failed to write to MPD: %s",
-				strerror(errno));
+				g_strerror(errno));
 			return -1;
 		}
 		free(tmp);

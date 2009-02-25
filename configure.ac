@@ -11,7 +11,7 @@ AM_INIT_AUTOMAKE([dist-bzip2 foreign])
 AC_PROG_CC
 
 # Checks for libraries.
-PKG_CHECK_MODULES([glib], [glib-2.0])
+PKG_CHECK_MODULES([glib], [glib-2.0 >= 2.16])
 AC_SUBST(glib_LIBS)
 AC_SUBST(glib_CFLAGS)
 

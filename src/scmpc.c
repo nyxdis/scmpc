@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 				mpd_parse(buf);
 			else
 				scmpc_log(ERROR,"Failed to read from MPD: %s",
-					strerror(errno));
+					g_strerror(errno));
 		}
 
 		/* save queue */
@@ -150,7 +150,7 @@ static int scmpc_is_running(void)
 	if(pid_file == NULL) {
 		/* Unable to open PID file, returning error */
 		scmpc_log(ERROR,"Cannot open pid file (%s) for reading: %s",
-				prefs.pid_file,strerror(errno));
+				prefs.pid_file,g_strerror(errno));
 		return -1;
 	}
 
@@ -198,7 +198,7 @@ static int scmpc_pid_create(void)
 	FILE *pid_file = fopen(prefs.pid_file,"w");
 	if(pid_file == NULL) {
 		scmpc_log(ERROR, "Cannot open pid file (%s) for writing: "
-				"%s\n",prefs.pid_file,strerror(errno));
+				"%s\n",prefs.pid_file,g_strerror(errno));
 		return -1;
 	}
 
@@ -210,7 +210,7 @@ static int scmpc_pid_create(void)
 static int scmpc_pid_remove(void)
 {
         if(unlink(prefs.pid_file) < 0) {
-                scmpc_log(ERROR,"Could not remove pid file: %s",strerror(errno));
+                scmpc_log(ERROR,"Could not remove pid file: %s",g_strerror(errno));
                 return 1;
 	}
 	return 0;

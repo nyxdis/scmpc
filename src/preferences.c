@@ -83,7 +83,7 @@ static void free_config_files(char **config_files)
 {
 	short int i;
 	for(i=0;i<3;i++)
-		free(config_files[i]);
+		g_free(config_files[i]);
 }
 
 static int parse_files(cfg_t *cfg)
@@ -94,23 +94,16 @@ static int parse_files(cfg_t *cfg)
 	home = getenv("HOME");
 
 	if(home == NULL) {
-		config_files[0] = strdup("");
-		config_files[1] = strdup("");
+		config_files[0] = g_strdup("");
+		config_files[1] = g_strdup("");
 	} else {
-		if((asprintf(&(config_files[0]),"%s/.scmpcrc",home)) == -1)
-			return -1;
-		if((asprintf(&(config_files[1]),"%s/.scmpc/scmpc.conf",home)) == -1){
-			free(config_files[0]);
-			return -1;
-		}
+		config_files[0] = g_strdup_printf("%s/.scmpcrc",home);
+		config_files[1] = g_strdup_printf("%s/.scmpc/scmpc.conf",home);
 	}
-	config_files[2] = strdup(SYSCONFDIR "/scmpc.conf");
+	config_files[2] = g_strdup(SYSCONFDIR "/scmpc.conf");
 
 	for(i=0;i<3;i++)
 	{
-		if(config_files[i] == NULL)
-			return -1;
-
 		switch(cfg_parse(cfg,config_files[i]))
 		{
 			case CFG_PARSE_ERROR:
