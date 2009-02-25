@@ -203,6 +203,12 @@ void mpd_parse(gchar *buf)
 		}
 		else if(strncmp(line,"file: ",6) == 0) {
 			if(strcmp(current_song.filename,&line[6])) {
+				GTimeVal tv;
+				glong ts;
+
+				g_get_current_time(&tv);
+				ts = tv.tv_sec;
+
 				g_free(current_song.filename);
 				g_free(current_song.artist);
 				current_song.artist = NULL;
@@ -224,7 +230,7 @@ void mpd_parse(gchar *buf)
 					if(strncmp(line,"Track: ",7) == 0)
 						current_song.track = atoi(strtok(&line[7],"/"));
 				}
-				current_song.date = time(NULL);
+				current_song.date = ts;
 				if(current_song.artist != NULL && current_song.title != NULL) {
 					current_song.song_state = NEW;
 					as_now_playing();
@@ -244,7 +250,7 @@ void mpd_parse(gchar *buf)
 				current_song.song_state = CHECK;
 		}
 		else if(strncmp(line,"OK MPD",6) == 0) {
-			sscanf(line,"%*s %*s %hhu.%hhu.%hhu",&mpd_info->version[0],
+			sscanf(line,"%*s %*s %hu.%hu.%hu",&mpd_info->version[0],
 				&mpd_info->version[1],&mpd_info->version[2]);
 			scmpc_log(INFO,"Connected to MPD.");
 			if(write(mpd_info->sockfd,"status\n",7) < 0) return;

@@ -27,22 +27,22 @@
 #include <glib.h>
 
 struct mpd_song {
-	gchar *artist;
-	gchar *album;
-	gchar *title;
-	gchar *filename;
-	guint length;
-	guint current_post;
-	gushort track;
-	enum { STOPPED, PAUSED, PLAYING, UNKNOWN } mpd_state;
 	enum { NEW, INVALID, CHECK, SUBMITTED } song_state;
+	enum { STOPPED, PAUSED, PLAYING, UNKNOWN } mpd_state;
+	gchar *album;
+	gchar *artist;
+	gchar *filename;
+	gchar *title;
+	glong date;
 	gshort crossfade;
-	time_t date;
+	guint current_post;
+	guint length;
+	gushort track;
 } current_song;
 
 struct mpd_info {
 	gint sockfd;
-	guint8 version[3];
+	gushort version[3];
 	enum connection_status status;
 } *mpd_info;
 
