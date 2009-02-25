@@ -39,12 +39,12 @@
 #include "audioscrobbler.h"
 #include "queue.h"
 
-static char curl_error_buffer[CURL_ERROR_SIZE];
+static gchar curl_error_buffer[CURL_ERROR_SIZE];
 
 #define HANDSHAKE_URL \
 	"http://post.audioscrobbler.com/?hs=true&p=1.2.1&c=spc&v=%s&u=%s&t=%ld&a=%s"
 
-int as_connection_init(void)
+gint as_connection_init(void)
 {
 	as_conn = calloc(sizeof(struct as_connection),1);
 	if(as_conn == NULL) return -1;
@@ -76,9 +76,9 @@ void as_cleanup(void)
 
 void as_handshake(void)
 {
-	char *auth_token, *handshake_url, *line, *saveptr, *tmp;
+	gchar *auth_token, *handshake_url, *line, *saveptr, *tmp;
 	time_t timestamp;
-	int ret;
+	gint ret;
 
 	if(as_conn->status == BADAUTH) {
 		scmpc_log(INFO,"Refusing handshake, please check your "
@@ -140,7 +140,7 @@ void as_handshake(void)
 	}
 
 	if(strncmp(line,"OK",2) == 0) {
-		unsigned short int line_no = 1;
+		gushort line_no = 1;
 
 		while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
 			line_no++;
@@ -180,8 +180,8 @@ void as_handshake(void)
 
 void as_now_playing(void)
 {
-	char *querystring, *artist, *album, *title, *line;
-	int ret;
+	gchar *querystring, *artist, *album, *title, *line;
+	gint ret;
 
 	if(as_conn->status != CONNECTED) {
 		scmpc_log(INFO,"Not sending Now Playing notification: not connected");
@@ -232,11 +232,11 @@ void as_now_playing(void)
 	g_free(buffer);
 }
 
-static int build_querystring(char **qs, struct queue_node **last_song)
+static gint build_querystring(gchar **qs, struct queue_node **last_song)
 {
-	char *artist, *title, *album;
+	gchar *artist, *title, *album;
 	GString *nqs;
-	int num = 0;
+	gint num = 0;
 	struct queue_node *song = queue.first;
 
 	nqs = g_string_new("s=");
@@ -262,12 +262,12 @@ static int build_querystring(char **qs, struct queue_node **last_song)
 	return num;
 }
 
-int as_submit(void)
+gint as_submit(void)
 {
-	char *querystring, *line, *saveptr;
+	gchar *querystring, *line, *saveptr;
 	struct queue_node *last_added;
-	int ret, num_songs;
-	static char last_failed[512];
+	gint ret, num_songs;
+	static gchar last_failed[512];
 
 	if(queue.first == NULL)
 		return -1;

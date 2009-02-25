@@ -26,22 +26,22 @@
 
 struct queue_node {
 	struct queue_node *next;
-	char *artist;
-	char *title;
-	char *album;
-	unsigned int length;
-	unsigned short track;
+	gchar *artist;
+	gchar *title;
+	gchar *album;
+	guint length;
+	gushort track;
 	time_t date;
 };
 
 struct queue_t {
 	struct queue_node *first;
 	struct queue_node *last;
-	int length;
+	gint length;
 } queue;
 
-void queue_add(const char *artist, const char *title, const char *album,
-	unsigned int length, unsigned short track, time_t date);
+void queue_add(gconstpointer artist, gconstpointer title, gconstpointer album,
+	guint length, gushort track, time_t date);
 void queue_load(void);
 void queue_remove_songs(struct queue_node *song, struct queue_node *keep_ptr);
 void queue_save(void);

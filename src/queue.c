@@ -34,8 +34,8 @@
 #include "queue.h"
 #include "preferences.h"
 
-void queue_add(const char *artist, const char *title, const char *album,
-	unsigned int length, unsigned short track, time_t date)
+void queue_add(gconstpointer artist, gconstpointer title, gconstpointer album,
+	guint length, gushort track, time_t date)
 {
 	struct queue_node *new_song;
 
@@ -89,9 +89,9 @@ void queue_add(const char *artist, const char *title, const char *album,
 
 void queue_load(void)
 {
-	char line[256], *artist, *album, *title;
-	unsigned int length = 0;
-	unsigned short track = 0;
+	gchar line[256], *artist, *album, *title;
+	guint length = 0;
+	gushort track = 0;
 	FILE *cache_file;
 	time_t date = 0;
 

@@ -41,11 +41,11 @@
 #include "preferences.h"
 #include "queue.h"
 
-static int server_connect_unix(const char *path)
+static gint server_connect_unix(gconstpointer path)
 {
-	int sockfd;
+	gint sockfd;
 	struct sockaddr_un addr;
-	unsigned int len;
+	guint len;
 
 	if((sockfd = socket(AF_UNIX,SOCK_STREAM,0))  < 0)
 		return -1;
@@ -63,11 +63,11 @@ static int server_connect_unix(const char *path)
 	return sockfd;
 }
 
-static int server_connect_tcp(const char *host, int port)
+static gint server_connect_tcp(gconstpointer host, gint port)
 {
 	fd_set write_flags;
-	int sockfd, valopt, ret;
-	char service[5];
+	gint sockfd, valopt, ret;
+	gchar service[5];
 	socklen_t len;
 	struct addrinfo hints, *result, *rp;
 	struct timeval timeout;
@@ -130,9 +130,9 @@ static int server_connect_tcp(const char *host, int port)
 	return sockfd;
 }
 
-int mpd_write(const char *string)
+gint mpd_write(gconstpointer string)
 {
-	char tmp[256];
+	gchar tmp[256];
 
 	/* exit idle mode before sending commands */
 	if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
@@ -149,9 +149,9 @@ int mpd_write(const char *string)
 	return 0;
 }
 
-int mpd_connect(void)
+gint mpd_connect(void)
 {
-	char *tmp;
+	gchar *tmp;
 
 	mpd_info = calloc(sizeof(struct mpd_info),1);
 	current_song.filename = g_strdup("");
@@ -181,9 +181,9 @@ int mpd_connect(void)
 	return 0;
 }
 
-void mpd_parse(char *buf)
+void mpd_parse(gchar *buf)
 {
-	char *saveptr, *line;
+	gchar *saveptr, *line;
 
 	line = strtok_r(buf,"\n",&saveptr);
 	do {
@@ -246,7 +246,7 @@ void mpd_parse(char *buf)
 				current_song.song_state = CHECK;
 		}
 		else if(strncmp(line,"OK MPD",6) == 0) {
-			sscanf(line,"%*s %*s %d.%d.%d",&mpd_info->version[0],
+			sscanf(line,"%*s %*s %hhu.%hhu.%hhu",&mpd_info->version[0],
 				&mpd_info->version[1],&mpd_info->version[2]);
 			scmpc_log(INFO,"Connected to MPD.");
 			if(write(mpd_info->sockfd,"status\n",7) < 0) return;

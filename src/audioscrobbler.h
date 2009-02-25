@@ -27,20 +27,20 @@
 #include <curl/curl.h>
 
 struct as_connection {
-	char *session_id;
-	char *submit_url;
-	char *np_url;
-	char password[33];
+	gchar *session_id;
+	gchar *submit_url;
+	gchar *np_url;
+	gchar password[33];
 	time_t last_handshake;
 	enum connection_status status;
 	CURL *handle;
 	struct curl_slist *headers;
 } *as_conn;
 
-char *buffer;
+gchar *buffer;
 
-int as_connection_init(void);
-int as_submit(void);
+gint as_connection_init(void);
+gint as_submit(void);
 void as_cleanup(void);
 void as_handshake(void);
 void as_now_playing(void);
