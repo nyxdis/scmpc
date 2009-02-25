@@ -234,56 +234,30 @@ void as_now_playing(void)
 
 static int build_querystring(char **qs, struct queue_node **last_song)
 {
-	char *artist, *title, *album, *nqs, *tmp;
+	char *artist, *title, *album;
+	GString *nqs;
 	int num = 0;
-	gsize buffer_length = 1024, current_length = 0;
 	struct queue_node *song = queue.first;
 
-	if((*qs = g_malloc(buffer_length)) == NULL)
-		return -1;
-
-	tmp = g_strdup_printf("s=%s",as_conn->session_id);
-	g_strlcpy(*qs,tmp,buffer_length);
-	g_free(tmp);
+	nqs = g_string_new("s=");
+	g_string_append(nqs,as_conn->session_id);
 
 	while(song != NULL && num < 10) {
 		artist = curl_easy_escape(as_conn->handle,song->artist,0);
 		title = curl_easy_escape(as_conn->handle,song->title,0);
 		album = curl_easy_escape(as_conn->handle,song->album,0);
 
-		tmp = g_strdup_printf("&a[%d]=%s&t[%d]=%s&i[%d]=%ld&o[%d]=P"
+		g_string_append_printf(nqs,"&a[%d]=%s&t[%d]=%s&i[%d]=%ld&o[%d]=P"
 			"&r[%d]=&l[%d]=%d&b[%d]=%s&n[%d]=&m[%d]=",num,artist,
 			num,title,num,song->date,num,num,num,song->length,num,
 			album,num,num);
 		curl_free(artist); curl_free(title); curl_free(album);
 
-		current_length += strlen(tmp);;
-
-		if(current_length > buffer_length) {
-			buffer_length *= 2;
-			if((nqs = g_realloc(*qs,buffer_length)) == NULL) {
-				g_free(tmp);
-				g_free(*qs);
-				*qs = NULL;
-				return -1;
-			} else {
-				*qs = nqs;
-			}
-		}
-
-		if(g_strlcat(*qs,tmp,buffer_length) >= (unsigned int)buffer_length) {
-			/* We tried, but the song is still too large for the buffer. */
-			scmpc_log(ERROR, "This song's information is unrealistically "
-				"long. Discarding.");
-			g_free(tmp);
-			song = song->next;
-			continue;
-		}
-		g_free(tmp);
 		num++;
 		song = song->next;
 	}
 
+	*qs = g_string_free(nqs,FALSE);
 	*last_song = song;
 	return num;
 }
@@ -300,7 +274,7 @@ int as_submit(void)
 	
 	num_songs = build_querystring(&querystring, &last_added);
 	if(num_songs <= 0) {
-		free(querystring);
+		g_free(querystring);
 		return -1;
 	}
 
@@ -314,6 +288,7 @@ int as_submit(void)
 		scmpc_log(INFO,"Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
 	}
+	g_free(querystring);
 
 	line = strtok_r(buffer,"\n",&saveptr);
 	if(line == NULL)

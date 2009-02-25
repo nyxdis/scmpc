@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 		}
 
 		/* submit queue */
-		if(queue.length > 0)
+		if(queue.length > 0 && as_conn->status == CONNECTED)
 			as_submit();
 	}
 }
