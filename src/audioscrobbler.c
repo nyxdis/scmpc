@@ -68,9 +68,9 @@ void as_cleanup(void)
 {
 	curl_slist_free_all(as_conn->headers);
 	curl_easy_cleanup(as_conn->handle);
-	free(as_conn->session_id);
-	free(as_conn->np_url);
-	free(as_conn->submit_url);
+	g_free(as_conn->session_id);
+	g_free(as_conn->np_url);
+	g_free(as_conn->submit_url);
 	free(as_conn);
 }
 
@@ -128,14 +128,14 @@ void as_handshake(void)
 	if(ret != 0) {
 		scmpc_log(ERROR,"Could not connect to the Audioscrobbler: %s",
 			curl_easy_strerror(ret));
-		free(buffer);
+		g_free(buffer);
 		return;
 	}
 
 	line = strtok_r(buffer,"\n",&saveptr);
 	if(line == NULL) {
 		scmpc_log(DEBUG,"Could not parse Audioscrobbler handshake response.");
-		free(buffer);
+		g_free(buffer);
 		return;
 	}
 
@@ -145,11 +145,11 @@ void as_handshake(void)
 		while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
 			line_no++;
 			if(line_no == 2) {
-				as_conn->session_id = strdup(line);
+				as_conn->session_id = g_strdup(line);
 			} else if(line_no == 3) {
-				as_conn->np_url = strdup(line);
+				as_conn->np_url = g_strdup(line);
 			} else if(line_no == 4) {
-				as_conn->submit_url = strdup(line);
+				as_conn->submit_url = g_strdup(line);
 				break;
 			}
 		}
@@ -175,7 +175,7 @@ void as_handshake(void)
 	} else {
 		scmpc_log(DEBUG,"Could not parse Audioscrobbler handshake response.");
 	}
-	free(buffer);
+	g_free(buffer);
 }
 
 void as_now_playing(void)
@@ -196,9 +196,9 @@ void as_now_playing(void)
 		as_conn->session_id,artist,title,album,current_song.length,
 		current_song.track);
 
-	free(artist);
-	free(album);
-	free(title);
+	curl_free(artist);
+	curl_free(album);
+	curl_free(title);
 
 	scmpc_log(DEBUG,"querystring = %s",querystring);
 
@@ -211,7 +211,7 @@ void as_now_playing(void)
 	if(ret != 0) {
 		scmpc_log(ERROR,"Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
-		free(buffer);
+		g_free(buffer);
 		return;
 	}
 
@@ -229,7 +229,7 @@ void as_now_playing(void)
 		scmpc_log(DEBUG,"Unknown response from Audioscrobbler while "
 			"sending Now Playing notification.");
 	}
-	free(buffer);
+	g_free(buffer);
 }
 
 static int build_querystring(char **qs, struct queue_node **last_song)
@@ -239,11 +239,11 @@ static int build_querystring(char **qs, struct queue_node **last_song)
 	gsize buffer_length = 1024, current_length = 0;
 	struct queue_node *song = queue.first;
 
-	if((*qs = malloc(buffer_length)) == NULL)
+	if((*qs = g_malloc(buffer_length)) == NULL)
 		return -1;
 
 	tmp = g_strdup_printf("s=%s",as_conn->session_id);
-	strcpy(*qs,tmp);
+	g_strlcpy(*qs,tmp,buffer_length);
 	g_free(tmp);
 
 	while(song != NULL && num < 10) {
@@ -261,9 +261,9 @@ static int build_querystring(char **qs, struct queue_node **last_song)
 
 		if(current_length > buffer_length) {
 			buffer_length *= 2;
-			if((nqs = realloc(*qs,buffer_length)) == NULL) {
-				free(tmp);
-				free(*qs);
+			if((nqs = g_realloc(*qs,buffer_length)) == NULL) {
+				g_free(tmp);
+				g_free(*qs);
 				*qs = NULL;
 				return -1;
 			} else {
@@ -271,16 +271,15 @@ static int build_querystring(char **qs, struct queue_node **last_song)
 			}
 		}
 
-		strncat(*qs,tmp,buffer_length-current_length);
 		if(g_strlcat(*qs,tmp,buffer_length) >= (int)buffer_length) {
 			/* We tried, but the song is still too large for the buffer. */
 			scmpc_log(ERROR, "This song's information is unrealistically "
 				"long. Discarding.");
-			free(tmp);
+			g_free(tmp);
 			song = song->next;
 			continue;
 		}
-		free(tmp);
+		g_free(tmp);
 		num++;
 		song = song->next;
 	}
@@ -321,7 +320,6 @@ int as_submit(void)
 		scmpc_log(INFO,"Could not parse Audioscrobbler submit response.");
 	else if(strncmp(line,"FAILED",6) == 0) {
 		if(strcmp(last_failed,&line[7]) != 0) {
-			memset(last_failed,0,sizeof(last_failed));
 			g_strlcpy(last_failed,&line[7],sizeof(last_failed));
 			scmpc_log(INFO,"Audioscrobbler returned FAILED: %s",
 				&line[7]);

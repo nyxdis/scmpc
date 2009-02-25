@@ -167,33 +167,33 @@ static int parse_config_file(void)
 		return -1;
 	}
 
-	free(prefs.log_file);
-	free(prefs.pid_file);
-	free(prefs.cache_file);
-	free(prefs.mpd_hostname);
-	free(prefs.mpd_password);
-	free(prefs.as_username);
-	free(prefs.as_password);
-	free(prefs.as_password_hash);
+	g_free(prefs.log_file);
+	g_free(prefs.pid_file);
+	g_free(prefs.cache_file);
+	g_free(prefs.mpd_hostname);
+	g_free(prefs.mpd_password);
+	g_free(prefs.as_username);
+	g_free(prefs.as_password);
+	g_free(prefs.as_password_hash);
 
 	prefs.log_level = cfg_getint(cfg,"log_level");
-	prefs.log_file = strdup(cfg_getstr(cfg,"log_file"));
-	prefs.pid_file = strdup(cfg_getstr(cfg,"pid_file"));
-	prefs.cache_file = strdup(cfg_getstr(cfg,"cache_file"));
+	prefs.log_file = g_strdup(cfg_getstr(cfg,"log_file"));
+	prefs.pid_file = g_strdup(cfg_getstr(cfg,"pid_file"));
+	prefs.cache_file = g_strdup(cfg_getstr(cfg,"cache_file"));
 	prefs.queue_length = cfg_getint(cfg,"queue_length");
 	prefs.cache_interval = cfg_getint(cfg,"cache_interval");
 
 	sec_mpd = cfg_getsec(cfg,"mpd");
-	prefs.mpd_hostname = strdup(cfg_getstr(sec_mpd,"host"));
+	prefs.mpd_hostname = g_strdup(cfg_getstr(sec_mpd,"host"));
 	prefs.mpd_port = cfg_getint(sec_mpd,"port");
 	prefs.mpd_timeout = cfg_getint(sec_mpd,"timeout");
 	prefs.mpd_interval = cfg_getint(sec_mpd,"interval");
-	prefs.mpd_password = strdup(cfg_getstr(sec_mpd,"password"));
+	prefs.mpd_password = g_strdup(cfg_getstr(sec_mpd,"password"));
 
 	sec_as = cfg_getsec(cfg,"audioscrobbler");
-	prefs.as_username = strdup(cfg_getstr(sec_as,"username"));
-	prefs.as_password = strdup(cfg_getstr(sec_as,"password"));
-	prefs.as_password_hash = strdup(cfg_getstr(sec_as,"password_hash"));
+	prefs.as_username = g_strdup(cfg_getstr(sec_as,"username"));
+	prefs.as_password = g_strdup(cfg_getstr(sec_as,"password"));
+	prefs.as_password_hash = g_strdup(cfg_getstr(sec_as,"password_hash"));
 
 	prefs.fork = TRUE;
 
@@ -236,14 +236,14 @@ static int parse_command_line(int argc, char **argv)
 		/* This must be at the top, to avoid any options specified in the
 		 * config file overriding those on the command line. */
 		if (conf_file != NULL) {
-			free(prefs.config_file);
-			prefs.config_file = strdup(conf_file);
+			g_free(prefs.config_file);
+			prefs.config_file = g_strdup(conf_file);
 			if(parse_config_file() < 0)
 				return -1;
 		}
 		if (pid_file != NULL) {
-			free(prefs.pid_file);
-			prefs.pid_file = strdup(pid_file);
+			g_free(prefs.pid_file);
+			prefs.pid_file = g_strdup(pid_file);
 		}
 		if (quiet && debug) {
 			fputs("Specifying --debug and --quiet at the same time"
@@ -274,14 +274,14 @@ int init_preferences(int argc, char **argv)
 
 	tmp = getenv("MPD_HOST");
 	if(tmp != NULL) {
-		free(prefs.mpd_password);
-		free(prefs.mpd_hostname);
+		g_free(prefs.mpd_password);
+		g_free(prefs.mpd_hostname);
 		if(strstr(tmp,"@")) {
-			prefs.mpd_password = strdup(strtok_r(tmp,"@",&saveptr));
-			prefs.mpd_hostname = strdup(strtok_r(NULL,"@",&saveptr));
+			prefs.mpd_password = g_strdup(strtok_r(tmp,"@",&saveptr));
+			prefs.mpd_hostname = g_strdup(strtok_r(NULL,"@",&saveptr));
 		} else {
-			prefs.mpd_password = strdup("");
-			prefs.mpd_hostname = strdup(tmp);
+			prefs.mpd_password = g_strdup("");
+			prefs.mpd_hostname = g_strdup(tmp);
 		}
 	}
 	if(getenv("MPD_PORT") != NULL)
@@ -292,13 +292,13 @@ int init_preferences(int argc, char **argv)
 
 void clear_preferences(void)
 {
-	free(prefs.mpd_hostname);
-	free(prefs.mpd_password);
-	free(prefs.config_file);
-	free(prefs.log_file);
-	free(prefs.pid_file);
-	free(prefs.cache_file);
-	free(prefs.as_username);
-	free(prefs.as_password);
-	free(prefs.as_password_hash);
+	g_free(prefs.mpd_hostname);
+	g_free(prefs.mpd_password);
+	g_free(prefs.config_file);
+	g_free(prefs.log_file);
+	g_free(prefs.pid_file);
+	g_free(prefs.cache_file);
+	g_free(prefs.as_username);
+	g_free(prefs.as_password);
+	g_free(prefs.as_password_hash);
 }

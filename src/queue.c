@@ -46,12 +46,12 @@ void queue_add(const char *artist, const char *title, const char *album,
 
 	if((new_song = malloc(sizeof(struct queue_node))) == NULL) return;
 
-	new_song->title = strdup(title);
-	new_song->artist = strdup(artist);
+	new_song->title = g_strdup(title);
+	new_song->artist = g_strdup(artist);
 	if(album != NULL)
-		new_song->album = strdup(album);
+		new_song->album = g_strdup(album);
 	else
-		new_song->album = strdup("");
+		new_song->album = g_strdup("");
 	new_song->length = length;
 	new_song->track = track;
 	new_song->next = NULL;
@@ -107,18 +107,18 @@ void queue_load(void)
 	
 	while(fgets(line,sizeof line,cache_file)) {
 		if(strncmp(line,"# BEGIN SONG",12) == 0) {
-			free(artist); free(title); free(album);
+			g_free(artist); g_free(title); g_free(album);
 			artist = title = album = NULL;
 			length = track = 0;
 		} else if(strncmp(line,"artist: ",8) == 0) {
-			free(artist);
-			artist = strdup(&line[8]);
+			g_free(artist);
+			artist = g_strdup(&line[8]);
 		} else if(strncmp(line,"title: ",7) == 0) {
-			free(title);
-			title = strdup(&line[7]);
+			g_free(title);
+			title = g_strdup(&line[7]);
 		} else if(strncmp(line,"album: ",7) == 0) {
-			free(album);
-			album = strdup(&line[7]);
+			g_free(album);
+			album = g_strdup(&line[7]);
 		} else if(strncmp(line,"date: ",6) == 0) {
 			date = atoi(&line[6]);
 		} else if(strncmp(line,"length: ",8) == 0) {
@@ -127,11 +127,11 @@ void queue_load(void)
 			track = atoi(&line[7]);
 		} else if(strncmp(line,"# END SONG",10) == 0) {
 			queue_add(artist,title,album,length,track,date);
-			free(artist); free(title); free(album);
+			g_free(artist); g_free(title); g_free(album);
 			artist = title = album = NULL;
 		}
 	}
-	free(artist); free(title); free(album);
+	g_free(artist); g_free(title); g_free(album);
 	fclose(cache_file);
 }
 
@@ -140,11 +140,11 @@ void queue_remove_songs(struct queue_node *song, struct queue_node *keep_ptr)
 	struct queue_node *next_song;
 
 	while(song != NULL && song != keep_ptr) {
-		free(song->title);
-		free(song->artist);
-		free(song->album);
+		g_free(song->title);
+		g_free(song->artist);
+		g_free(song->album);
 		next_song = song->next;
-		free(song);
+		g_free(song);
 		song = next_song;
 		queue.length--;
 	}

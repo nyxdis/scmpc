@@ -77,6 +77,6 @@ gsize buffer_write(void *input, gsize size, gsize nmemb, void *buf)
 {
 	gsize len = size*nmemb;
 	buf = NULL; /* suppress warnings about buf being unused */
-	buffer = strdup(input);
+	buffer = g_strdup(input);
 	return len;
 }
