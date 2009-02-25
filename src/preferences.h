@@ -24,7 +24,7 @@
  */
 
 
-#include <stdbool.h>
+#include <glib.h>
 
 struct preferences {
         char *mpd_hostname;
@@ -32,7 +32,7 @@ struct preferences {
 	int mpd_interval;
         int mpd_timeout;
         char *mpd_password;
-        bool fork;
+        gboolean fork;
         enum loglevel log_level;
         char *config_file;
         char *log_file;
