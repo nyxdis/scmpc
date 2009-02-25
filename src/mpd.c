@@ -39,6 +39,7 @@
 #include "scmpc.h"
 #include "mpd.h"
 #include "preferences.h"
+#include "queue.h"
 
 static int server_connect_unix(const char *path)
 {

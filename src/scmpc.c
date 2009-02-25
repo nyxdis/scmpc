@@ -49,9 +49,6 @@ static void sighandler(int sig);
 static int daemonise(void);
 const char *pid_filename(void);
 
-/* Declared in preferences.h */
-extern struct preferences prefs;
-
 int main(int argc, char *argv[])
 {
 	int sr;

@@ -35,6 +35,7 @@
 #include "config.h"
 #endif
 
+#include "scmpc.h"
 #include "misc.h"
 #include "preferences.h"
 
@@ -205,10 +206,10 @@ static int parse_command_line(int argc, char **argv)
 {
 	GError *error = NULL;
 	gchar *pid_file = NULL, *conf_file = NULL;
-	gboolean kill = FALSE, debug = FALSE, quiet = FALSE, version = FALSE, fork = TRUE;
+	gboolean dokill = FALSE, debug = FALSE, quiet = FALSE, version = FALSE, fork = TRUE;
 	GOptionEntry entries[] = {
 		{ "debug", 'd', 0, G_OPTION_ARG_NONE, &debug, "Log everything.", NULL },
-		{ "kill", 'k', 0, G_OPTION_ARG_NONE, &kill, "Kill the running scmpc", NULL },
+		{ "kill", 'k', 0, G_OPTION_ARG_NONE, &dokill, "Kill the running scmpc", NULL },
 		{ "quiet", 'q', 0, G_OPTION_ARG_NONE, &quiet, "Disable logging.", NULL },
 		{ "config-file", 'f', 0, G_OPTION_ARG_FILENAME, &conf_file, "The location of the configuration file.", "<config_file>" },
 		{ "pid-file", 'i', 0, G_OPTION_ARG_FILENAME, &pid_file, "The location of the pid file.", "<pid_file>" },
@@ -255,7 +256,7 @@ static int parse_command_line(int argc, char **argv)
 			prefs.log_level = DEBUG;
 		if (!fork)
 			prefs.fork = FALSE;
-		if (kill)
+		if (dokill)
 			kill_scmpc();
 	}
 	g_free(pid_file);

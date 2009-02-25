@@ -235,7 +235,7 @@ void as_now_playing(void)
 static int build_querystring(char **qs, struct queue_node **last_song)
 {
 	char *artist, *title, *album, *nqs, *tmp;
-	int ret, num = 0;
+	int num = 0;
 	gsize buffer_length = 1024, current_length = 0;
 	struct queue_node *song = queue.first;
 
@@ -271,7 +271,7 @@ static int build_querystring(char **qs, struct queue_node **last_song)
 			}
 		}
 
-		if(g_strlcat(*qs,tmp,buffer_length) >= (int)buffer_length) {
+		if(g_strlcat(*qs,tmp,buffer_length) >= (unsigned int)buffer_length) {
 			/* We tried, but the song is still too large for the buffer. */
 			scmpc_log(ERROR, "This song's information is unrealistically "
 				"long. Discarding.");
