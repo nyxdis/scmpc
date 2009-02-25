@@ -49,15 +49,13 @@ void open_log(gconstpointer filename)
 void scmpc_log(enum loglevel level, gconstpointer format, ...)
 {
 	gchar *ts;
-	glong t;
-	GTimeVal tv;
+	time_t t;
 	va_list ap;
 
 	if(level > prefs.log_level)
 		return;
 
-	g_get_current_time(&tv);
-	t = tv.tv_sec;
+	t = time(NULL);
 	ts = g_malloc(22);
 	strftime(ts,22,"%Y-%m-%d %H:%M:%S  ",localtime(&t));
 	fputs(ts,log_file);
