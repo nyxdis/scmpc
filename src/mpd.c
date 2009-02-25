@@ -27,12 +27,10 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/un.h>
-#include <netinet/in.h>
 
 #include "misc.h"
 #include "audioscrobbler.h"
