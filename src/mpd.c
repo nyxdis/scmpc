@@ -51,7 +51,7 @@ static gint server_connect_unix(gconstpointer path)
 		return -1;
 
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path,path,strlen(path) + 1);
+	g_strlcpy(addr.sun_path,path,strlen(path));
 	len = strlen(addr.sun_path) + sizeof(addr.sun_family);
 
 	if(fcntl(sockfd,F_SETFL,fcntl(sockfd,F_GETFL,0) | O_NONBLOCK) < 0)
@@ -138,12 +138,12 @@ gint mpd_write(gconstpointer string)
 	if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
 		sprintf(tmp,"noidle\n");
 
-	strncat(tmp,string,240);
-	strcat(tmp,"\n");
+	g_strlcat(tmp,string,sizeof tmp);
+	g_strlcat(tmp,"\n",sizeof tmp);
 
 	/* re-enter idle mode */
 	if(mpd_info->version[0] > 0 || mpd_info->version[1] >= 14)
-		strcat(tmp,"idle\n");
+		g_strlcat(tmp,"idle\n",sizeof tmp);
 
 	if(write(mpd_info->sockfd,tmp,strlen(tmp)) < 0) return -1;
 	return 0;
@@ -188,7 +188,7 @@ void mpd_parse(gchar *buf)
 	line = strtok_r(buf,"\n",&saveptr);
 	do {
 		if(strncmp(line,"ACK",3) == 0) {
-			if(strstr(line,"incorrect password")) {
+			if(g_strrstr(line,"incorrect password")) {
 				scmpc_log(ERROR,"[MPD] Incorrect password");
 				mpd_info->status = BADAUTH;
 			} else {

@@ -51,9 +51,9 @@ gconstpointer pid_filename(void);
 
 int main(int argc, char *argv[])
 {
-	gint sr;
-	gchar *buf;
 	fd_set read_flags;
+	gchar *buf;
+	gssize sr;
 	pid_t pid;
 	struct sigaction sa;
 	struct timeval waitd;
