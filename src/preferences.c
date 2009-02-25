@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <glib.h>
 #include <confuse.h>
 
 #ifdef HAVE_CONFIG_H
