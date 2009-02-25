@@ -44,7 +44,7 @@ void queue_add(gconstpointer artist, gconstpointer title, gconstpointer album,
 		return;
 	}
 
-	if((new_song = malloc(sizeof(struct queue_node))) == NULL) return;
+	if((new_song = g_malloc(sizeof(struct queue_node))) == NULL) return;
 
 	new_song->title = g_strdup(title);
 	new_song->artist = g_strdup(artist);
