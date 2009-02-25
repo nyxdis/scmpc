@@ -25,7 +25,6 @@
 
 
 #include <stdarg.h>
-#include <time.h>
 
 #include "misc.h"
 #include "audioscrobbler.h"
@@ -50,13 +49,15 @@ void open_log(gconstpointer filename)
 void scmpc_log(enum loglevel level, gconstpointer format, ...)
 {
 	gchar *ts;
-	time_t t;
+	glong t;
+	GTimeVal tv;
 	va_list ap;
 
 	if(level > prefs.log_level)
 		return;
 
-	t = time(NULL);
+	g_get_current_time(&tv);
+	t = tv.tv_sec;
 	ts = g_malloc(22);
 	strftime(ts,22,"%Y-%m-%d %H:%M:%S  ",localtime(&t));
 	fputs(ts,log_file);

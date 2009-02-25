@@ -53,7 +53,8 @@ int main(int argc, char *argv[])
 	pid_t pid;
 	struct sigaction sa;
 	struct timeval waitd;
-	time_t last_queue_save = 0;
+	glong last_queue_save = 0;
+	GTimeVal tv;
 
 	if(init_preferences(argc,argv) < 0)
 		g_error("Config file parsing failed");
@@ -86,7 +87,8 @@ int main(int argc, char *argv[])
 	}
 	as_handshake();
 	queue_load();
-	last_queue_save = time(NULL);
+	g_get_current_time(&tv);
+	last_queue_save = tv.tv_sec;
 
 	for(;;)
 	{
@@ -111,9 +113,10 @@ int main(int argc, char *argv[])
 		}
 
 		/* save queue */
-		if(difftime(time(NULL),last_queue_save) >= prefs.cache_interval * 60) {
+		g_get_current_time(&tv);
+		if((tv.tv_sec - last_queue_save) >= prefs.cache_interval * 60) {
 			queue_save();
-			last_queue_save = time(NULL);
+			last_queue_save = tv.tv_sec;
 		}
 
 		/* Check if song is eligible for submission
