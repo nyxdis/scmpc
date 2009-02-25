@@ -224,13 +224,14 @@ static int parse_command_line(int argc, char **argv)
 		{ NULL }
 	};
 
-	GOptionContext *context = g_option_context_new("");
+	GOptionContext *context = g_option_context_new(NULL);
 	g_option_context_add_main_entries(context,entries,NULL);
 	if(!g_option_context_parse(context,&argc,&argv,&error)) {
 		g_print("%s\n",error->message);
 		g_option_context_free(context);
 		return -1;
 	}
+	g_option_context_free(context);
 
 	if (version) {
 		puts(PACKAGE_STRING);
@@ -264,7 +265,6 @@ static int parse_command_line(int argc, char **argv)
 		if (kill)
 			kill_scmpc();
 	}
-	g_option_context_free(context);
 	g_free(pid_file);
 	g_free(conf_file);
 	return 0;
