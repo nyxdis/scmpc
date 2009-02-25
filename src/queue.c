@@ -35,7 +35,7 @@
 #include "preferences.h"
 
 void queue_add(gconstpointer artist, gconstpointer title, gconstpointer album,
-	guint length, gushort track, time_t date)
+	guint length, gushort track, glong date)
 {
 	struct queue_node *new_song;
 
@@ -93,7 +93,7 @@ void queue_load(void)
 	guint length = 0;
 	gushort track = 0;
 	FILE *cache_file;
-	time_t date = 0;
+	glong date = 0;
 
 	artist = title = album = NULL;
 	scmpc_log(DEBUG,"Loading queue.");
@@ -120,7 +120,7 @@ void queue_load(void)
 			g_free(album);
 			album = g_strdup(&line[7]);
 		} else if(strncmp(line,"date: ",6) == 0) {
-			date = atoi(&line[6]);
+			date = strtol(&line[6],NULL,10);
 		} else if(strncmp(line,"length: ",8) == 0) {
 			length = atoi(&line[8]);
 		} else if(strncmp(line,"track: ",7) == 0) {

@@ -33,7 +33,7 @@ struct queue_node {
 	gchar *album;
 	guint length;
 	gushort track;
-	time_t date;
+	glong date;
 };
 
 struct queue_t {
@@ -43,7 +43,7 @@ struct queue_t {
 } queue;
 
 void queue_add(gconstpointer artist, gconstpointer title, gconstpointer album,
-	guint length, gushort track, time_t date);
+	guint length, gushort track, glong date);
 void queue_load(void);
 void queue_remove_songs(struct queue_node *song, struct queue_node *keep_ptr);
 void queue_save(void);
