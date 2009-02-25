@@ -75,7 +75,8 @@ void as_cleanup(void)
 void as_handshake(void)
 {
 	gchar *auth_token, *handshake_url, *line, *saveptr, *tmp;
-	time_t timestamp;
+	GTimeVal tv;
+	glong timestamp;
 	gint ret;
 
 	if(as_conn->status == BADAUTH) {
@@ -93,9 +94,10 @@ void as_handshake(void)
 		return;
 	}
 
-	timestamp = time(NULL);
+	g_get_current_time(&tv);
+	timestamp = tv.tv_sec;
 
-	if(difftime(timestamp,as_conn->last_handshake) < 1800) {
+	if((timestamp - as_conn->last_handshake) < 1800) {
 		scmpc_log(DEBUG,"Requested handshake, but last handshake "
 				"was less than 30 minutes ago.");
 		return;
