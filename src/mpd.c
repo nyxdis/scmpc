@@ -243,7 +243,7 @@ void mpd_parse(gchar *buf)
 		}
 		else if(strncmp(line,"time: ",6) == 0) {
 			/* check if the song has really been played for at least 240 seconds or more than 50% */
-			if(current_song.length > 0 && current_song.song_state != SUBMITTED && (strtol(&line[6],NULL,10) > 240 || strtol(&line[6],NULL,10) > current_song.length / 2)) {
+			if(current_song.length > 0 && current_song.song_state != SUBMITTED && (strtol(&line[6],NULL,10) > 240 || strtol(&line[6],NULL,10) > (long)current_song.length / 2)) {
 				queue_add(current_song.artist,current_song.title,current_song.album,current_song.length,current_song.track,current_song.date);
 				current_song.song_state = SUBMITTED;
 			} else
