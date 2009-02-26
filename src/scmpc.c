@@ -25,6 +25,7 @@
 
 
 #include <errno.h>
+#include <poll.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -47,14 +48,13 @@ gconstpointer pid_filename(void);
 
 int main(int argc, char *argv[])
 {
-	fd_set read_flags;
+	GTimeVal tv;
 	gchar *buf;
+	glong last_queue_save = 0;
 	gssize sr;
 	pid_t pid;
+	struct pollfd fds[1];
 	struct sigaction sa;
-	struct timeval waitd;
-	glong last_queue_save = 0;
-	GTimeVal tv;
 
 	if(init_preferences(argc,argv) < 0)
 		g_error("Config file parsing failed");
@@ -90,18 +90,14 @@ int main(int argc, char *argv[])
 	g_get_current_time(&tv);
 	last_queue_save = tv.tv_sec;
 
+	fds[0].fd = mpd_info->sockfd;
+	fds[0].events = POLLIN;
+
 	for(;;)
 	{
-		waitd.tv_sec = prefs.mpd_interval;
-		waitd.tv_usec = 0;
+		poll(fds,1,prefs.mpd_interval);
 
-		FD_ZERO(&read_flags);
-		FD_SET(mpd_info->sockfd,&read_flags);
-
-		if(select(mpd_info->sockfd+1,&read_flags,NULL,NULL,&waitd) < 0)
-			continue;
-
-		if(FD_ISSET(mpd_info->sockfd,&read_flags)) {
+		if(fds[0].revents & POLLIN) {
 			buf = g_malloc0(256);
 			sr = read(mpd_info->sockfd,buf,255);
 			if(sr > 0)
@@ -110,6 +106,9 @@ int main(int argc, char *argv[])
 				scmpc_log(ERROR,"Failed to read from MPD: %s",
 					g_strerror(errno));
 			g_free(buf);
+		} else if(fds[0].revents & POLLHUP) {
+			/* TODO: reconnect */
+			scmpc_log(ERROR,"Disconnected from MPD");
 		}
 
 		/* save queue */
