@@ -1,12 +1,12 @@
 .\" Copyright 2006 Jonathan Coome (jcoome@gmail.com)
-.\" Copyright 2008 Christoph Mende (angelos@unkreativ.org)
+.\" Copyright 2009 Christoph Mende (angelos@unkreativ.org)
 .\" Released under the GNU General Public License
 .TH scmpc 1 "20 December 2008" "" "scmpc User Guide"
 .SH NAME
 scmpc \- An Audioscrobbler client for MPD
 .SH SYNOPSIS
 .B scmpc
-.RB [ " -dqvnh " ]
+.RB [ " -dhknqv " ]
 .RB [ " -f\ <config_file> " ]
 .RB [ " -i <pid_file> " ]
 .SH DESCRIPTION
@@ -38,28 +38,31 @@ to ignore internet streams. It will submit songs without an Album specified,
 but only if the Title and Artist are both set.
 .SH OPTIONS
 .TP
-.B -f or --config-file <file>
-The location of an alternative configuration file. This overrides the default
-search options, but is still overridden by any command line options.
-.TP
-.B -i or --pid-file <file>
-The location of the pid file, which essentially stores the process id and makes
-sure that only one copy of the daemon is running at once.
-.TP
 .B -d or --debug
 Sets the logging level to debug, which will log everything considered
 noteworthy while the program is being developed. Probably unnecessary for
 normal use.
 .TP
-.B -q or --quiet
-Sets the logging level to none, which disables logging completely.
+.B -f or --config-file <file>
+The location of an alternative configuration file. This overrides the default
+search options, but is still overridden by any command line options.
+.TP
+.B -h or --help
+Prints a summary of the available command line options.
+.TP
+.B -i or --pid-file <file>
+The location of the pid file, which essentially stores the process id and makes
+sure that only one copy of the daemon is running at once.
+.TP
+.B -k or --kill
+Kill the currently running scmpc
 .TP
 .B -n or --foreground
 Runs the program in the foreground instead of immediately forking. It also
 redirects logging output to standard out, and doesn't create a pid file.
 .TP
-.B -h or --help
-Prints a summary of the available command line options.
+.B -q or --quiet
+Sets the logging level to none, which disables logging completely.
 .TP
 .B -v or --version
 Prints the name and version of the program along with a brief copyright notice.
@@ -191,5 +194,5 @@ at some point in the future if there is demand for it.
 Please report any other bugs to Christoph Mende <angelos@unkreativ.org>.
 
 .SH CREDITS
-Current maintainer: Christoph Mende <angelos@unkreativ.org>
 Original author: Jonathan Coome <jcoome@gmail.com>
+Threadless rewrite by: Christoph Mende <angelos@unkreativ.org>
