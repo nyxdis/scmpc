@@ -44,32 +44,28 @@ static gchar curl_error_buffer[CURL_ERROR_SIZE];
 
 gint as_connection_init(void)
 {
-	as_conn = calloc(sizeof(struct as_connection),1);
-	if(as_conn == NULL) return -1;
-
-	as_conn->last_handshake = 0;
-	as_conn->status = DISCONNECTED;
-	as_conn->handle = curl_easy_init();
-	if(as_conn->handle == NULL) return -1;
-	as_conn->headers = curl_slist_append(as_conn->headers,
+	as_conn.last_handshake = 0;
+	as_conn.status = DISCONNECTED;
+	as_conn.handle = curl_easy_init();
+	if(as_conn.handle == NULL) return -1;
+	as_conn.headers = curl_slist_append(as_conn.headers,
 			"User-Agent: scmpc/" PACKAGE_VERSION);
 
-	curl_easy_setopt(as_conn->handle,CURLOPT_HTTPHEADER,as_conn->headers);
-	curl_easy_setopt(as_conn->handle,CURLOPT_WRITEFUNCTION,&buffer_write);
-	curl_easy_setopt(as_conn->handle,CURLOPT_ERRORBUFFER,curl_error_buffer);
-	curl_easy_setopt(as_conn->handle,CURLOPT_NOSIGNAL,1L);
-	curl_easy_setopt(as_conn->handle,CURLOPT_CONNECTTIMEOUT,5L);
+	curl_easy_setopt(as_conn.handle,CURLOPT_HTTPHEADER,as_conn.headers);
+	curl_easy_setopt(as_conn.handle,CURLOPT_WRITEFUNCTION,&buffer_write);
+	curl_easy_setopt(as_conn.handle,CURLOPT_ERRORBUFFER,curl_error_buffer);
+	curl_easy_setopt(as_conn.handle,CURLOPT_NOSIGNAL,1L);
+	curl_easy_setopt(as_conn.handle,CURLOPT_CONNECTTIMEOUT,5L);
 	return 0;
 }
 
 void as_cleanup(void)
 {
-	curl_slist_free_all(as_conn->headers);
-	curl_easy_cleanup(as_conn->handle);
-	g_free(as_conn->session_id);
-	g_free(as_conn->np_url);
-	g_free(as_conn->submit_url);
-	free(as_conn);
+	curl_slist_free_all(as_conn.headers);
+	curl_easy_cleanup(as_conn.handle);
+	g_free(as_conn.session_id);
+	g_free(as_conn.np_url);
+	g_free(as_conn.submit_url);
 }
 
 void as_handshake(void)
@@ -79,7 +75,7 @@ void as_handshake(void)
 	glong timestamp;
 	gint ret;
 
-	if(as_conn->status == BADAUTH) {
+	if(as_conn.status == BADAUTH) {
 		scmpc_log(INFO,"Refusing handshake, please check your "
 			"Audioscrobbler credentials and restart %s",
 			PACKAGE_NAME);
@@ -90,14 +86,14 @@ void as_handshake(void)
 		strlen(prefs.as_password_hash) == 0)) {
 		scmpc_log(INFO,"No username or password specified. "
 				"Not connecting to Audioscrobbler.");
-		as_conn->status = BADAUTH;
+		as_conn.status = BADAUTH;
 		return;
 	}
 
 	g_get_current_time(&tv);
 	timestamp = tv.tv_sec;
 
-	if((timestamp - as_conn->last_handshake) < 1800) {
+	if((timestamp - as_conn.last_handshake) < 1800) {
 		scmpc_log(DEBUG,"Requested handshake, but last handshake "
 				"was less than 30 minutes ago.");
 		return;
@@ -118,11 +114,11 @@ void as_handshake(void)
 
 	scmpc_log(DEBUG,"handshake_url = %s",handshake_url);
 
-	curl_easy_setopt(as_conn->handle,CURLOPT_WRITEDATA,(void *)buffer);
-	curl_easy_setopt(as_conn->handle,CURLOPT_HTTPGET,1);
-	curl_easy_setopt(as_conn->handle,CURLOPT_URL,handshake_url);
+	curl_easy_setopt(as_conn.handle,CURLOPT_WRITEDATA,(void *)buffer);
+	curl_easy_setopt(as_conn.handle,CURLOPT_HTTPGET,1);
+	curl_easy_setopt(as_conn.handle,CURLOPT_URL,handshake_url);
 
-	ret = curl_easy_perform(as_conn->handle);
+	ret = curl_easy_perform(as_conn.handle);
 	g_free(handshake_url);
 
 	if(ret != 0) {
@@ -145,11 +141,11 @@ void as_handshake(void)
 		while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
 			line_no++;
 			if(line_no == 2) {
-				as_conn->session_id = g_strdup(line);
+				as_conn.session_id = g_strdup(line);
 			} else if(line_no == 3) {
-				as_conn->np_url = g_strdup(line);
+				as_conn.np_url = g_strdup(line);
 			} else if(line_no == 4) {
-				as_conn->submit_url = g_strdup(line);
+				as_conn.submit_url = g_strdup(line);
 				break;
 			}
 		}
@@ -158,8 +154,8 @@ void as_handshake(void)
 				" lines, expected 4 lines or more.",line_no);
 		} else {
 			scmpc_log(INFO,"Connected to Audioscrobbler.");
-			as_conn->status = CONNECTED;
-			as_conn->last_handshake = time(NULL);
+			as_conn.status = CONNECTED;
+			as_conn.last_handshake = time(NULL);
 		}
 	} else if(strncmp(line,"FAILED",6) == 0) {
 		scmpc_log(ERROR,"The Audioscrobbler handshake could not be "
@@ -168,7 +164,7 @@ void as_handshake(void)
 		scmpc_log(ERROR,"The user details you specified were not "
 				"accepted by Audioscrobbler. Please correct "
 				"them and restart this program.");
-		as_conn->status = BADAUTH;
+		as_conn.status = BADAUTH;
 	} else if(strncmp(line,"BADTIME",7) == 0) {
 		scmpc_log(ERROR,"Handshake failed because your system time is "
 				"too far off. Please correct your clock.");
@@ -183,17 +179,17 @@ void as_now_playing(void)
 	gchar *querystring, *artist, *album, *title, *line;
 	gint ret;
 
-	if(as_conn->status != CONNECTED) {
+	if(as_conn.status != CONNECTED) {
 		scmpc_log(INFO,"Not sending Now Playing notification: not connected");
 		return;
 	}
 
-	artist = curl_easy_escape(as_conn->handle,current_song.artist,0);
-	album = curl_easy_escape(as_conn->handle,current_song.album,0);
-	title = curl_easy_escape(as_conn->handle,current_song.title,0);
+	artist = curl_easy_escape(as_conn.handle,current_song.artist,0);
+	album = curl_easy_escape(as_conn.handle,current_song.album,0);
+	title = curl_easy_escape(as_conn.handle,current_song.title,0);
 
 	querystring = g_strdup_printf("s=%s&a=%s&t=%s&b=%s&l=%d&n=%d&m=",
-		as_conn->session_id,artist,title,album,current_song.length,
+		as_conn.session_id,artist,title,album,current_song.length,
 		current_song.track);
 
 	curl_free(artist);
@@ -202,11 +198,11 @@ void as_now_playing(void)
 
 	scmpc_log(DEBUG,"querystring = %s",querystring);
 
-	curl_easy_setopt(as_conn->handle,CURLOPT_WRITEDATA,(void*)buffer);
-	curl_easy_setopt(as_conn->handle,CURLOPT_POSTFIELDS,querystring);
-	curl_easy_setopt(as_conn->handle,CURLOPT_URL,as_conn->np_url);
+	curl_easy_setopt(as_conn.handle,CURLOPT_WRITEDATA,(void*)buffer);
+	curl_easy_setopt(as_conn.handle,CURLOPT_POSTFIELDS,querystring);
+	curl_easy_setopt(as_conn.handle,CURLOPT_URL,as_conn.np_url);
 
-	ret = curl_easy_perform(as_conn->handle);
+	ret = curl_easy_perform(as_conn.handle);
 	g_free(querystring);
 	if(ret != 0) {
 		scmpc_log(ERROR,"Failed to connect to Audioscrobbler: %s",
@@ -240,12 +236,12 @@ static gint build_querystring(gchar **qs, struct queue_node **last_song)
 	struct queue_node *song = queue.first;
 
 	nqs = g_string_new("s=");
-	g_string_append(nqs,as_conn->session_id);
+	g_string_append(nqs,as_conn.session_id);
 
 	while(song != NULL && num < 10) {
-		artist = curl_easy_escape(as_conn->handle,song->artist,0);
-		title = curl_easy_escape(as_conn->handle,song->title,0);
-		album = curl_easy_escape(as_conn->handle,song->album,0);
+		artist = curl_easy_escape(as_conn.handle,song->artist,0);
+		title = curl_easy_escape(as_conn.handle,song->title,0);
+		album = curl_easy_escape(as_conn.handle,song->album,0);
 
 		g_string_append_printf(nqs,"&a[%d]=%s&t[%d]=%s&i[%d]=%ld&o[%d]=P"
 			"&r[%d]=&l[%d]=%d&b[%d]=%s&n[%d]=&m[%d]=",num,artist,
@@ -280,11 +276,11 @@ gint as_submit(void)
 
 	scmpc_log(DEBUG,"querystring = %s",querystring);
 
-	curl_easy_setopt(as_conn->handle, CURLOPT_WRITEDATA, (void *)buffer);
-	curl_easy_setopt(as_conn->handle, CURLOPT_POSTFIELDS, querystring);
-	curl_easy_setopt(as_conn->handle, CURLOPT_URL, as_conn->submit_url);
+	curl_easy_setopt(as_conn.handle, CURLOPT_WRITEDATA, (void *)buffer);
+	curl_easy_setopt(as_conn.handle, CURLOPT_POSTFIELDS, querystring);
+	curl_easy_setopt(as_conn.handle, CURLOPT_URL, as_conn.submit_url);
 
-	if((ret = curl_easy_perform(as_conn->handle)) != 0) {
+	if((ret = curl_easy_perform(as_conn.handle)) != 0) {
 		scmpc_log(INFO,"Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
 	}

@@ -81,6 +81,7 @@ int main(int argc, char *argv[])
 	sigaction(SIGTERM,&sa,NULL);
 	sigaction(SIGQUIT,&sa,NULL);
 
+	mpd_info.have_idle = FALSE;
 	if(as_connection_init() < 0 || mpd_connect() < 0) {
 		cleanup();
 		exit(EXIT_FAILURE);
@@ -90,7 +91,7 @@ int main(int argc, char *argv[])
 	g_get_current_time(&tv);
 	last_queue_save = tv.tv_sec;
 
-	fds[0].fd = mpd_info->sockfd;
+	fds[0].fd = mpd_info.sockfd;
 	fds[0].events = POLLIN;
 
 	for(;;)
@@ -99,7 +100,7 @@ int main(int argc, char *argv[])
 
 		if(fds[0].revents & POLLIN) {
 			buf = g_malloc0(256);
-			sr = read(mpd_info->sockfd,buf,255);
+			sr = read(mpd_info.sockfd,buf,255);
 			if(sr > 0)
 				mpd_parse(buf);
 			else
@@ -120,13 +121,17 @@ int main(int argc, char *argv[])
 
 		/* Check if song is eligible for submission
 		 * second condition checks if the song was played halfway through, third if it was played for more than 240 seconds */
-		if(current_song.date > 0 && current_song.song_state == NEW && (difftime(time(NULL),current_song.date) >= (current_song.length / 2) || difftime(time(NULL),current_song.date) >= 240)) {
-			if(mpd_write("status") < 0) /* check if there was no skipping */
-				perror("MPD write failed:");
+		if(mpd_info.have_idle) {
+			/* TODO: if mpd >= 0.14, use idle to get the playing status and time the time played */
+		} else {
+			if(current_song.date > 0 && current_song.song_state == NEW && (difftime(time(NULL),current_song.date) >= (current_song.length / 2) || difftime(time(NULL),current_song.date) >= 240)) {
+				if(mpd_write("status") < 0) /* check if there was no skipping */
+					perror("MPD write failed:");
+			}
 		}
 
 		/* submit queue */
-		if(queue.length > 0 && as_conn->status == CONNECTED)
+		if(queue.length > 0 && as_conn.status == CONNECTED)
 			as_submit();
 	}
 }

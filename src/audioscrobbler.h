@@ -36,7 +36,7 @@ struct as_connection {
 	enum connection_status status;
 	CURL *handle;
 	struct curl_slist *headers;
-} *as_conn;
+} as_conn;
 
 gchar *buffer;
 
