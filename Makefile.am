@@ -16,6 +16,6 @@ scmpc_LDADD = 	@libcurl_LIBS@ \
 		@confuse_LIBS@ \
 		@glib_LIBS@
 
-DEFS += -DSYSCONFDIR=\"$(sysconfdir)\" -D_GNU_SOURCE
+DEFS += -DSYSCONFDIR=\"$(sysconfdir)\"
 
 EXTRA_DIST = scmpc.conf.example
