@@ -33,7 +33,7 @@ struct _as_conn {
 	gchar *np_url;
 	gchar password[33];
 	glong last_handshake;
-	enum connection_status status;
+	connection_status status;
 	CURL *handle;
 	struct curl_slist *headers;
 } as_conn;

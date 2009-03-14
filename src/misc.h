@@ -26,22 +26,22 @@
 
 #include <glib.h>
 
-enum loglevel
+typedef enum _loglevel
 {
 	NONE,
 	ERROR,
 	INFO,
 	DEBUG
-};
+} loglevel;
 
-enum connection_status {
+typedef enum _connection_status {
 	DISCONNECTED,
 	CONNECTED,
 	BADAUTH
-};
+} connection_status;
 
 void open_log(gconstpointer filename);
-void scmpc_log(enum loglevel, gconstpointer format, ...);
+void scmpc_log(loglevel level, gconstpointer format, ...);
 
 /* used by curl */
 gsize buffer_write(void *input, gsize size, gsize nmemb, void *buf);

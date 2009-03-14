@@ -29,7 +29,7 @@
 struct _current_song {
 	GTimer *pos;
 	enum { CHECK, NEW, INVALID, SUBMITTED } song_state;
-	enum { STOPPED, PAUSED, PLAYING, UNKNOWN } mpd_state;
+	enum { UNKNOWN, STOPPED, PAUSED, PLAYING } mpd_state;
 	gchar *album;
 	gchar *artist;
 	gchar *filename;
@@ -42,7 +42,7 @@ struct _current_song {
 } current_song;
 
 struct _mpd_info {
-	enum connection_status status;
+	connection_status status;
 	gint sockfd;
 } mpd_info;
 
