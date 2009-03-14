@@ -26,24 +26,24 @@
 
 #include <glib.h>
 
-struct queue_node {
-	struct queue_node *next;
+typedef struct _queue_node {
+	struct _queue_node *next;
 	gchar *artist;
 	gchar *title;
 	gchar *album;
 	guint length;
 	gushort track;
 	glong date;
-};
+} queue_node;
 
 struct queue_t {
-	struct queue_node *first;
-	struct queue_node *last;
+	queue_node *first;
+	queue_node *last;
 	gint length;
 } queue;
 
 void queue_add(gconstpointer artist, gconstpointer title, gconstpointer album,
 	guint length, gushort track, glong date);
 void queue_load(void);
-void queue_remove_songs(struct queue_node *song, struct queue_node *keep_ptr);
+void queue_remove_songs(queue_node *song, queue_node *keep_ptr);
 void queue_save(void);
