@@ -33,5 +33,5 @@ AC_TYPE_PID_T
 AC_FUNC_FORK
 AC_CHECK_FUNCS([memset select socket strtol])
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile scmpc.1])
 AC_OUTPUT
