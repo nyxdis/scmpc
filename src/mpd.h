@@ -43,9 +43,7 @@ struct _current_song {
 
 struct _mpd_info {
 	enum connection_status status;
-	gboolean have_idle;
 	gint sockfd;
-	gushort version[3];
 } mpd_info;
 
 void mpd_parse(gchar *buf);
