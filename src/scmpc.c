@@ -244,8 +244,8 @@ static void daemonise(void)
 
 static void cleanup(void)
 {
-	if(queue.length > 0) queue_save();
 	if(prefs.fork) scmpc_pid_remove();
+	queue_save();
 	g_timer_destroy(current_song.pos);
 	clear_preferences();
 	as_cleanup();
