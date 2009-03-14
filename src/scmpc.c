@@ -81,7 +81,6 @@ int main(int argc, char *argv[])
 	sigaction(SIGTERM,&sa,NULL);
 	sigaction(SIGQUIT,&sa,NULL);
 
-	mpd_info.have_idle = FALSE;
 	if(as_connection_init() < 0 || mpd_connect() < 0) {
 		cleanup();
 		exit(EXIT_FAILURE);
@@ -127,16 +126,9 @@ int main(int argc, char *argv[])
 		if(current_song.song_state != NEW)
 			continue;
 
-		if(mpd_info.have_idle) {
-			if(g_timer_elapsed(current_song.pos,NULL) >= 240 || g_timer_elapsed(current_song.pos,NULL) >= current_song.length / 2) {
-				queue_add(current_song.artist,current_song.title,current_song.album,current_song.length,current_song.track,current_song.date);
-				current_song.song_state = SUBMITTED;
-			}
-		} else {
-			if(current_song.date > 0 && (difftime(time(NULL),current_song.date) >= (current_song.length / 2) || difftime(time(NULL),current_song.date) >= 240)) {
-				if(mpd_write("status") < 0) /* check if there was no skipping */
-					perror("MPD write failed:");
-			}
+		if(g_timer_elapsed(current_song.pos,NULL) >= 240 || g_timer_elapsed(current_song.pos,NULL) >= current_song.length / 2) {
+			queue_add(current_song.artist,current_song.title,current_song.album,current_song.length,current_song.track,current_song.date);
+			current_song.song_state = SUBMITTED;
 		}
 	}
 }
@@ -251,7 +243,7 @@ void cleanup(void)
 {
 	if(queue.length > 0) queue_save();
 	if(prefs.fork) scmpc_pid_remove();
-	if(mpd_info.have_idle) g_timer_destroy(current_song.pos);
+	g_timer_destroy(current_song.pos);
 	clear_preferences();
 	as_cleanup();
 	mpd_cleanup();

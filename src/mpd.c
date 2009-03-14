@@ -133,15 +133,13 @@ gint mpd_write(gconstpointer string)
 	gchar tmp[256];
 
 	/* exit idle mode before sending commands */
-	if(mpd_info.have_idle)
-		sprintf(tmp,"noidle\n");
+	sprintf(tmp,"noidle\n");
 
 	g_strlcat(tmp,string,sizeof tmp);
 	g_strlcat(tmp,"\n",sizeof tmp);
 
 	/* re-enter idle mode */
-	if(mpd_info.have_idle)
-		g_strlcat(tmp,"idle player\n",sizeof tmp);
+	g_strlcat(tmp,"idle player\n",sizeof tmp);
 
 	if(write(mpd_info.sockfd,tmp,strlen(tmp)) < 0) return -1;
 	return 0;
@@ -236,31 +234,21 @@ void mpd_parse(gchar *buf)
 					current_song.song_state = INVALID;
 				}
 				if(current_song.length < 30) current_song.song_state = INVALID;
-				else if(mpd_info.have_idle) {
-					g_timer_start(current_song.pos);
-				}
+				g_timer_start(current_song.pos);
 			}
 			continue;
 		}
-		else if(strncmp(line,"time: ",6) == 0) {
-			/* check if the song has really been played for at least 240 seconds or more than 50% */
-			if(current_song.length > 0 && current_song.song_state != SUBMITTED && (strtol(&line[6],NULL,10) > 240 || strtol(&line[6],NULL,10) > (long)current_song.length / 2)) {
-				queue_add(current_song.artist,current_song.title,current_song.album,current_song.length,current_song.track,current_song.date);
-				current_song.song_state = SUBMITTED;
-			} else
-				current_song.song_state = CHECK;
-		}
 		else if(strncmp(line,"OK MPD",6) == 0) {
-			sscanf(line,"%*s %*s %hu.%hu.%hu",&mpd_info.version[0],
-				&mpd_info.version[1],&mpd_info.version[2]);
-			scmpc_log(INFO,"Connected to MPD.");
-			if(write(mpd_info.sockfd,"status\n",7) < 0) return;
-			if(mpd_info.version[0] > 0 || mpd_info.version[1] >= 14) {
-				if(write(mpd_info.sockfd,"idle player\n",12) < 0) return;
-				scmpc_log(INFO,"MPD >= 0.14, using idle");
-				mpd_info.have_idle = TRUE;
-				current_song.pos = g_timer_new();
+			gushort version[2];
+			sscanf(line,"%*s %*s %hu.%hu",&version[0],&version[1]);
+			if(version[0] == 0 && version[1] < 14) {
+				scmpc_log(ERROR,"MPD too old, please upgrade to 0.14");
+				cleanup();
+				exit(EXIT_FAILURE);
 			}
+			scmpc_log(INFO,"Connected to MPD.");
+			current_song.pos = g_timer_new();
+			if(write(mpd_info.sockfd,"idle player\n",12) < 0) return;
 		}
 	} while((line = strtok_r(NULL,"\n",&saveptr)) != NULL);
 }
