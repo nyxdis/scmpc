@@ -33,7 +33,7 @@ struct _prefs {
 	gint mpd_timeout;
 	gchar *mpd_password;
 	gboolean fork;
-	enum loglevel log_level;
+	loglevel log_level;
 	gchar *config_file;
 	gchar *log_file;
 	gchar *pid_file;

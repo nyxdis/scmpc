@@ -40,13 +40,13 @@
 static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
 	if(strncmp(value,"off",3) == 0)
-		*(enum loglevel *)result = NONE;
+		*(loglevel *)result = NONE;
 	else if(strncmp(value,"error",5) == 0)
-		*(enum loglevel *)result = ERROR;
+		*(loglevel *)result = ERROR;
 	else if(strncmp(value,"info",4) == 0)
-		*(enum loglevel *)result = INFO;
+		*(loglevel *)result = INFO;
 	else if(strncmp(value,"debug",5) == 0)
-		*(enum loglevel *)result = DEBUG;
+		*(loglevel *)result = DEBUG;
 	else {
 		cfg_error(cfg,"Invalid value for option '%s': '%s'",
 			cfg_opt_name(opt),value);

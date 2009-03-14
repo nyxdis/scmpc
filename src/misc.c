@@ -46,7 +46,7 @@ void open_log(gconstpointer filename)
 	}
 }
 
-void scmpc_log(enum loglevel level, gconstpointer format, ...)
+void scmpc_log(loglevel level, gconstpointer format, ...)
 {
 	gchar *ts;
 	time_t t;
