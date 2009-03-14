@@ -27,7 +27,7 @@
 #include <curl/curl.h>
 #include <glib.h>
 
-struct as_connection {
+struct _as_conn {
 	gchar *session_id;
 	gchar *submit_url;
 	gchar *np_url;

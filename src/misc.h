@@ -35,8 +35,8 @@ enum loglevel
 };
 
 enum connection_status {
-	CONNECTED,
 	DISCONNECTED,
+	CONNECTED,
 	BADAUTH
 };
 
