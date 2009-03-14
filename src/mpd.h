@@ -26,8 +26,9 @@
 
 #include <glib.h>
 
-struct mpd_song {
-	enum { NEW, INVALID, CHECK, SUBMITTED } song_state;
+struct _current_song {
+	GTimer *pos;
+	enum { CHECK, NEW, INVALID, SUBMITTED } song_state;
 	enum { STOPPED, PAUSED, PLAYING, UNKNOWN } mpd_state;
 	gchar *album;
 	gchar *artist;
@@ -40,7 +41,7 @@ struct mpd_song {
 	gushort track;
 } current_song;
 
-struct mpd_info {
+struct _mpd_info {
 	enum connection_status status;
 	gboolean have_idle;
 	gint sockfd;
