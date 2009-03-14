@@ -16,6 +16,6 @@ scmpc_LDADD = 	@libcurl_LIBS@ \
 		@confuse_LIBS@ \
 		@glib_LIBS@
 
-DEFS += -DSYSCONFDIR=\"$(sysconfdir)\"
+DEFS += -DSYSCONFDIR=\"$(sysconfdir)\" -D_POSIX_SOURCE -D_BSD_SOURCE
 
 EXTRA_DIST = scmpc.conf.example
