@@ -55,11 +55,11 @@ The location of the pid file, which essentially stores the process id and makes
 sure that only one copy of the daemon is running at once.
 .TP
 .B -k or --kill
-Kill the currently running scmpc
+Kills the currently running scmpc
 .TP
 .B -n or --foreground
 Runs the program in the foreground instead of immediately forking. It also
-redirects logging output to standard out, and doesn't create a pid file.
+redirects logging output to standard out and doesn't create a pid file.
 .TP
 .B -q or --quiet
 Sets the logging level to none, which disables logging completely.
@@ -70,7 +70,7 @@ Prints the name and version of the program along with a brief copyright notice.
 .SH CONFIGURATION
 .B scmpc
 looks for its configuration file first at \fI~/.scmpcrc\fR, then at
-\fI~/.scmpc/scmpc.conf\fR, and finally at \fI@sysconfdir@/scmpc.conf\fR. If a
+\fI~/.scmpc/scmpc.conf\fR and finally at \fI@sysconfdir@/scmpc.conf\fR. If a
 config file is specified as a command line option that file will be used
 instead.
 .PP
@@ -178,10 +178,9 @@ The default location of the pid file.
 .RE
 
 .SH BUGS
-The MPD connection code should work with IPv6, but I have no way of testing it.
 If libcurl was compiled with IPv6 support and Audioscrobbler supports it, it
-should work for communicating with Audioscrobbler, but like I say, I have no
-way of knowing.
+should work for communicating with Audioscrobbler, but I have no way of
+knowing.
 .PP
 There is no proxy support for communicating with MPD. However, if you use a
 proxy to connect to the internet and your \fIhttp_proxy\fR environment variable
