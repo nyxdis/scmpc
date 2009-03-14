@@ -69,10 +69,9 @@ void scmpc_log(loglevel level, gconstpointer format, ...)
 	fflush(log_file);
 }
 
-gsize buffer_write(void *input, gsize size, gsize nmemb, void *buf)
+gsize buffer_write(void *input, gsize size, gsize nmemb, G_GNUC_UNUSED void *buf)
 {
 	gsize len = size*nmemb;
-	buf = NULL; /* suppress warnings about buf being unused */
 	buffer = g_strdup(input);
 	return len;
 }
