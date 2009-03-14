@@ -141,7 +141,7 @@ gint mpd_write(gconstpointer string)
 
 	/* re-enter idle mode */
 	if(mpd_info.have_idle)
-		g_strlcat(tmp,"idle\n",sizeof tmp);
+		g_strlcat(tmp,"idle player\n",sizeof tmp);
 
 	if(write(mpd_info.sockfd,tmp,strlen(tmp)) < 0) return -1;
 	return 0;
@@ -194,11 +194,9 @@ void mpd_parse(gchar *buf)
 					"%s",&line[13]);
 			}
 		}
-		else if(strncmp(line,"changed: ",8) == 0) {
-			if(strncmp(line,"changed: player",14) == 0) {
-				if(write(mpd_info.sockfd,"currentsong\n",12) < 0) return;
-			}
-			if(write(mpd_info.sockfd,"idle\n",5) < 0) return;
+		else if(strncmp(line,"changed: player",15) == 0) {
+			if(write(mpd_info.sockfd,"currentsong\n",12) < 0) return;
+			if(write(mpd_info.sockfd,"idle player\n",12) < 0) return;
 		}
 		else if(strncmp(line,"file: ",6) == 0) {
 			if(strcmp(current_song.filename,&line[6])) {
@@ -237,6 +235,10 @@ void mpd_parse(gchar *buf)
 					scmpc_log(INFO,"File is not tagged properly.");
 					current_song.song_state = INVALID;
 				}
+				if(current_song.length < 30) current_song.song_state = INVALID;
+				else if(mpd_info.have_idle) {
+					g_timer_start(current_song.pos);
+				}
 			}
 			continue;
 		}
@@ -254,9 +256,10 @@ void mpd_parse(gchar *buf)
 			scmpc_log(INFO,"Connected to MPD.");
 			if(write(mpd_info.sockfd,"status\n",7) < 0) return;
 			if(mpd_info.version[0] > 0 || mpd_info.version[1] >= 14) {
-				if(write(mpd_info.sockfd,"idle\n",5) < 0) return;
+				if(write(mpd_info.sockfd,"idle player\n",12) < 0) return;
 				scmpc_log(INFO,"MPD >= 0.14, using idle");
 				mpd_info.have_idle = TRUE;
+				current_song.pos = g_timer_new();
 			}
 		}
 	} while((line = strtok_r(NULL,"\n",&saveptr)) != NULL);
