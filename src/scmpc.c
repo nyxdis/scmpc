@@ -44,6 +44,7 @@ static gint scmpc_pid_remove(void);
 
 static void sighandler(gint sig);
 static void daemonise(void);
+static void cleanup(void);
 gconstpointer pid_filename(void);
 
 int main(int argc, char *argv[])
@@ -241,7 +242,7 @@ static void daemonise(void)
 	}
 }
 
-void cleanup(void)
+static void cleanup(void)
 {
 	if(queue.length > 0) queue_save();
 	if(prefs.fork) scmpc_pid_remove();
