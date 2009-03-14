@@ -81,10 +81,11 @@ int main(int argc, char *argv[])
 	sigaction(SIGTERM,&sa,NULL);
 	sigaction(SIGQUIT,&sa,NULL);
 
-	if(as_connection_init() < 0 || mpd_connect() < 0) {
+	if(as_connection_init() < 0) {
 		cleanup();
 		exit(EXIT_FAILURE);
 	}
+	mpd_connect();
 	as_handshake();
 	queue_load();
 	g_get_current_time(&tv);
@@ -107,8 +108,9 @@ int main(int argc, char *argv[])
 					g_strerror(errno));
 			g_free(buf);
 		} else if(fds[0].revents & POLLHUP) {
-			/* TODO: reconnect */
-			scmpc_log(ERROR,"Disconnected from MPD");
+			mpd_info.status = DISCONNECTED;
+			scmpc_log(INFO,"Disconnected from MPD, reconnecting");
+			mpd_connect();
 		}
 
 		/* submit queue */
