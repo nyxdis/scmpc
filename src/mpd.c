@@ -192,12 +192,27 @@ void mpd_parse(gchar *buf)
 					"%s",&line[13]);
 			}
 		}
-		else if(strncmp(line,"changed: player",15) == 0) {
-			if(write(mpd_info.sockfd,"currentsong\n",12) < 0) return;
-			if(write(mpd_info.sockfd,"idle player\n",12) < 0) return;
+		else if(strncmp(line,"changed: player",15) == 0)
+			if(write(mpd_info.sockfd,"status\ncurrentsong\nidle player\n",31) < 0) return;
+		else if(strncmp(line,"state: ",7) == 0) {
+			if(strncmp(&line[8],"play") == 0) {
+				if(current_song.mpd_state == PLAYING)
+					current_song.song_state = CHECK;
+				else if(current_song.mpd_state == PAUSED) {
+					g_timer_continue(current_song.pos);
+				}
+				current_song.mpd_state = PLAYING;
+			} else if(strncmp(&line[8],"pause") == 0) {
+				if(current_song.mpd_state == PLAYING)
+					g_timer_stop(current_song.pos);
+				current_song.mpd_state = PAUSED;
+			} else if(strncmp(&line[8],"stop") == 0) {
+				current_song.song_state = CHECK;
+				current_song.mpd_state = STOPPED;
+			}
 		}
 		else if(strncmp(line,"file: ",6) == 0) {
-			if(strcmp(current_song.filename,&line[6])) {
+			if(current_song.mpd_state == CHECK) {
 				GTimeVal tv;
 				glong ts;
 
