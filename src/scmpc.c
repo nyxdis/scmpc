@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 	/* Check if scmpc is already running */
 	if((pid = scmpc_is_running()) > 0) {
 		clear_preferences();
-		g_error("Daemon is already running with PID: %u",pid);
+		g_error("Daemon is already running with PID: %ld",(long)pid);
 	}
 
 	/* Daemonise if wanted */
@@ -112,6 +112,10 @@ int main(int argc, char *argv[])
 			scmpc_log(ERROR,"Disconnected from MPD");
 		}
 
+		/* submit queue */
+		if(queue.length > 0 && as_conn.status == CONNECTED)
+			as_submit();
+
 		/* save queue */
 		g_get_current_time(&tv);
 		if((tv.tv_sec - last_queue_save) >= prefs.cache_interval * 60) {
@@ -119,20 +123,21 @@ int main(int argc, char *argv[])
 			last_queue_save = tv.tv_sec;
 		}
 
-		/* Check if song is eligible for submission
-		 * second condition checks if the song was played halfway through, third if it was played for more than 240 seconds */
+		/* Check if song is eligible for submission */
+		if(current_song.song_state != NEW)
+			continue;
+
 		if(mpd_info.have_idle) {
-			/* TODO: if mpd >= 0.14, use idle to get the playing status and time the time played */
+			if(g_timer_elapsed(current_song.pos,NULL) >= 240 || g_timer_elapsed(current_song.pos,NULL) >= current_song.length / 2) {
+				queue_add(current_song.artist,current_song.title,current_song.album,current_song.length,current_song.track,current_song.date);
+				current_song.song_state = SUBMITTED;
+			}
 		} else {
-			if(current_song.date > 0 && current_song.song_state == NEW && (difftime(time(NULL),current_song.date) >= (current_song.length / 2) || difftime(time(NULL),current_song.date) >= 240)) {
+			if(current_song.date > 0 && (difftime(time(NULL),current_song.date) >= (current_song.length / 2) || difftime(time(NULL),current_song.date) >= 240)) {
 				if(mpd_write("status") < 0) /* check if there was no skipping */
 					perror("MPD write failed:");
 			}
 		}
-
-		/* submit queue */
-		if(queue.length > 0 && as_conn.status == CONNECTED)
-			as_submit();
 	}
 }
 
@@ -150,7 +155,7 @@ static gint scmpc_is_running(void)
 		return -1;
 	}
 
-	if(fscanf(pid_file,"%u",&pid) < 1) {
+	if(fscanf(pid_file,"%d",&pid) < 1) {
 		/* Read nothing from pid_file */
 		fclose(pid_file);
 		if(unlink(prefs.pid_file) < 0) {
@@ -246,6 +251,7 @@ void cleanup(void)
 {
 	if(queue.length > 0) queue_save();
 	if(prefs.fork) scmpc_pid_remove();
+	if(mpd_info.have_idle) g_timer_destroy(current_song.pos);
 	clear_preferences();
 	as_cleanup();
 	mpd_cleanup();
@@ -259,9 +265,9 @@ void kill_scmpc(void)
 	if(pid_file == NULL)
 		g_error("Unable to open PID file");
 
-	if(fscanf(pid_file,"%u",&pid) < 1)
+	if(fscanf(pid_file,"%d",&pid) < 1)
 		g_error("Invalid PID file");
-	
+
 	if(kill(pid,SIGTERM) < 0)
 		g_error("Cannot kill running scmpc");
 
