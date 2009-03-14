@@ -149,7 +149,6 @@ gint mpd_connect(void)
 {
 	gchar *tmp;
 
-	current_song.filename = g_strdup("");
 	mpd_info.status = DISCONNECTED;
 	if(strncmp(prefs.mpd_hostname,"/",1) == 0)
 		mpd_info.sockfd = server_connect_unix(prefs.mpd_hostname);
@@ -192,21 +191,22 @@ void mpd_parse(gchar *buf)
 					"%s",&line[13]);
 			}
 		}
-		else if(strncmp(line,"changed: player",15) == 0)
+		else if(strncmp(line,"changed: player",15) == 0) {
 			if(write(mpd_info.sockfd,"status\ncurrentsong\nidle player\n",31) < 0) return;
+		}
 		else if(strncmp(line,"state: ",7) == 0) {
-			if(strncmp(&line[8],"play") == 0) {
+			if(strncmp(&line[8],"play",4) == 0) {
 				if(current_song.mpd_state == PLAYING)
 					current_song.song_state = CHECK;
 				else if(current_song.mpd_state == PAUSED) {
 					g_timer_continue(current_song.pos);
 				}
 				current_song.mpd_state = PLAYING;
-			} else if(strncmp(&line[8],"pause") == 0) {
+			} else if(strncmp(&line[8],"pause",5) == 0) {
 				if(current_song.mpd_state == PLAYING)
 					g_timer_stop(current_song.pos);
 				current_song.mpd_state = PAUSED;
-			} else if(strncmp(&line[8],"stop") == 0) {
+			} else if(strncmp(&line[8],"stop",4) == 0) {
 				current_song.song_state = CHECK;
 				current_song.mpd_state = STOPPED;
 			}
@@ -258,8 +258,9 @@ void mpd_parse(gchar *buf)
 			sscanf(line,"%*s %*s %hu.%hu",&version[0],&version[1]);
 			if(version[0] == 0 && version[1] < 14) {
 				scmpc_log(ERROR,"MPD too old, please upgrade to 0.14");
-				cleanup();
-				exit(EXIT_FAILURE);
+				mpd_info.status = BADAUTH;
+				close(mpd_info.sockfd);
+				continue;
 			}
 			scmpc_log(INFO,"Connected to MPD.");
 			current_song.pos = g_timer_new();
@@ -270,7 +271,7 @@ void mpd_parse(gchar *buf)
 
 void mpd_cleanup(void)
 {
-	close(mpd_info.sockfd);
+	if(mpd_info.status == CONNECTED) close(mpd_info.sockfd);
 	g_free(current_song.filename);
 	g_free(current_song.artist);
 	g_free(current_song.title);
