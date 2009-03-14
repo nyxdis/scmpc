@@ -228,12 +228,12 @@ void as_now_playing(void)
 	g_free(buffer);
 }
 
-static gint build_querystring(gchar **qs, struct queue_node **last_song)
+static gint build_querystring(gchar **qs, queue_node **last_song)
 {
 	gchar *artist, *title, *album;
 	GString *nqs;
 	gint num = 0;
-	struct queue_node *song = queue.first;
+	queue_node *song = queue.first;
 
 	nqs = g_string_new("s=");
 	g_string_append(nqs,as_conn.session_id);
@@ -261,13 +261,13 @@ static gint build_querystring(gchar **qs, struct queue_node **last_song)
 gint as_submit(void)
 {
 	gchar *querystring, *line, *saveptr;
-	struct queue_node *last_added;
+	queue_node *last_added;
 	gint ret, num_songs;
 	static gchar last_failed[512];
 
 	if(queue.first == NULL)
 		return -1;
-	
+
 	num_songs = build_querystring(&querystring, &last_added);
 	if(num_songs <= 0) {
 		g_free(querystring);

@@ -36,14 +36,14 @@
 void queue_add(gconstpointer artist, gconstpointer title, gconstpointer album,
 	guint length, gushort track, glong date)
 {
-	struct queue_node *new_song;
+	queue_node *new_song;
 
 	if(artist == NULL || title == NULL || length < 30) {
 		scmpc_log(DEBUG,"Invalid song passed to queue_add(). Rejecting.");
 		return;
 	}
 
-	if((new_song = g_malloc(sizeof(struct queue_node))) == NULL) return;
+	if((new_song = g_malloc(sizeof (queue_node))) == NULL) return;
 
 	new_song->title = g_strdup(title);
 	new_song->artist = g_strdup(artist);
@@ -69,7 +69,7 @@ void queue_add(gconstpointer artist, gconstpointer title, gconstpointer album,
 
 	/* Queue is full, remove the first item and add the new one */
 	if(queue.length == prefs.queue_length) {
-		struct queue_node *new_first_song = queue.first->next;
+		queue_node *new_first_song = queue.first->next;
 		if(new_first_song == NULL) {
 			scmpc_log(DEBUG,"Queue is too long, but there is only "
 				"one accessible song in the list. New song not added.");
@@ -103,7 +103,7 @@ void queue_load(void)
 				g_strerror(errno));
 		return;
 	}
-	
+
 	while(fgets(line,sizeof line,cache_file)) {
 		if(strncmp(line,"# BEGIN SONG",12) == 0) {
 			g_free(artist); g_free(title); g_free(album);
@@ -134,9 +134,9 @@ void queue_load(void)
 	fclose(cache_file);
 }
 
-void queue_remove_songs(struct queue_node *song, struct queue_node *keep_ptr)
+void queue_remove_songs(queue_node *song, queue_node *keep_ptr)
 {
-	struct queue_node *next_song;
+	queue_node *next_song;
 
 	while(song != NULL && song != keep_ptr) {
 		g_free(song->title);
@@ -155,7 +155,7 @@ void queue_remove_songs(struct queue_node *song, struct queue_node *keep_ptr)
 void queue_save(void)
 {
 	FILE *cache_file;
-	struct queue_node *current_song;
+	queue_node *current_song;
 
 	current_song = queue.first;
 
