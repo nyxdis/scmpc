@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
 
 		/* save queue */
 		g_get_current_time(&tv);
-		if(queue.length > 0 && (tv.tv_sec - last_queue_save) >= prefs.cache_interval * 60) {
+		if((tv.tv_sec - last_queue_save) >= prefs.cache_interval * 60) {
 			queue_save();
 			last_queue_save = tv.tv_sec;
 		}
