@@ -120,8 +120,10 @@ int main(int argc, char *argv[])
 		}
 
 		/* submit queue */
-		if(queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL),as_last_fail) >= 600)
-			as_submit();
+		if(queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL),as_last_fail) >= 600) {
+			if(as_submit() == 1)
+				as_last_fail = time(NULL);
+		}
 
 		/* save queue */
 		if(difftime(time(NULL),last_queue_save) >= prefs.cache_interval * 60) {

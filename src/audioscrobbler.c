@@ -283,6 +283,7 @@ gint as_submit(void)
 	if((ret = curl_easy_perform(as_conn.handle)) != 0) {
 		scmpc_log(INFO,"Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
+		return 1;
 	}
 	g_free(querystring);
 
