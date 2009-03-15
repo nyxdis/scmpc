@@ -28,7 +28,7 @@
 
 struct _current_song {
 	GTimer *pos;
-	enum { CHECK, NEW, INVALID, SUBMITTED } song_state;
+	enum { INVALID, NEW, SUBMITTED } song_state;
 	enum { UNKNOWN, STOPPED, PAUSED, PLAYING } mpd_state;
 	gchar *album;
 	gchar *artist;
