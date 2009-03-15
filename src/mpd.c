@@ -192,12 +192,12 @@ void mpd_parse(gchar *buf)
 			}
 		}
 		else if(strncmp(line,"changed: player",15) == 0) {
-			if(write(mpd_info.sockfd,"status\ncurrentsong\nidle player\n",31) < 0) return;
+			if(write(mpd_info.sockfd,"status\n",7) < 0) return;
 		}
 		else if(strncmp(line,"state: ",7) == 0) {
 			if(strncmp(&line[8],"play",4) == 0) {
-				if(current_song.mpd_state == PLAYING)
-					current_song.song_state = CHECK;
+				if(current_song.mpd_state == PLAYING || current_song.mpd_state == STOPPED)
+					if(write(mpd_info.sockfd,"currentsong\n",12) < 0) return;
 				else if(current_song.mpd_state == PAUSED) {
 					g_timer_continue(current_song.pos);
 				}
@@ -207,51 +207,48 @@ void mpd_parse(gchar *buf)
 					g_timer_stop(current_song.pos);
 				current_song.mpd_state = PAUSED;
 			} else if(strncmp(&line[8],"stop",4) == 0) {
-				current_song.song_state = CHECK;
 				current_song.mpd_state = STOPPED;
 			}
+			if(write(mpd_info.sockfd,"idle player\n",12) < 0) return;
 		}
 		else if(strncmp(line,"file: ",6) == 0) {
-			if(current_song.mpd_state == CHECK) {
-				GTimeVal tv;
-				glong ts;
+			GTimeVal tv;
+			glong ts;
 
-				g_get_current_time(&tv);
-				ts = tv.tv_sec;
+			g_get_current_time(&tv);
+			ts = tv.tv_sec;
 
-				g_free(current_song.filename);
-				g_free(current_song.artist);
-				current_song.artist = NULL;
-				g_free(current_song.title);
-				current_song.artist = NULL;
-				g_free(current_song.album);
-				current_song.artist = NULL;
-				current_song.track = 0;
-				current_song.filename = g_strdup(&line[6]);
-				while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
-					if(strncmp(line,"Artist: ",8) == 0)
-						current_song.artist = g_strdup(&line[8]);
-					if(strncmp(line,"Album: ",7) == 0)
-						current_song.album = g_strdup(&line[7]);
-					if(strncmp(line,"Title: ",7) == 0)
-						current_song.title = g_strdup(&line[7]);
-					if(strncmp(line,"Time: ",6) == 0)
-						current_song.length = atoi(&line[6]);
-					if(strncmp(line,"Track: ",7) == 0)
-						current_song.track = atoi(strtok(&line[7],"/"));
-				}
-				current_song.date = ts;
-				if(current_song.artist != NULL && current_song.title != NULL) {
-					current_song.song_state = NEW;
-					as_now_playing();
-				} else {
-					scmpc_log(INFO,"File is not tagged properly.");
-					current_song.song_state = INVALID;
-				}
-				if(current_song.length < 30) current_song.song_state = INVALID;
-				g_timer_start(current_song.pos);
+			g_free(current_song.filename);
+			g_free(current_song.artist);
+			g_free(current_song.title);
+			g_free(current_song.album);
+			current_song.artist = current_song.title = current_song.album = NULL;
+			current_song.track = 0;
+			current_song.filename = g_strdup(&line[6]);
+			while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
+				if(strncmp(line,"Artist: ",8) == 0)
+					current_song.artist = g_strdup(&line[8]);
+				if(strncmp(line,"Album: ",7) == 0)
+					current_song.album = g_strdup(&line[7]);
+				if(strncmp(line,"Title: ",7) == 0)
+					current_song.title = g_strdup(&line[7]);
+				if(strncmp(line,"Time: ",6) == 0)
+					current_song.length = atoi(&line[6]);
+				if(strncmp(line,"Track: ",7) == 0)
+					current_song.track = atoi(strtok(&line[7],"/"));
 			}
-			continue;
+			current_song.date = ts;
+			if(current_song.artist != NULL && current_song.title != NULL && current_song.length >= 30) {
+				current_song.song_state = NEW;
+				as_now_playing();
+				g_timer_start(current_song.pos);
+			} else if(current_song.length < 30) {
+				scmpc_log(INFO,"Song is too short.");
+				current_song.song_state = INVALID;
+			} else {
+				scmpc_log(INFO,"File is not tagged properly.");
+				current_song.song_state = INVALID;
+			}
 		}
 		else if(strncmp(line,"OK MPD",6) == 0) {
 			gushort version[2];
