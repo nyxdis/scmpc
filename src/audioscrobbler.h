@@ -24,6 +24,8 @@
  */
 
 
+/* curl/curl.h requires sys/select.h but doesn't include it on FreeBSD */
+#include <sys/select.h>
 #include <curl/curl.h>
 #include <glib.h>
 
