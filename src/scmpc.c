@@ -50,7 +50,6 @@ gconstpointer pid_filename(void);
 int main(int argc, char *argv[])
 {
 	gchar *buf;
-	gssize sr;
 	pid_t pid;
 	struct pollfd fds[1];
 	struct sigaction sa;
@@ -99,8 +98,7 @@ int main(int argc, char *argv[])
 
 		if(fds[0].revents & POLLIN) {
 			buf = g_malloc0(256);
-			sr = read(mpd_info.sockfd,buf,255);
-			if(sr > 0)
+			if(read(mpd_info.sockfd,buf,255) > 0)
 				mpd_parse(buf);
 			else
 				scmpc_log(ERROR,"Failed to read from MPD: %s",
