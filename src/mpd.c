@@ -196,9 +196,9 @@ void mpd_parse(gchar *buf)
 		}
 		else if(strncmp(line,"state: ",7) == 0) {
 			if(strncmp(&line[8],"play",4) == 0) {
-				if(current_song.mpd_state == PLAYING || current_song.mpd_state == STOPPED)
+				if(current_song.mpd_state == PLAYING || current_song.mpd_state == STOPPED) {
 					if(write(mpd_info.sockfd,"currentsong\n",12) < 0) return;
-				else if(current_song.mpd_state == PAUSED) {
+				} else if(current_song.mpd_state == PAUSED) {
 					g_timer_continue(current_song.pos);
 				}
 				current_song.mpd_state = PLAYING;
