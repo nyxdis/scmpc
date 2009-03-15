@@ -49,13 +49,12 @@ gconstpointer pid_filename(void);
 
 int main(int argc, char *argv[])
 {
-	GTimeVal tv;
 	gchar *buf;
-	glong last_queue_save = 0;
 	gssize sr;
 	pid_t pid;
 	struct pollfd fds[1];
 	struct sigaction sa;
+	time_t last_queue_save = 0, mpd_last_fail = 0, as_last_fail = 0;
 
 	if(init_preferences(argc,argv) < 0)
 		g_error("Config file parsing failed");
@@ -89,8 +88,7 @@ int main(int argc, char *argv[])
 	mpd_connect();
 	as_handshake();
 	queue_load();
-	g_get_current_time(&tv);
-	last_queue_save = tv.tv_sec;
+	last_queue_save = time(NULL);
 
 	fds[0].fd = mpd_info.sockfd;
 	fds[0].events = POLLIN;
@@ -111,18 +109,24 @@ int main(int argc, char *argv[])
 		} else if(fds[0].revents & POLLHUP) {
 			mpd_info.status = DISCONNECTED;
 			scmpc_log(INFO,"Disconnected from MPD, reconnecting");
-			mpd_connect();
+			if(mpd_connect() < 0)
+				mpd_last_fail = time(NULL);
+		}
+
+		/* reconnect to MPD */
+		if(mpd_info.status == DISCONNECTED && difftime(time(NULL),mpd_last_fail) >= 1800) {
+			if(mpd_connect() < 0)
+				mpd_last_fail = time(NULL);
 		}
 
 		/* submit queue */
-		if(queue.length > 0 && as_conn.status == CONNECTED)
+		if(queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL),as_last_fail) >= 600)
 			as_submit();
 
 		/* save queue */
-		g_get_current_time(&tv);
-		if((tv.tv_sec - last_queue_save) >= prefs.cache_interval * 60) {
+		if(difftime(time(NULL),last_queue_save) >= prefs.cache_interval * 60) {
 			queue_save();
-			last_queue_save = tv.tv_sec;
+			last_queue_save = time(NULL);
 		}
 
 		/* Check if song is eligible for submission */
