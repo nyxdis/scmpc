@@ -90,16 +90,22 @@ static gint parse_files(cfg_t *cfg)
 	gshort i;
 	gchar *config_files[3], *home;
 
-	home = getenv("HOME");
+	if(prefs.config_file == NULL) {
+		home = getenv("HOME");
 
-	if(home == NULL) {
-		config_files[0] = g_strdup("");
-		config_files[1] = g_strdup("");
+		if(home == NULL) {
+			config_files[0] = g_strdup("");
+			config_files[1] = g_strdup("");
+		} else {
+			config_files[0] = g_strdup_printf("%s/.scmpcrc",home);
+			config_files[1] = g_strdup_printf("%s/.scmpc/scmpc.conf",home);
+		}
+		config_files[2] = g_strdup(SYSCONFDIR "/scmpc.conf");
 	} else {
-		config_files[0] = g_strdup_printf("%s/.scmpcrc",home);
-		config_files[1] = g_strdup_printf("%s/.scmpc/scmpc.conf",home);
+		config_files[0] = prefs.config_file;
+		config_files[1] = g_strdup("");
+		config_files[2] = g_strdup("");
 	}
-	config_files[2] = g_strdup(SYSCONFDIR "/scmpc.conf");
 
 	for(i=0;i<3;i++)
 	{
@@ -266,6 +272,7 @@ gint init_preferences(gint argc, gchar **argv)
 {
 	gchar *tmp, *saveptr;
 
+	prefs.config_file = NULL;
 	if(parse_config_file() < 0)
 		return -1;
 	if(parse_command_line(argc,argv) < 0)
