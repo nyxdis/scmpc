@@ -84,7 +84,8 @@ int main(int argc, char *argv[])
 		cleanup();
 		exit(EXIT_FAILURE);
 	}
-	mpd_connect();
+	if(mpd_connect() < 0)
+		mpd_last_fail = time(NULL);
 	as_handshake();
 	queue_load();
 	last_queue_save = time(NULL);

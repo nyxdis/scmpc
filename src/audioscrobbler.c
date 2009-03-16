@@ -93,7 +93,7 @@ void as_handshake(void)
 	g_get_current_time(&tv);
 	timestamp = tv.tv_sec;
 
-	if((timestamp - as_conn.last_handshake) < 1800) {
+	if(difftime(time(NULL),as_conn.last_handshake) < 1800) {
 		scmpc_log(DEBUG,"Requested handshake, but last handshake "
 				"was less than 30 minutes ago.");
 		return;
