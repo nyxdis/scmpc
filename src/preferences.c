@@ -39,7 +39,7 @@
 
 static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
-	if(strncmp(value,"off",3) == 0)
+	if(strncmp(value,"none",4) == 0)
 		*(loglevel *)result = NONE;
 	else if(strncmp(value,"error",5) == 0)
 		*(loglevel *)result = ERROR;
@@ -143,7 +143,7 @@ static gint parse_config_file(void)
 		CFG_END()
 	};
 	cfg_opt_t opts[] = {
-		CFG_INT_CB("log_level",ERROR,CFGF_NONE,cf_log_level),
+		CFG_INT_CB("log_level",ERROR,CFGF_NONE,&cf_log_level),
 		CFG_STR("log_file","/var/log/scmpc.log",CFGF_NONE),
 		CFG_STR("pid_file","/var/run/scmpc.pid",CFGF_NONE),
 		CFG_STR("cache_file","/var/lib/scmpc/scmpc.cache",CFGF_NONE),
@@ -155,11 +155,11 @@ static gint parse_config_file(void)
 	};
 
 	cfg = cfg_init(opts,CFGF_NONE);
-	cfg_set_validate_func(cfg,"queue_length",cf_validate_num);
-	cfg_set_validate_func(cfg,"cache_interval",cf_validate_num_zero);
-	cfg_set_validate_func(cfg,"mpd|port",cf_validate_num);
-	cfg_set_validate_func(cfg,"mpd|timeout",cf_validate_num);
-	cfg_set_validate_func(cfg,"mpd|interval",cf_validate_num);
+	cfg_set_validate_func(cfg,"queue_length",&cf_validate_num);
+	cfg_set_validate_func(cfg,"cache_interval",&cf_validate_num_zero);
+	cfg_set_validate_func(cfg,"mpd|port",&cf_validate_num);
+	cfg_set_validate_func(cfg,"mpd|timeout",&cf_validate_num);
+	cfg_set_validate_func(cfg,"mpd|interval",&cf_validate_num);
 
 	if(parse_files(cfg) < 0) {
 		cfg_free(cfg);
