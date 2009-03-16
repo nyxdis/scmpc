@@ -34,7 +34,7 @@ struct _as_conn {
 	gchar *submit_url;
 	gchar *np_url;
 	gchar password[33];
-	glong last_handshake;
+	time_t last_handshake;
 	connection_status status;
 	CURL *handle;
 	struct curl_slist *headers;
