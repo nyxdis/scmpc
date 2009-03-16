@@ -56,6 +56,7 @@ gint as_connection_init(void)
 	curl_easy_setopt(as_conn.handle,CURLOPT_ERRORBUFFER,curl_error_buffer);
 	curl_easy_setopt(as_conn.handle,CURLOPT_NOSIGNAL,1L);
 	curl_easy_setopt(as_conn.handle,CURLOPT_CONNECTTIMEOUT,5L);
+	curl_easy_setopt(as_conn.handle,CURLOPT_TIMEOUT,5L);
 	return 0;
 }
 
