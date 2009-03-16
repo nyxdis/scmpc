@@ -89,6 +89,7 @@ int main(int argc, char *argv[])
 	as_handshake();
 	queue_load();
 	last_queue_save = time(NULL);
+	current_song.pos = g_timer_new();
 
 	fds[0].fd = mpd_info.sockfd;
 	fds[0].events = POLLIN;
