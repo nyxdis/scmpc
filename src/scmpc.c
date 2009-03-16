@@ -96,6 +96,7 @@ int main(int argc, char *argv[])
 	{
 		poll(fds,1,prefs.mpd_interval);
 
+		/* Check for new events on MPD socket */
 		if(fds[0].revents & POLLIN) {
 			buf = g_malloc0(256);
 			if(read(mpd_info.sockfd,buf,255) > 0)
@@ -104,11 +105,26 @@ int main(int argc, char *argv[])
 				scmpc_log(ERROR,"Failed to read from MPD: %s",
 					g_strerror(errno));
 			g_free(buf);
-		} else if(fds[0].revents & POLLHUP) {
+		}
+
+		/* Check if MPD socket disconnected */
+		if(fds[0].revents & POLLHUP) {
 			mpd_info.status = DISCONNECTED;
 			scmpc_log(INFO,"Disconnected from MPD, reconnecting");
 			if(mpd_connect() < 0)
 				mpd_last_fail = time(NULL);
+		}
+
+		/* Check if song is eligible for submission */
+		if(current_song.song_state == NEW && (g_timer_elapsed(current_song.pos,NULL) >= 240 || g_timer_elapsed(current_song.pos,NULL) >= current_song.length / 2)) {
+			queue_add(current_song.artist,current_song.title,current_song.album,current_song.length,current_song.track,current_song.date);
+			current_song.song_state = SUBMITTED;
+		}
+
+		/* save queue */
+		if(difftime(time(NULL),last_queue_save) >= prefs.cache_interval * 60) {
+		        queue_save();
+		        last_queue_save = time(NULL);
 		}
 
 		/* reconnect to MPD */
@@ -121,21 +137,6 @@ int main(int argc, char *argv[])
 		if(queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL),as_last_fail) >= 600) {
 			if(as_submit() == 1)
 				as_last_fail = time(NULL);
-		}
-
-		/* save queue */
-		if(difftime(time(NULL),last_queue_save) >= prefs.cache_interval * 60) {
-			queue_save();
-			last_queue_save = time(NULL);
-		}
-
-		/* Check if song is eligible for submission */
-		if(current_song.song_state != NEW)
-			continue;
-
-		if(g_timer_elapsed(current_song.pos,NULL) >= 240 || g_timer_elapsed(current_song.pos,NULL) >= current_song.length / 2) {
-			queue_add(current_song.artist,current_song.title,current_song.album,current_song.length,current_song.track,current_song.date);
-			current_song.song_state = SUBMITTED;
 		}
 	}
 }
