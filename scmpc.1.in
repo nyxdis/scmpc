@@ -18,7 +18,7 @@ it can be run in the foreground with the logs directed to standard out.
 .B scmpc
 can be run without a connection to the internet as it stores songs in a queue
 if they can't be submitted immediately. The size of this queue can be limited
-in the configuration file so as to avoid scmpc taking up all your memory.  The
+in the configuration file so as to avoid scmpc taking up all your memory. The
 queue is saved at another configurable interval so that if scmpc is stopped
 unexpectedly for some reason, such as a power failure, you should 'lose' as
 few songs as possible.
@@ -74,11 +74,11 @@ looks for its configuration file first at \fI~/.scmpcrc\fR, then at
 config file is specified as a command line option that file will be used
 instead.
 .PP
-If 
+If
 .B scmpc
 doesn't find a file at any of these locations it will silently use the
 compiled in defaults. This will mean that no tracks will be submitted to
-Audioscrobbler because no username or password will have been specified, but 
+Audioscrobbler because no username or password will have been specified, but
 .B scmpc
 will still add any valid songs to the unsubmitted song queue.
 .PP
@@ -194,4 +194,5 @@ Please report any other bugs to Christoph Mende <angelos@unkreativ.org>.
 
 .SH CREDITS
 Original author: Jonathan Coome <jcoome@gmail.com>
-Threadless rewrite by: Christoph Mende <angelos@unkreativ.org>
+.br
+Current maintainer: Christoph Mende <angelos@unkreativ.org>
