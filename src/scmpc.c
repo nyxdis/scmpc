@@ -91,11 +91,11 @@ int main(int argc, char *argv[])
 	last_queue_save = time(NULL);
 	current_song.pos = g_timer_new();
 
-	fds[0].fd = mpd_info.sockfd;
 	fds[0].events = POLLIN;
 
 	for(;;)
 	{
+		fds[0].fd = mpd_info.sockfd;
 		poll(fds,1,prefs.mpd_interval);
 
 		/* Check for new events on MPD socket */
@@ -103,9 +103,10 @@ int main(int argc, char *argv[])
 			buf = g_malloc0(256);
 			if(read(mpd_info.sockfd,buf,255) > 0)
 				mpd_parse(buf);
-			else
-				scmpc_log(ERROR,"Failed to read from MPD: %s",
-					g_strerror(errno));
+			else {
+				scmpc_log(ERROR,"Failed to read from MPD, reconnecting");
+				mpd_info.status = DISCONNECTED;
+			}
 			g_free(buf);
 		}
 
@@ -131,6 +132,7 @@ int main(int argc, char *argv[])
 
 		/* reconnect to MPD */
 		if(mpd_info.status == DISCONNECTED && difftime(time(NULL),mpd_last_fail) >= 1800) {
+			mpd_info.sockfd = -1;
 			if(mpd_connect() < 0)
 				mpd_last_fail = time(NULL);
 		}
