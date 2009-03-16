@@ -213,7 +213,7 @@ static gint parse_command_line(gint argc, gchar **argv)
 		{ "pid-file", 'i', 0, G_OPTION_ARG_FILENAME, &pid_file, "The location of the pid file.", "<pid_file>" },
 		{ "version", 'v', 0, G_OPTION_ARG_NONE, &version, "Print the program version.", NULL },
 		{ "foreground", 'n', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &fork, "Run the program in the foreground rather than as a daemon.", NULL },
-		{ NULL }
+		{ NULL, 0, 0, 0, NULL, NULL, NULL }
 	};
 
 	GOptionContext *context = g_option_context_new(NULL);
@@ -225,7 +225,7 @@ static gint parse_command_line(gint argc, gchar **argv)
 	}
 	g_option_context_free(context);
 
-	if (version) {
+	if(version) {
 		puts(PACKAGE_STRING);
 		puts("An Audioscrobbler client for MPD.");
 		puts("Copyright 2009 Christoph Mende <angelos@unkreativ.org>");
@@ -234,27 +234,27 @@ static gint parse_command_line(gint argc, gchar **argv)
 	} else {
 		/* This must be at the top, to avoid any options specified in the
 		 * config file overriding those on the command line. */
-		if (conf_file != NULL) {
+		if(conf_file != NULL) {
 			g_free(prefs.config_file);
 			prefs.config_file = g_strdup(conf_file);
 			if(parse_config_file() < 0)
 				return -1;
 		}
-		if (pid_file != NULL) {
+		if(pid_file != NULL) {
 			g_free(prefs.pid_file);
 			prefs.pid_file = g_strdup(pid_file);
 		}
-		if (quiet && debug) {
+		if(quiet && debug) {
 			fputs("Specifying --debug and --quiet at the same time"
 					" makes no sense.",stderr);
 			return -1;
-		} else if (quiet)
+		} else if(quiet)
 			prefs.log_level = NONE;
-		else if (debug)
+		else if(debug)
 			prefs.log_level = DEBUG;
-		if (!fork)
+		if(!fork)
 			prefs.fork = FALSE;
-		if (dokill)
+		if(dokill)
 			kill_scmpc();
 	}
 	g_free(pid_file);
