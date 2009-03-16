@@ -41,7 +41,7 @@ void open_log(gconstpointer filename)
 
 	log_file = fopen(filename,"a");
 	if(log_file == NULL) {
-		fputs("Unable to open log file, logging to stdout",stderr);
+		fputs("Unable to open log file for writing, logging to stdout\n",stderr);
 		log_file = stdout;
 	}
 }
