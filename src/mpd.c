@@ -260,7 +260,6 @@ void mpd_parse(gchar *buf)
 				continue;
 			}
 			scmpc_log(INFO,"Connected to MPD.");
-			current_song.pos = g_timer_new();
 			if(write(mpd_info.sockfd,"idle player\n",12) < 0) return;
 		}
 	} while((line = strtok_r(NULL,"\n",&saveptr)) != NULL);
