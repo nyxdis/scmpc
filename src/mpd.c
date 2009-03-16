@@ -195,18 +195,19 @@ void mpd_parse(gchar *buf)
 			if(write(mpd_info.sockfd,"status\n",7) < 0) return;
 		}
 		else if(strncmp(line,"state: ",7) == 0) {
-			if(strncmp(&line[8],"play",4) == 0) {
+			if(strncmp(&line[7],"play",4) == 0) {
 				if(current_song.mpd_state == PLAYING || current_song.mpd_state == STOPPED) {
 					if(write(mpd_info.sockfd,"currentsong\n",12) < 0) return;
 				} else if(current_song.mpd_state == PAUSED) {
 					g_timer_continue(current_song.pos);
 				}
 				current_song.mpd_state = PLAYING;
-			} else if(strncmp(&line[8],"pause",5) == 0) {
-				if(current_song.mpd_state == PLAYING)
+			} else if(strncmp(&line[7],"pause",5) == 0) {
+				if(current_song.mpd_state == PLAYING) {
 					g_timer_stop(current_song.pos);
+				}
 				current_song.mpd_state = PAUSED;
-			} else if(strncmp(&line[8],"stop",4) == 0) {
+			} else if(strncmp(&line[7],"stop",4) == 0) {
 				current_song.mpd_state = STOPPED;
 			}
 			if(write(mpd_info.sockfd,"idle player\n",12) < 0) return;
@@ -260,7 +261,8 @@ void mpd_parse(gchar *buf)
 				continue;
 			}
 			scmpc_log(INFO,"Connected to MPD.");
-			if(write(mpd_info.sockfd,"idle player\n",12) < 0) return;
+			current_song.mpd_state = UNKNOWN;
+			if(write(mpd_info.sockfd,"status\n",7) < 0) return;
 		}
 	} while((line = strtok_r(NULL,"\n",&saveptr)) != NULL);
 }
