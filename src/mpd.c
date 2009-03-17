@@ -185,10 +185,15 @@ void mpd_parse(gchar *buf)
 			if(g_strrstr(line,"incorrect password")) {
 				scmpc_log(ERROR,"[MPD] Incorrect password");
 				mpd_info.status = BADAUTH;
+				mpd_info.sockfd = -1;
+			} else if(g_strrstr(line,"you don't have permission")) {
+				scmpc_log(ERROR,"[MPD] Server is password-protected");
+				mpd_info.status = BADAUTH;
+				mpd_info.sockfd = -1;
 			} else {
 				/* Unknown error */
 				scmpc_log(ERROR,"Received ACK error from MPD: "
-					"%s",&line[13]);
+					"%s",&line[10]);
 			}
 		}
 		else if(strncmp(line,"changed: player",15) == 0) {
