@@ -234,9 +234,9 @@ void mpd_parse(gchar *buf)
 				if(strncmp(line,"Title: ",7) == 0)
 					current_song.title = g_strdup(&line[7]);
 				if(strncmp(line,"Time: ",6) == 0)
-					current_song.length = atoi(&line[6]);
+					current_song.length = strtol(&line[6],NULL,10);
 				if(strncmp(line,"Track: ",7) == 0)
-					current_song.track = atoi(strtok(&line[7],"/"));
+					current_song.track = strtol(strtok(&line[7],"/"),NULL,10);
 			}
 			current_song.date = ts;
 			if(current_song.artist != NULL && current_song.title != NULL && current_song.length >= 30) {

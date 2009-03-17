@@ -121,9 +121,9 @@ void queue_load(void)
 		} else if(strncmp(line,"date: ",6) == 0) {
 			date = strtol(&line[6],NULL,10);
 		} else if(strncmp(line,"length: ",8) == 0) {
-			length = atoi(&line[8]);
+			length = strtol(&line[8],NULL,10);
 		} else if(strncmp(line,"track: ",7) == 0) {
-			track = atoi(&line[7]);
+			track = strtol(&line[7],NULL,10);
 		} else if(strncmp(line,"# END SONG",10) == 0) {
 			queue_add(artist,title,album,length,track,date);
 			g_free(artist); g_free(title); g_free(album);

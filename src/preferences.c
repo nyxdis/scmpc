@@ -291,7 +291,7 @@ gint init_preferences(gint argc, gchar **argv)
 		}
 	}
 	if(getenv("MPD_PORT") != NULL)
-		prefs.mpd_port = atoi(getenv("MPD_PORT"));
+		prefs.mpd_port = strtol(getenv("MPD_PORT"),NULL,10);
 
 	return 0;
 }
