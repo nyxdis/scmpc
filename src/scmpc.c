@@ -241,7 +241,7 @@ static void daemonise(void)
 		exit(EXIT_SUCCESS);
 	} else { /* The child */
 		/* Force sane umask */
-		umask(027);
+		umask(022);
 
 		/* Create the PID file */
 		if(scmpc_pid_create() < 0) {
