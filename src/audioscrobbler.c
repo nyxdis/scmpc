@@ -219,7 +219,6 @@ void as_now_playing(void)
 		scmpc_log(INFO,"Received bad session response from "
 			"Audioscrobbler, re-handshaking.");
 		as_handshake();
-		as_now_playing();
 	} else if(strncmp(line,"OK",2) == 0) {
 		scmpc_log(INFO,"Sent Now Playing notification.");
 	} else {
