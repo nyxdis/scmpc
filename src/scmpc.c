@@ -267,7 +267,7 @@ void kill_scmpc(void)
 	pid_t pid;
 
 	if(pid_file == NULL)
-		g_error("Unable to open PID file");
+		g_error("Unable to open PID file: %s",g_strerror(errno));
 
 	if(fscanf(pid_file,"%d",&pid) < 1)
 		g_error("Invalid PID file");
