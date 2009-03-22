@@ -29,7 +29,7 @@
 #include <curl/curl.h>
 #include <glib.h>
 
-struct _as_conn {
+struct {
 	gchar *session_id;
 	gchar *submit_url;
 	gchar *np_url;

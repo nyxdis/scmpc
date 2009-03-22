@@ -224,13 +224,11 @@ void mpd_parse(gchar *buf)
 			g_get_current_time(&tv);
 			ts = tv.tv_sec;
 
-			g_free(current_song.filename);
 			g_free(current_song.artist);
 			g_free(current_song.title);
 			g_free(current_song.album);
 			current_song.artist = current_song.title = current_song.album = NULL;
 			current_song.track = 0;
-			current_song.filename = g_strdup(&line[6]);
 			while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
 				if(strncmp(line,"Artist: ",8) == 0)
 					current_song.artist = g_strdup(&line[8]);
@@ -275,7 +273,6 @@ void mpd_parse(gchar *buf)
 void mpd_cleanup(void)
 {
 	if(mpd_info.status == CONNECTED) close(mpd_info.sockfd);
-	g_free(current_song.filename);
 	g_free(current_song.artist);
 	g_free(current_song.title);
 	g_free(current_song.album);

@@ -26,7 +26,7 @@
 
 #include <glib.h>
 
-struct _prefs {
+struct {
 	gchar *mpd_hostname;
 	gint mpd_port;
 	gint mpd_interval;

@@ -26,22 +26,19 @@
 
 #include <glib.h>
 
-struct _current_song {
+struct {
 	GTimer *pos;
 	enum { INVALID, NEW, SUBMITTED } song_state;
 	enum { UNKNOWN, STOPPED, PAUSED, PLAYING } mpd_state;
 	gchar *album;
 	gchar *artist;
-	gchar *filename;
 	gchar *title;
 	glong date;
-	gshort crossfade;
-	guint current_post;
 	guint length;
 	gushort track;
 } current_song;
 
-struct _mpd_info {
+struct {
 	connection_status status;
 	gint sockfd;
 } mpd_info;
