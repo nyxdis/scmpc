@@ -39,7 +39,7 @@
 #include "preferences.h"
 #include "queue.h"
 
-static gint server_connect_unix(gconstpointer path)
+static gint server_connect_unix(const gchar *path)
 {
 	gint sockfd;
 	struct sockaddr_un addr;
@@ -61,7 +61,7 @@ static gint server_connect_unix(gconstpointer path)
 	return sockfd;
 }
 
-static gint server_connect_tcp(gconstpointer host, gint port)
+static gint server_connect_tcp(const gchar *host, gint port)
 {
 	fd_set write_flags;
 	gint sockfd, valopt, ret;
@@ -128,7 +128,7 @@ static gint server_connect_tcp(gconstpointer host, gint port)
 	return sockfd;
 }
 
-gint mpd_write(gconstpointer string)
+gint mpd_write(const gchar *string)
 {
 	gchar tmp[256];
 

@@ -45,7 +45,6 @@ static gint scmpc_pid_remove(void);
 static void sighandler(gint sig);
 static void daemonise(void);
 static void cleanup(void);
-gconstpointer pid_filename(void);
 
 int main(int argc, char *argv[])
 {

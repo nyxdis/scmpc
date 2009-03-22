@@ -39,8 +39,8 @@ typedef enum {
 	BADAUTH
 } connection_status;
 
-void open_log(gconstpointer filename);
-void scmpc_log(loglevel level, gconstpointer format, ...);
+void open_log(const gchar *filename);
+void scmpc_log(loglevel level, const gchar *format, ...);
 
 /* used by curl */
 gsize buffer_write(void *input, gsize size, gsize nmemb, void *buf);
