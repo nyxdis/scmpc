@@ -36,6 +36,7 @@ struct {
 	glong date;
 	guint length;
 	gushort track;
+	gushort xfade;
 } current_song;
 
 struct {
