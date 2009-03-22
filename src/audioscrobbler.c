@@ -186,16 +186,22 @@ void as_now_playing(void)
 	}
 
 	artist = curl_easy_escape(as_conn.handle,current_song.artist,0);
-	album = curl_easy_escape(as_conn.handle,current_song.album,0);
 	title = curl_easy_escape(as_conn.handle,current_song.title,0);
+	if(current_song.album != NULL)
+		album = curl_easy_escape(as_conn.handle,current_song.album,0);
+	else
+		album = g_strdup("");
 
 	querystring = g_strdup_printf("s=%s&a=%s&t=%s&b=%s&l=%d&n=%d&m=",
 		as_conn.session_id,artist,title,album,current_song.length,
 		current_song.track);
 
 	curl_free(artist);
-	curl_free(album);
 	curl_free(title);
+	if(current_song.album != NULL)
+		curl_free(album);
+	else
+		g_free(album);
 
 	scmpc_log(DEBUG,"querystring = %s",querystring);
 
