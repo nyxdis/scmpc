@@ -36,7 +36,7 @@ typedef struct _queue_node {
 	glong date;
 } queue_node;
 
-struct queue_t {
+struct {
 	queue_node *first;
 	queue_node *last;
 	gint length;

@@ -26,15 +26,14 @@
 
 #include <glib.h>
 
-typedef enum _loglevel
-{
+typedef enum {
 	NONE,
 	ERROR,
 	INFO,
 	DEBUG
 } loglevel;
 
-typedef enum _connection_status {
+typedef enum {
 	DISCONNECTED,
 	CONNECTED,
 	BADAUTH
