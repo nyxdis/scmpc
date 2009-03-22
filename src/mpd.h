@@ -46,4 +46,4 @@ struct {
 void mpd_parse(gchar *buf);
 gint mpd_connect(void);
 void mpd_cleanup(void);
-gint mpd_write(gconstpointer string);
+gint mpd_write(const gchar *string);

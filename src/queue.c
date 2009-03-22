@@ -33,7 +33,7 @@
 #include "queue.h"
 #include "preferences.h"
 
-void queue_add(gconstpointer artist, gconstpointer title, gconstpointer album,
+void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 	guint length, gushort track, glong date)
 {
 	queue_node *new_song;
