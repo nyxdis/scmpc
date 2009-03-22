@@ -192,17 +192,20 @@ void mpd_parse(gchar *buf)
 				mpd_info.sockfd = -1;
 			} else {
 				/* Unknown error */
-				scmpc_log(ERROR,"Received ACK error from MPD: "
+				scmpc_log(ERROR,"Received unknown ACK from MPD: "
 					"%s",&line[10]);
 			}
-		}
-		else if(strncmp(line,"changed: player",15) == 0) {
+		} else if(strncmp(line,"changed: player",15) == 0) {
 			if(write(mpd_info.sockfd,"status\n",7) < 0) return;
-		}
-		else if(strncmp(line,"state: ",7) == 0) {
+		} else if(strncmp(line,"xfade: ",7) == 0) {
+			current_song.xfade = strtol(&line[7],NULL,10);
+		} else if(strncmp(line,"state: ",7) == 0) {
 			if(strncmp(&line[7],"play",4) == 0) {
 				if(current_song.mpd_state == PLAYING || current_song.mpd_state == STOPPED) {
-					if(write(mpd_info.sockfd,"currentsong\n",12) < 0) return;
+					while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
+						if(strncmp(line,"time: ",6) == 0 && strtol(strtok(&line[6],":"),NULL,10) < current_song.xfade + 5)
+								if(write(mpd_info.sockfd,"currentsong\n",12) < 0) return;
+					}
 				} else if(current_song.mpd_state == PAUSED) {
 					g_timer_continue(current_song.pos);
 				}
@@ -216,8 +219,7 @@ void mpd_parse(gchar *buf)
 				current_song.mpd_state = STOPPED;
 			}
 			if(write(mpd_info.sockfd,"idle player\n",12) < 0) return;
-		}
-		else if(strncmp(line,"file: ",6) == 0) {
+		} else if(strncmp(line,"file: ",6) == 0) {
 			GTimeVal tv;
 			glong ts;
 
@@ -232,13 +234,13 @@ void mpd_parse(gchar *buf)
 			while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
 				if(strncmp(line,"Artist: ",8) == 0)
 					current_song.artist = g_strdup(&line[8]);
-				if(strncmp(line,"Album: ",7) == 0)
+				else if(strncmp(line,"Album: ",7) == 0)
 					current_song.album = g_strdup(&line[7]);
-				if(strncmp(line,"Title: ",7) == 0)
+				else if(strncmp(line,"Title: ",7) == 0)
 					current_song.title = g_strdup(&line[7]);
-				if(strncmp(line,"Time: ",6) == 0)
+				else if(strncmp(line,"Time: ",6) == 0)
 					current_song.length = strtol(&line[6],NULL,10);
-				if(strncmp(line,"Track: ",7) == 0)
+				else if(strncmp(line,"Track: ",7) == 0)
 					current_song.track = strtol(strtok(&line[7],"/"),NULL,10);
 			}
 			current_song.date = ts;
@@ -253,8 +255,7 @@ void mpd_parse(gchar *buf)
 				scmpc_log(INFO,"File is not tagged properly.");
 				current_song.song_state = INVALID;
 			}
-		}
-		else if(strncmp(line,"OK MPD",6) == 0) {
+		} else if(strncmp(line,"OK MPD",6) == 0) {
 			gushort version[2];
 			sscanf(line,"%*s %*s %hu.%hu",&version[0],&version[1]);
 			if(version[0] == 0 && version[1] < 14) {
