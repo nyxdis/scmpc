@@ -83,8 +83,8 @@ void as_handshake(void)
 		return;
 	}
 
-	if(strlen(prefs.as_username) == 0 || (strlen(prefs.as_password) == 0 &&
-		strlen(prefs.as_password_hash) == 0)) {
+	if(!strlen(prefs.as_username) || (!strlen(prefs.as_password) &&
+		!strlen(prefs.as_password_hash))) {
 		scmpc_log(INFO,"No username or password specified. "
 				"Not connecting to Audioscrobbler.");
 		as_conn.status = BADAUTH;
@@ -136,7 +136,7 @@ void as_handshake(void)
 		return;
 	}
 
-	if(strncmp(line,"OK",2) == 0) {
+	if(!strncmp(line,"OK",2)) {
 		gushort line_no = 1;
 
 		while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
@@ -158,15 +158,15 @@ void as_handshake(void)
 			as_conn.status = CONNECTED;
 			as_conn.last_handshake = time(NULL);
 		}
-	} else if(strncmp(line,"FAILED",6) == 0) {
+	} else if(!strncmp(line,"FAILED",6)) {
 		scmpc_log(ERROR,"The Audioscrobbler handshake could not be "
 			"completed: %s",&line[7]);
-	} else if(strncmp(line,"BADAUTH",7) == 0) {
+	} else if(!strncmp(line,"BADAUTH",7)) {
 		scmpc_log(ERROR,"The user details you specified were not "
 				"accepted by Audioscrobbler. Please correct "
 				"them and restart this program.");
 		as_conn.status = BADAUTH;
-	} else if(strncmp(line,"BADTIME",7) == 0) {
+	} else if(!strncmp(line,"BADTIME",7)) {
 		scmpc_log(ERROR,"Handshake failed because your system time is "
 				"too far off. Please correct your clock.");
 	} else {
@@ -221,11 +221,11 @@ void as_now_playing(void)
 	line = strtok(buffer,"\n");
 	if(line == NULL)  {
 		scmpc_log(INFO,"Could not parse Audioscrobbler submit response.");
-	} else if(strncmp(line,"BADSESSION",10) == 0) {
+	} else if(!strncmp(line,"BADSESSION",10)) {
 		scmpc_log(INFO,"Received bad session response from "
 			"Audioscrobbler, re-handshaking.");
 		as_handshake();
-	} else if(strncmp(line,"OK",2) == 0) {
+	} else if(!strncmp(line,"OK",2)) {
 		scmpc_log(INFO,"Sent Now Playing notification.");
 	} else {
 		scmpc_log(DEBUG,"Unknown response from Audioscrobbler while "
@@ -245,9 +245,17 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 	g_string_append(nqs,as_conn.session_id);
 
 	while(song != NULL && num < 10) {
+		printf("unescaped:\n");
+		printf("%p\n",song->artist);
+		printf("%p\n",song->title);
+		printf("%p\n",song->album);
 		artist = curl_easy_escape(as_conn.handle,song->artist,0);
 		title = curl_easy_escape(as_conn.handle,song->title,0);
 		album = curl_easy_escape(as_conn.handle,song->album,0);
+		printf("escaped:\n");
+		printf("%p\n",artist);
+		printf("%p\n",title);
+		printf("%p\n",album);
 
 		g_string_append_printf(nqs,"&a[%d]=%s&t[%d]=%s&i[%d]=%ld&o[%d]=P"
 			"&r[%d]=&l[%d]=%d&b[%d]=%s&n[%d]=&m[%d]=",num,artist,
@@ -296,17 +304,17 @@ gint as_submit(void)
 	line = strtok_r(buffer,"\n",&saveptr);
 	if(line == NULL)
 		scmpc_log(INFO,"Could not parse Audioscrobbler submit response.");
-	else if(strncmp(line,"FAILED",6) == 0) {
+	else if(!strncmp(line,"FAILED",6)) {
 		if(strcmp(last_failed,&line[7]) != 0) {
 			g_strlcpy(last_failed,&line[7],sizeof(last_failed));
 			scmpc_log(INFO,"Audioscrobbler returned FAILED: %s",
 				&line[7]);
 		}
-	} else if(strncmp(line,"BADSESSION",10) == 0) {
+	} else if(!strncmp(line,"BADSESSION",10)) {
 		last_failed[0] = '\0';
 		scmpc_log(INFO,"Received bad session from Audioscrobbler, re-handshaking.");
 		as_handshake();
-	} else if(strncmp(line,"OK",2) == 0) {
+	} else if(!strncmp(line,"OK",2)) {
 		last_failed[0] = '\0';
 		if(num_songs == 1)
 			scmpc_log(INFO,"1 song submitted.");

@@ -150,7 +150,7 @@ gint mpd_connect(void)
 	gchar *tmp;
 
 	mpd_info.status = DISCONNECTED;
-	if(strncmp(prefs.mpd_hostname,"/",1) == 0)
+	if(!strncmp(prefs.mpd_hostname,"/",1))
 		mpd_info.sockfd = server_connect_unix(prefs.mpd_hostname);
 	else
 		mpd_info.sockfd = server_connect_tcp(prefs.mpd_hostname,
@@ -181,7 +181,7 @@ void mpd_parse(gchar *buf)
 
 	if((line = strtok_r(buf,"\n",&saveptr)) == NULL) return;
 	do {
-		if(strncmp(line,"ACK",3) == 0) {
+		if(!strncmp(line,"ACK",3)) {
 			if(g_strrstr(line,"incorrect password")) {
 				scmpc_log(ERROR,"[MPD] Incorrect password");
 				mpd_info.status = BADAUTH;
@@ -195,31 +195,31 @@ void mpd_parse(gchar *buf)
 				scmpc_log(ERROR,"Received unknown ACK from MPD: "
 					"%s",&line[10]);
 			}
-		} else if(strncmp(line,"changed: player",15) == 0) {
+		} else if(!strncmp(line,"changed: player",15)) {
 			if(write(mpd_info.sockfd,"status\n",7) < 0) return;
-		} else if(strncmp(line,"xfade: ",7) == 0) {
+		} else if(!strncmp(line,"xfade: ",7)) {
 			current_song.xfade = strtol(&line[7],NULL,10);
-		} else if(strncmp(line,"state: ",7) == 0) {
-			if(strncmp(&line[7],"play",4) == 0) {
+		} else if(!strncmp(line,"state: ",7)) {
+			if(!strncmp(&line[7],"play",4)) {
 				if(current_song.mpd_state == PLAYING || current_song.mpd_state == STOPPED) {
 					while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
-						if(strncmp(line,"time: ",6) == 0 && strtol(strtok(&line[6],":"),NULL,10) < current_song.xfade + 5)
+						if(!strncmp(line,"time: ",6) && strtol(strtok(&line[6],":"),NULL,10) < current_song.xfade + 5)
 								if(write(mpd_info.sockfd,"currentsong\n",12) < 0) return;
 					}
 				} else if(current_song.mpd_state == PAUSED) {
 					g_timer_continue(current_song.pos);
 				}
 				current_song.mpd_state = PLAYING;
-			} else if(strncmp(&line[7],"pause",5) == 0) {
+			} else if(!strncmp(&line[7],"pause",5)) {
 				if(current_song.mpd_state == PLAYING) {
 					g_timer_stop(current_song.pos);
 				}
 				current_song.mpd_state = PAUSED;
-			} else if(strncmp(&line[7],"stop",4) == 0) {
+			} else if(!strncmp(&line[7],"stop",4)) {
 				current_song.mpd_state = STOPPED;
 			}
 			if(write(mpd_info.sockfd,"idle player\n",12) < 0) return;
-		} else if(strncmp(line,"file: ",6) == 0) {
+		} else if(!strncmp(line,"file: ",6)) {
 			GTimeVal tv;
 			glong ts;
 
@@ -232,15 +232,15 @@ void mpd_parse(gchar *buf)
 			current_song.artist = current_song.title = current_song.album = NULL;
 			current_song.track = 0;
 			while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
-				if(strncmp(line,"Artist: ",8) == 0)
+				if(!strncmp(line,"Artist: ",8))
 					current_song.artist = g_strdup(&line[8]);
-				else if(strncmp(line,"Album: ",7) == 0)
+				else if(!strncmp(line,"Album: ",7))
 					current_song.album = g_strdup(&line[7]);
-				else if(strncmp(line,"Title: ",7) == 0)
+				else if(!strncmp(line,"Title: ",7))
 					current_song.title = g_strdup(&line[7]);
-				else if(strncmp(line,"Time: ",6) == 0)
+				else if(!strncmp(line,"Time: ",6))
 					current_song.length = strtol(&line[6],NULL,10);
-				else if(strncmp(line,"Track: ",7) == 0)
+				else if(!strncmp(line,"Track: ",7))
 					current_song.track = strtol(strtok(&line[7],"/"),NULL,10);
 			}
 			current_song.date = ts;
@@ -255,10 +255,10 @@ void mpd_parse(gchar *buf)
 				scmpc_log(INFO,"File is not tagged properly.");
 				current_song.song_state = INVALID;
 			}
-		} else if(strncmp(line,"OK MPD",6) == 0) {
+		} else if(!strncmp(line,"OK MPD",6)) {
 			gushort version[2];
 			sscanf(line,"%*s %*s %hu.%hu",&version[0],&version[1]);
-			if(version[0] == 0 && version[1] < 14) {
+			if(!version[0] && version[1] < 14) {
 				scmpc_log(ERROR,"MPD too old, please upgrade to 0.14");
 				mpd_info.status = BADAUTH;
 				close(mpd_info.sockfd);

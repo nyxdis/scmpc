@@ -54,7 +54,7 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 	new_song->length = length;
 	new_song->track = track;
 	new_song->next = NULL;
-	if(date == 0)
+	if(!date)
 		new_song->date = time(NULL);
 	else
 		new_song->date = date;
@@ -105,26 +105,26 @@ void queue_load(void)
 	}
 
 	while(fgets(line,sizeof line,cache_file)) {
-		if(strncmp(line,"# BEGIN SONG",12) == 0) {
+		if(!strncmp(line,"# BEGIN SONG",12)) {
 			g_free(artist); g_free(title); g_free(album);
 			artist = title = album = NULL;
 			length = track = 0;
-		} else if(strncmp(line,"artist: ",8) == 0) {
+		} else if(!strncmp(line,"artist: ",8)) {
 			g_free(artist);
 			artist = g_strdup(&line[8]);
-		} else if(strncmp(line,"title: ",7) == 0) {
+		} else if(!strncmp(line,"title: ",7)) {
 			g_free(title);
 			title = g_strdup(&line[7]);
-		} else if(strncmp(line,"album: ",7) == 0) {
+		} else if(!strncmp(line,"album: ",7)) {
 			g_free(album);
 			album = g_strdup(&line[7]);
-		} else if(strncmp(line,"date: ",6) == 0) {
+		} else if(!strncmp(line,"date: ",6)) {
 			date = strtol(&line[6],NULL,10);
-		} else if(strncmp(line,"length: ",8) == 0) {
+		} else if(!strncmp(line,"length: ",8)) {
 			length = strtol(&line[8],NULL,10);
-		} else if(strncmp(line,"track: ",7) == 0) {
+		} else if(!strncmp(line,"track: ",7)) {
 			track = strtol(&line[7],NULL,10);
-		} else if(strncmp(line,"# END SONG",10) == 0) {
+		} else if(!strncmp(line,"# END SONG",10)) {
 			queue_add(artist,title,album,length,track,date);
 			g_free(artist); g_free(title); g_free(album);
 			artist = title = album = NULL;
@@ -148,7 +148,7 @@ void queue_remove_songs(queue_node *song, queue_node *keep_ptr)
 		queue.length--;
 	}
 
-	if(queue.length == 0)
+	if(!queue.length)
 		queue.first = queue.last = NULL;
 }
 
