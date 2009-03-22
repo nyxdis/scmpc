@@ -176,7 +176,7 @@ static gint scmpc_is_running(void)
 
 	fclose(pid_file);
 
-	if(kill(pid,0) == 0) {
+	if(!kill(pid,0)) {
 		/* scmpc already running */
 		return pid;
 	} else if(errno == ESRCH) {
