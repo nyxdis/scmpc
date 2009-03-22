@@ -179,7 +179,7 @@ void mpd_parse(gchar *buf)
 {
 	gchar *saveptr, *line;
 
-	line = strtok_r(buf,"\n",&saveptr);
+	if((line = strtok_r(buf,"\n",&saveptr)) == NULL) return;
 	do {
 		if(strncmp(line,"ACK",3) == 0) {
 			if(g_strrstr(line,"incorrect password")) {
