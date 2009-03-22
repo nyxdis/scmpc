@@ -245,17 +245,9 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 	g_string_append(nqs,as_conn.session_id);
 
 	while(song != NULL && num < 10) {
-		printf("unescaped:\n");
-		printf("%p\n",song->artist);
-		printf("%p\n",song->title);
-		printf("%p\n",song->album);
 		artist = curl_easy_escape(as_conn.handle,song->artist,0);
 		title = curl_easy_escape(as_conn.handle,song->title,0);
 		album = curl_easy_escape(as_conn.handle,song->album,0);
-		printf("escaped:\n");
-		printf("%p\n",artist);
-		printf("%p\n",title);
-		printf("%p\n",album);
 
 		g_string_append_printf(nqs,"&a[%d]=%s&t[%d]=%s&i[%d]=%ld&o[%d]=P"
 			"&r[%d]=&l[%d]=%d&b[%d]=%s&n[%d]=&m[%d]=",num,artist,
