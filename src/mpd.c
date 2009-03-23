@@ -75,14 +75,14 @@ static gint server_connect_tcp(const gchar *host, gint port)
 	hints.ai_socktype = SOCK_STREAM;
 	sprintf(service,"%d",port);
 
-	if((ret = getaddrinfo(host,service,&hints,&result)) != 0) {
+	if((ret = getaddrinfo(host,service,&hints,&result))) {
 		scmpc_log(ERROR,"getaddrinfo: %s",gai_strerror(ret));
 		freeaddrinfo(result);
 		return -1;
 	}
 	if(!result) return -1;
 
-	for(rp = result;rp != NULL;rp = rp->ai_next) {
+	for(rp = result;rp;rp = rp->ai_next) {
 		if((sockfd = socket(rp->ai_family,rp->ai_socktype,
 			rp->ai_protocol)) >= 0) break;
 
@@ -203,7 +203,7 @@ void mpd_parse(gchar *buf)
 		} else if(!strncmp(line,"state: ",7)) {
 			if(!strncmp(&line[7],"play",4)) {
 				if(current_song.mpd_state == PLAYING || current_song.mpd_state == STOPPED) {
-					while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
+					while((line = strtok_r(NULL,"\n",&saveptr))) {
 						if(!strncmp(line,"time: ",6) && strtol(strtok(&line[6],":"),NULL,10) < current_song.xfade + 5)
 								if(write(mpd_info.sockfd,"currentsong\n",12) < 0) return;
 					}
@@ -232,7 +232,7 @@ void mpd_parse(gchar *buf)
 			g_free(current_song.album);
 			current_song.artist = current_song.title = current_song.album = NULL;
 			current_song.track = 0;
-			while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
+			while((line = strtok_r(NULL,"\n",&saveptr))) {
 				if(!strncmp(line,"Artist: ",8))
 					current_song.artist = g_strdup(&line[8]);
 				else if(!strncmp(line,"Album: ",7))
@@ -245,7 +245,7 @@ void mpd_parse(gchar *buf)
 					current_song.track = strtol(strtok(&line[7],"/"),NULL,10);
 			}
 			current_song.date = ts;
-			if(current_song.artist != NULL && current_song.title != NULL && current_song.length >= 30) {
+			if(current_song.artist && current_song.title && current_song.length >= 30) {
 				current_song.song_state = NEW;
 				as_now_playing();
 				g_timer_start(current_song.pos);
@@ -269,7 +269,7 @@ void mpd_parse(gchar *buf)
 			current_song.mpd_state = UNKNOWN;
 			if(write(mpd_info.sockfd,"status\n",7) < 0) return;
 		}
-	} while((line = strtok_r(NULL,"\n",&saveptr)) != NULL);
+	} while((line = strtok_r(NULL,"\n",&saveptr)));
 }
 
 void mpd_cleanup(void)

@@ -237,13 +237,13 @@ static gint parse_command_line(gint argc, gchar **argv)
 	} else {
 		/* This must be at the top, to avoid any options specified in the
 		 * config file overriding those on the command line. */
-		if(conf_file != NULL) {
+		if(conf_file) {
 			g_free(prefs.config_file);
 			prefs.config_file = g_strdup(conf_file);
 			if(parse_config_file() < 0)
 				return -1;
 		}
-		if(pid_file != NULL) {
+		if(pid_file) {
 			g_free(prefs.pid_file);
 			prefs.pid_file = g_strdup(pid_file);
 		}
@@ -276,7 +276,7 @@ gint init_preferences(gint argc, gchar **argv)
 		return -1;
 
 	tmp = getenv("MPD_HOST");
-	if(tmp != NULL) {
+	if(tmp) {
 		g_free(prefs.mpd_password);
 		g_free(prefs.mpd_hostname);
 		if(g_strrstr(tmp,"@")) {
@@ -287,7 +287,7 @@ gint init_preferences(gint argc, gchar **argv)
 			prefs.mpd_hostname = g_strdup(tmp);
 		}
 	}
-	if(getenv("MPD_PORT") != NULL)
+	if(getenv("MPD_PORT"))
 		prefs.mpd_port = strtol(getenv("MPD_PORT"),NULL,10);
 
 	return 0;
