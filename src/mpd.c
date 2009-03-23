@@ -80,7 +80,7 @@ static gint server_connect_tcp(const gchar *host, gint port)
 		freeaddrinfo(result);
 		return -1;
 	}
-	if(result == NULL) return -1;
+	if(!result) return -1;
 
 	for(rp = result;rp != NULL;rp = rp->ai_next) {
 		if((sockfd = socket(rp->ai_family,rp->ai_socktype,
@@ -179,7 +179,8 @@ void mpd_parse(gchar *buf)
 {
 	gchar *saveptr, *line;
 
-	if((line = strtok_r(buf,"\n",&saveptr)) == NULL) return;
+	line = strtok_r(buf,"\n",&saveptr);
+	if(!line) return;
 	do {
 		if(!strncmp(line,"ACK",3)) {
 			if(g_strrstr(line,"incorrect password")) {
