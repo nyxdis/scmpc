@@ -47,7 +47,7 @@ gint as_connection_init(void)
 	as_conn.last_handshake = 0;
 	as_conn.status = DISCONNECTED;
 	as_conn.handle = curl_easy_init();
-	if(as_conn.handle == NULL) return -1;
+	if(!as_conn.handle) return -1;
 	as_conn.headers = curl_slist_append(as_conn.headers,
 			"User-Agent: scmpc/" PACKAGE_VERSION);
 
@@ -130,7 +130,7 @@ void as_handshake(void)
 	}
 
 	line = strtok_r(buffer,"\n",&saveptr);
-	if(line == NULL) {
+	if(!line) {
 		scmpc_log(DEBUG,"Could not parse Audioscrobbler handshake response.");
 		g_free(buffer);
 		return;
@@ -219,7 +219,7 @@ void as_now_playing(void)
 	}
 
 	line = strtok(buffer,"\n");
-	if(line == NULL)  {
+	if(!line)  {
 		scmpc_log(INFO,"Could not parse Audioscrobbler submit response.");
 	} else if(!strncmp(line,"BADSESSION",10)) {
 		scmpc_log(INFO,"Received bad session response from "
@@ -271,7 +271,7 @@ gint as_submit(void)
 	gint ret, num_songs;
 	static gchar last_failed[512];
 
-	if(queue.first == NULL)
+	if(!queue.first)
 		return -1;
 
 	num_songs = build_querystring(&querystring, &last_added);
@@ -294,7 +294,7 @@ gint as_submit(void)
 	g_free(querystring);
 
 	line = strtok_r(buffer,"\n",&saveptr);
-	if(line == NULL)
+	if(!line)
 		scmpc_log(INFO,"Could not parse Audioscrobbler submit response.");
 	else if(!strncmp(line,"FAILED",6)) {
 		if(strcmp(last_failed,&line[7]) != 0) {

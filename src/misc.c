@@ -40,7 +40,7 @@ void open_log(const gchar *filename)
 	}
 
 	log_file = fopen(filename,"a");
-	if(log_file == NULL) {
+	if(!log_file) {
 		fputs("Unable to open log file for writing, logging to stdout\n",stderr);
 		log_file = stdout;
 	}

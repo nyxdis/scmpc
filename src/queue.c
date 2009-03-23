@@ -38,12 +38,13 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 {
 	queue_node *new_song;
 
-	if(artist == NULL || title == NULL || length < 30) {
+	if(!artist || !title || length < 30) {
 		scmpc_log(DEBUG,"Invalid song passed to queue_add(). Rejecting.");
 		return;
 	}
 
-	if((new_song = g_malloc(sizeof (queue_node))) == NULL) return;
+	new_song = g_malloc(sizeof (queue_node));
+	if(!new_song) return;
 
 	new_song->title = g_strdup(title);
 	new_song->artist = g_strdup(artist);
@@ -60,7 +61,7 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 		new_song->date = date;
 
 	/* Queue is empty */
-	if(queue.first == NULL) {
+	if(!queue.first) {
 		queue.first = queue.last = new_song;
 		queue.length = 1;
 		scmpc_log(DEBUG,"Song added to queue. Queue length: 1");
@@ -70,7 +71,7 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 	/* Queue is full, remove the first item and add the new one */
 	if(queue.length == prefs.queue_length) {
 		queue_node *new_first_song = queue.first->next;
-		if(new_first_song == NULL) {
+		if(!new_first_song) {
 			scmpc_log(DEBUG,"Queue is too long, but there is only "
 				"one accessible song in the list. New song not added.");
 			return;
@@ -97,7 +98,8 @@ void queue_load(void)
 	artist = title = album = NULL;
 	scmpc_log(DEBUG,"Loading queue.");
 
-	if((cache_file = fopen(prefs.cache_file,"r")) == NULL) {
+	cache_file = fopen(prefs.cache_file,"r");
+	if(!cache_file) {
 		if(errno != ENOENT)
 			scmpc_log(INFO,"Failed to open cache file for reading: %s",
 				g_strerror(errno));
@@ -159,7 +161,8 @@ void queue_save(void)
 
 	current_song = queue.first;
 
-	if((cache_file = fopen(prefs.cache_file,"w")) == NULL) {
+	cache_file = fopen(prefs.cache_file,"w");
+	if(!cache_file) {
 		scmpc_log(ERROR,"Failed to open cache file for writing: %s",
 			g_strerror(errno));
 		return;

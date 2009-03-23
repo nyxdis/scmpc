@@ -149,9 +149,9 @@ static gint scmpc_is_running(void)
 	FILE *pid_file = fopen(prefs.pid_file,"r");
 	pid_t pid;
 
-	if(pid_file == NULL && errno == ENOENT) return 0;
+	if(!pid_file && errno == ENOENT) return 0;
 
-	if(pid_file == NULL) {
+	if(!pid_file) {
 		/* Unable to open PID file, returning error */
 		scmpc_log(ERROR,"Cannot open pid file (%s) for reading: %s",
 				prefs.pid_file,g_strerror(errno));
@@ -200,7 +200,7 @@ static gint scmpc_is_running(void)
 static gint scmpc_pid_create(void)
 {
 	FILE *pid_file = fopen(prefs.pid_file,"w");
-	if(pid_file == NULL) {
+	if(!pid_file) {
 		scmpc_log(ERROR, "Cannot open pid file (%s) for writing: "
 				"%s\n",prefs.pid_file,g_strerror(errno));
 		return -1;
@@ -265,7 +265,7 @@ void kill_scmpc(void)
 	FILE *pid_file = fopen(prefs.pid_file,"r");
 	pid_t pid;
 
-	if(pid_file == NULL)
+	if(!pid_file)
 		g_error("Unable to open PID file: %s",g_strerror(errno));
 
 	if(fscanf(pid_file,"%d",&pid) < 1)
