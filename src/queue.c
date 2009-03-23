@@ -48,7 +48,7 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 
 	new_song->title = g_strdup(title);
 	new_song->artist = g_strdup(artist);
-	if(album != NULL)
+	if(album)
 		new_song->album = g_strdup(album);
 	else
 		new_song->album = g_strdup("");
@@ -140,7 +140,7 @@ void queue_remove_songs(queue_node *song, queue_node *keep_ptr)
 {
 	queue_node *next_song;
 
-	while(song != NULL && song != keep_ptr) {
+	while(song && song != keep_ptr) {
 		g_free(song->title);
 		g_free(song->artist);
 		g_free(song->album);
@@ -168,7 +168,7 @@ void queue_save(void)
 		return;
 	}
 
-	while(current_song != NULL) {
+	while(current_song) {
 		fprintf(cache_file,"# BEGIN SONG\n"
 			"artist: %s\n"
 			"title: %s\n"

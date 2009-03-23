@@ -44,10 +44,11 @@ static gchar curl_error_buffer[CURL_ERROR_SIZE];
 
 gint as_connection_init(void)
 {
-	as_conn.last_handshake = 0;
-	as_conn.status = DISCONNECTED;
 	as_conn.handle = curl_easy_init();
 	if(!as_conn.handle) return -1;
+	as_conn.submit_url = as_conn.np_url = as_conn.session_id = NULL;
+	as_conn.last_handshake = 0;
+	as_conn.status = DISCONNECTED;
 	as_conn.headers = curl_slist_append(as_conn.headers,
 			"User-Agent: scmpc/" PACKAGE_VERSION);
 
@@ -122,13 +123,14 @@ void as_handshake(void)
 	ret = curl_easy_perform(as_conn.handle);
 	g_free(handshake_url);
 
-	if(ret != 0) {
+	if(ret) {
 		scmpc_log(ERROR,"Could not connect to the Audioscrobbler: %s",
 			curl_easy_strerror(ret));
 		g_free(buffer);
 		return;
 	}
 
+	as_conn.last_handshake = time(NULL);
 	line = strtok_r(buffer,"\n",&saveptr);
 	if(!line) {
 		scmpc_log(DEBUG,"Could not parse Audioscrobbler handshake response.");
@@ -139,13 +141,16 @@ void as_handshake(void)
 	if(!strncmp(line,"OK",2)) {
 		gushort line_no = 1;
 
-		while((line = strtok_r(NULL,"\n",&saveptr)) != NULL) {
+		while((line = strtok_r(NULL,"\n",&saveptr))) {
 			line_no++;
 			if(line_no == 2) {
+				free(as_conn.session_id);
 				as_conn.session_id = g_strdup(line);
 			} else if(line_no == 3) {
+				free(as_conn.np_url);
 				as_conn.np_url = g_strdup(line);
 			} else if(line_no == 4) {
+				free(as_conn.submit_url);
 				as_conn.submit_url = g_strdup(line);
 				break;
 			}
@@ -156,7 +161,6 @@ void as_handshake(void)
 		} else {
 			scmpc_log(INFO,"Connected to Audioscrobbler.");
 			as_conn.status = CONNECTED;
-			as_conn.last_handshake = time(NULL);
 		}
 	} else if(!strncmp(line,"FAILED",6)) {
 		scmpc_log(ERROR,"The Audioscrobbler handshake could not be "
@@ -187,7 +191,7 @@ void as_now_playing(void)
 
 	artist = curl_easy_escape(as_conn.handle,current_song.artist,0);
 	title = curl_easy_escape(as_conn.handle,current_song.title,0);
-	if(current_song.album != NULL)
+	if(current_song.album)
 		album = curl_easy_escape(as_conn.handle,current_song.album,0);
 	else
 		album = g_strdup("");
@@ -198,7 +202,7 @@ void as_now_playing(void)
 
 	curl_free(artist);
 	curl_free(title);
-	if(current_song.album != NULL)
+	if(current_song.album)
 		curl_free(album);
 	else
 		g_free(album);
@@ -211,7 +215,7 @@ void as_now_playing(void)
 
 	ret = curl_easy_perform(as_conn.handle);
 	g_free(querystring);
-	if(ret != 0) {
+	if(ret) {
 		scmpc_log(ERROR,"Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
 		g_free(buffer);
@@ -244,7 +248,7 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 	nqs = g_string_new("s=");
 	g_string_append(nqs,as_conn.session_id);
 
-	while(song != NULL && num < 10) {
+	while(song && num < 10) {
 		artist = curl_easy_escape(as_conn.handle,song->artist,0);
 		title = curl_easy_escape(as_conn.handle,song->title,0);
 		album = curl_easy_escape(as_conn.handle,song->album,0);
@@ -286,7 +290,7 @@ gint as_submit(void)
 	curl_easy_setopt(as_conn.handle, CURLOPT_POSTFIELDS, querystring);
 	curl_easy_setopt(as_conn.handle, CURLOPT_URL, as_conn.submit_url);
 
-	if((ret = curl_easy_perform(as_conn.handle)) != 0) {
+	if((ret = curl_easy_perform(as_conn.handle))) {
 		scmpc_log(INFO,"Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
 		return 1;
@@ -297,7 +301,7 @@ gint as_submit(void)
 	if(!line)
 		scmpc_log(INFO,"Could not parse Audioscrobbler submit response.");
 	else if(!strncmp(line,"FAILED",6)) {
-		if(strcmp(last_failed,&line[7]) != 0) {
+		if(strcmp(last_failed,&line[7])) {
 			g_strlcpy(last_failed,&line[7],sizeof(last_failed));
 			scmpc_log(INFO,"Audioscrobbler returned FAILED: %s",
 				&line[7]);
