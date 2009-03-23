@@ -90,16 +90,13 @@ static gint parse_files(cfg_t *cfg)
 	gshort i;
 	gchar *config_files[3], *home;
 
-	if(prefs.config_file == NULL) {
-		home = getenv("HOME");
+	if(!prefs.config_file) {
+		home = g_getenv("HOME");
+		if(!home)
+			home = g_get_home_dir();
 
-		if(home == NULL) {
-			config_files[0] = g_strdup("");
-			config_files[1] = g_strdup("");
-		} else {
-			config_files[0] = g_strdup_printf("%s/.scmpcrc",home);
-			config_files[1] = g_strdup_printf("%s/.scmpc/scmpc.conf",home);
-		}
+		config_files[0] = g_strdup_printf("%s/.scmpcrc",home);
+		config_files[1] = g_strdup_printf("%s/.scmpc/scmpc.conf",home);
 		config_files[2] = g_strdup(SYSCONFDIR "/scmpc.conf");
 	} else {
 		config_files[0] = prefs.config_file;
