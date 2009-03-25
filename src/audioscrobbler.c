@@ -127,6 +127,7 @@ void as_handshake(void)
 		scmpc_log(ERROR,"Could not connect to the Audioscrobbler: %s",
 			curl_easy_strerror(ret));
 		g_free(buffer);
+		buffer = NULL;
 		return;
 	}
 
@@ -135,6 +136,7 @@ void as_handshake(void)
 	if(!line) {
 		scmpc_log(DEBUG,"Could not parse Audioscrobbler handshake response.");
 		g_free(buffer);
+		buffer = NULL;
 		return;
 	}
 
@@ -177,6 +179,7 @@ void as_handshake(void)
 		scmpc_log(DEBUG,"Could not parse Audioscrobbler handshake response.");
 	}
 	g_free(buffer);
+	buffer = NULL;
 }
 
 void as_now_playing(void)
@@ -219,6 +222,7 @@ void as_now_playing(void)
 		scmpc_log(ERROR,"Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
 		g_free(buffer);
+		buffer = NULL;
 		return;
 	}
 
@@ -236,6 +240,7 @@ void as_now_playing(void)
 			"sending Now Playing notification.");
 	}
 	g_free(buffer);
+	buffer = NULL;
 }
 
 static gint build_querystring(gchar **qs, queue_node **last_song)
