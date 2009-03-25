@@ -234,32 +234,30 @@ static gint parse_command_line(gint argc, gchar **argv)
 		puts("Copyright 2009 Christoph Mende <angelos@unkreativ.org>");
 		puts("Based on Jonathan Coome's work on scmpc");
 		exit(EXIT_SUCCESS);
-	} else {
-		/* This must be at the top, to avoid any options specified in the
-		 * config file overriding those on the command line. */
-		if(conf_file) {
-			g_free(prefs.config_file);
-			prefs.config_file = g_strdup(conf_file);
-			if(parse_config_file() < 0)
-				return -1;
-		}
-		if(pid_file) {
-			g_free(prefs.pid_file);
-			prefs.pid_file = g_strdup(pid_file);
-		}
-		if(quiet && debug) {
-			fputs("Specifying --debug and --quiet at the same time"
-					" makes no sense.",stderr);
-			return -1;
-		} else if(quiet)
-			prefs.log_level = NONE;
-		else if(debug)
-			prefs.log_level = DEBUG;
-		if(!fork)
-			prefs.fork = FALSE;
-		if(dokill)
-			kill_scmpc();
 	}
+	/* This must be at the top, to avoid any options specified in the
+	 * config file overriding those on the command line. */
+	if(conf_file) {
+		g_free(prefs.config_file);
+		prefs.config_file = g_strdup(conf_file);
+		if(parse_config_file() < 0)
+			return -1;
+	}
+	if(pid_file) {
+		g_free(prefs.pid_file);
+		prefs.pid_file = g_strdup(pid_file);
+	}
+	if(quiet && debug) {
+		fputs("Specifying --debug and --quiet at the same time makes no sense.",stderr);
+		return -1;
+	} else if(quiet)
+		prefs.log_level = NONE;
+	else if(debug)
+		prefs.log_level = DEBUG;
+	if(!fork)
+		prefs.fork = FALSE;
+	if(dokill)
+		kill_scmpc();
 	g_free(pid_file);
 	g_free(conf_file);
 	return 0;

@@ -125,8 +125,8 @@ int main(int argc, char *argv[])
 
 		/* save queue */
 		if(difftime(time(NULL),last_queue_save) >= prefs.cache_interval * 60) {
-		        queue_save();
-		        last_queue_save = time(NULL);
+			queue_save();
+			last_queue_save = time(NULL);
 		}
 
 		/* reconnect to MPD */
@@ -213,9 +213,9 @@ static gint scmpc_pid_create(void)
 
 static gint scmpc_pid_remove(void)
 {
-        if(unlink(prefs.pid_file) < 0) {
-                scmpc_log(ERROR,"Could not remove pid file: %s",g_strerror(errno));
-                return 1;
+	if(unlink(prefs.pid_file) < 0) {
+		scmpc_log(ERROR,"Could not remove pid file: %s",g_strerror(errno));
+		return 1;
 	}
 	return 0;
 
