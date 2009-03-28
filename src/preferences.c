@@ -88,12 +88,13 @@ static void free_config_files(gchar **config_files)
 static gint parse_files(cfg_t *cfg)
 {
 	gshort i;
-	gchar *config_files[3], *home;
+	gchar *config_files[3];
+	const gchar *home;
 
 	if(!prefs.config_file) {
-		home = g_getenv("HOME");
-		if(!home)
+		if(!(home = g_getenv("HOME")))
 			home = g_get_home_dir();
+		printf("%s\n",home);
 
 		config_files[0] = g_strdup_printf("%s/.scmpcrc",home);
 		config_files[1] = g_strdup_printf("%s/.scmpc/scmpc.conf",home);
