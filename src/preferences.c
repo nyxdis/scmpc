@@ -94,7 +94,6 @@ static gint parse_files(cfg_t *cfg)
 	if(!prefs.config_file) {
 		if(!(home = g_getenv("HOME")))
 			home = g_get_home_dir();
-		printf("%s\n",home);
 
 		config_files[0] = g_strdup_printf("%s/.scmpcrc",home);
 		config_files[1] = g_strdup_printf("%s/.scmpc/scmpc.conf",home);
