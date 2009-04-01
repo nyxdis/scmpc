@@ -20,8 +20,8 @@ AC_SUBST(confuse_LIBS)
 AC_SUBST(confuse_CFLAGS)
 
 PKG_CHECK_MODULES([libcurl], [libcurl >= 7.15.4])
-AC_SUBST(libdaemon_LIBS)
-AC_SUBST(libdaemon_CFLAGS)
+AC_SUBST(libcurl_LIBS)
+AC_SUBST(libcurl_CFLAGS)
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h netdb.h stdlib.h string.h unistd.h])
