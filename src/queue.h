@@ -27,13 +27,14 @@
 #include <glib.h>
 
 typedef struct _queue_node {
-	struct _queue_node *next;
+	gboolean finished_playing;
+	gchar *album;
 	gchar *artist;
 	gchar *title;
-	gchar *album;
+	glong date;
 	guint length;
 	gushort track;
-	glong date;
+	struct _queue_node *next;
 } queue_node;
 
 struct {
