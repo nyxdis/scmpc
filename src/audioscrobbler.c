@@ -72,7 +72,7 @@ void as_cleanup(void)
 
 void as_handshake(void)
 {
-	gchar *auth_token, *handshake_url, *line, *saveptr, *tmp;
+	gchar *auth_token, *handshake_url, *line, *saveptr = NULL, *tmp;
 	GTimeVal tv;
 	glong timestamp;
 	gint ret;
@@ -254,6 +254,11 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 	g_string_append(nqs,as_conn.session_id);
 
 	while(song && num < 10) {
+		if(!song->finished_playing) {
+			song = song->next;
+			continue;
+		}
+
 		artist = curl_easy_escape(as_conn.handle,song->artist,0);
 		title = curl_easy_escape(as_conn.handle,song->title,0);
 		album = curl_easy_escape(as_conn.handle,song->album,0);
@@ -275,7 +280,7 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 
 gint as_submit(void)
 {
-	gchar *querystring, *line, *saveptr;
+	gchar *querystring, *line, *saveptr = NULL;
 	queue_node *last_added;
 	gint ret, num_songs;
 	static gchar last_failed[512];

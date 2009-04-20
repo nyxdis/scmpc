@@ -49,7 +49,7 @@ static gint server_connect_unix(const gchar *path)
 		return -1;
 
 	addr.sun_family = AF_UNIX;
-	g_strlcpy(addr.sun_path,path,strlen(path));
+	g_strlcpy(addr.sun_path,path,strlen(path)+1);
 	len = strlen(addr.sun_path) + sizeof(addr.sun_family);
 
 	if(fcntl(sockfd,F_SETFL,fcntl(sockfd,F_GETFL,0) | O_NONBLOCK) < 0)
@@ -177,7 +177,7 @@ gint mpd_connect(void)
 
 void mpd_parse(gchar *buf)
 {
-	gchar *saveptr, *line;
+	gchar *saveptr = NULL, *line;
 
 	line = strtok_r(buf,"\n",&saveptr);
 	if(!line) return;
@@ -204,8 +204,10 @@ void mpd_parse(gchar *buf)
 			if(!strncmp(&line[7],"play",4)) {
 				if(current_song.mpd_state == PLAYING || current_song.mpd_state == STOPPED) {
 					while((line = strtok_r(NULL,"\n",&saveptr))) {
-						if(!strncmp(line,"time: ",6) && strtol(strtok(&line[6],":"),NULL,10) < current_song.xfade + 5)
-								if(write(mpd_info.sockfd,"currentsong\n",12) < 0) return;
+						if(!strncmp(line,"time: ",6) && strtol(strtok(&line[6],":"),NULL,10) < current_song.xfade + 5) {
+							if(write(mpd_info.sockfd,"currentsong\n",12) < 0) return;
+							queue.last->finished_playing = TRUE;
+						}
 					}
 				} else if(current_song.mpd_state == PAUSED) {
 					g_timer_continue(current_song.pos);
