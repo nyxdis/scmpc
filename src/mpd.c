@@ -206,7 +206,8 @@ void mpd_parse(gchar *buf)
 					while((line = strtok_r(NULL,"\n",&saveptr))) {
 						if(!strncmp(line,"time: ",6) && strtol(strtok(&line[6],":"),NULL,10) < current_song.xfade + 5) {
 							if(write(mpd_info.sockfd,"currentsong\n",12) < 0) return;
-							queue.last->finished_playing = TRUE;
+							if(queue.length > 0)
+								queue.last->finished_playing = TRUE;
 						}
 					}
 				} else if(current_song.mpd_state == PAUSED) {
