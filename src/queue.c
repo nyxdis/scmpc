@@ -59,7 +59,7 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 		new_song->date = time(NULL);
 	else
 		new_song->date = date;
-	new_song.finished_playing = FALSE;
+	new_song->finished_playing = FALSE;
 
 	/* Queue is empty */
 	if(!queue.first) {
