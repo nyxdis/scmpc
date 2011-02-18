@@ -1,8 +1,8 @@
-== scmpc 0.14.0 ==
+== scmpc 0.3.0 ==
 - Last.fm Now Playing support
 - UNIX domain socket support (mpd 0.14)
 - a lot of code cleanup
 - mpd idle support (mpd 0.14)
 - respect MPD_PORT/MPD_HOST from environment
 - support for the Last.fm submission protocol v1.2.1
-- new command line option: -k --kill - kill the running scmpc
+- new command line option: -k/--kill - kill the running scmpc
