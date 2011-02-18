@@ -1,0 +1,15 @@
+*.o
+.deps
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache
+config.*
+configure
+depcomp
+install-sh
+missing
+scmpc
+scmpc.1
+scmpc.conf
+src/stamp-h1

@@ -1,6 +1,4 @@
 #!/bin/bash
 
-aclocal
-autoconf
-
+autoreconf -ifv
 ./configure $@

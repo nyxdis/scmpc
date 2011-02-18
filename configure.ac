@@ -7,8 +7,11 @@ AC_INIT([scmpc], [0.2.2], [jcoome@gmail.com])
 AC_CONFIG_SRCDIR([src/scmpc.h])
 AC_CONFIG_HEADER([src/config.h])
 
+AM_INIT_AUTOMAKE([dist-bzip2 foreign])
+
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_CC_C99
 AC_PROG_INSTALL
 
 # Checks for libraries.
@@ -134,4 +137,4 @@ AC_C_BIGENDIAN(
 AC_CHECK_FUNCS([gethostbyname memset select socket strdup strerror strstr \
 	strtol strlcat strlcpy asprintf getline])
 
-AC_OUTPUT([examples/scmpc.conf Makefile])
+AC_OUTPUT([scmpc.conf Makefile scmpc.1])
