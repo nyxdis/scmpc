@@ -2,7 +2,7 @@
  * misc.c: Misc helper functions
  *
  * ==================================================================
- * Copyright (c) 2009 Christoph Mende <angelos@unkreativ.org>
+ * Copyright (c) 2009-2011 Christoph Mende <angelos@gentoo.org>
  * Based on Jonathan Coome's work on scmpc
  *
  * This file is part of scmpc.
@@ -34,14 +34,15 @@ static FILE *log_file;
 
 void open_log(const gchar *filename)
 {
-	if(!prefs.fork) {
+	if (!prefs.fork) {
 		log_file = stdout;
 		return;
 	}
 
-	log_file = fopen(filename,"a");
-	if(!log_file) {
-		fputs("Unable to open log file for writing, logging to stdout\n",stderr);
+	log_file = fopen(filename, "a");
+	if (!log_file) {
+		fputs("Unable to open log file for writing,"
+				" logging to stdout\n", stderr);
 		log_file = stdout;
 	}
 }
@@ -52,20 +53,20 @@ void scmpc_log(loglevel level, const gchar *format, ...)
 	time_t t;
 	va_list ap;
 
-	if(level > prefs.log_level)
+	if (level > prefs.log_level)
 		return;
 
 	t = time(NULL);
 	ts = g_malloc(22);
-	strftime(ts,22,"%Y-%m-%d %H:%M:%S  ",localtime(&t));
-	fputs(ts,log_file);
+	strftime(ts, 22, "%Y-%m-%d %H:%M:%S  ", localtime(&t));
+	fputs(ts, log_file);
 	g_free(ts);
 
-	va_start(ap,format);
-	vfprintf(log_file,format,ap);
+	va_start(ap, format);
+	vfprintf(log_file, format, ap);
 	va_end(ap);
 
-	fputs("\n",log_file);
+	fputs("\n", log_file);
 	fflush(log_file);
 }
 

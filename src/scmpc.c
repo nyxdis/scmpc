@@ -2,7 +2,7 @@
  * scmpc.c: The front end of the program.
  *
  * ==================================================================
- * Copyright (c) 2009 Christoph Mende <angelos@unkreativ.org>
+ * Copyright (c) 2009-2011 Christoph Mende <angelos@gentoo.org>
  * Based on Jonathan Coome's work on scmpc
  *
  * This file is part of scmpc.
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 	struct sigaction sa;
 	time_t last_queue_save = 0, mpd_last_fail = 0, as_last_fail = 0;
 
-	if(init_preferences(argc,argv) < 0)
+	if (init_preferences(argc, argv) < 0)
 		g_error("Config file parsing failed");
 
 	/* Open the log file before forking, so that if there is an error, the
@@ -62,28 +62,28 @@ int main(int argc, char *argv[])
 	open_log(prefs.log_file);
 
 	/* Check if scmpc is already running */
-	if((pid = scmpc_is_running()) > 0) {
+	if ((pid = scmpc_is_running()) > 0) {
 		clear_preferences();
-		g_error("Daemon is already running with PID: %ld",(long)pid);
+		g_error("Daemon is already running with PID: %ld", (long)pid);
 	}
 
 	/* Daemonise if wanted */
-	if(prefs.fork)
+	if (prefs.fork)
 		daemonise();
 
 	/* Signal handler */
 	sa.sa_handler = sighandler;
 	sigfillset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
-	sigaction(SIGINT,&sa,NULL);
-	sigaction(SIGTERM,&sa,NULL);
-	sigaction(SIGQUIT,&sa,NULL);
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
 
-	if(as_connection_init() < 0) {
+	if (as_connection_init() < 0) {
 		cleanup();
 		exit(EXIT_FAILURE);
 	}
-	if(mpd_connect() < 0)
+	if (mpd_connect() < 0)
 		mpd_last_fail = time(NULL);
 	as_handshake();
 	queue_load();
@@ -92,53 +92,53 @@ int main(int argc, char *argv[])
 
 	fds[0].events = POLLIN;
 
-	for(;;)
+	for (;;)
 	{
 		fds[0].fd = mpd_info.sockfd;
-		poll(fds,1,prefs.mpd_interval);
+		poll(fds, 1, prefs.mpd_interval);
 
 		/* Check for new events on MPD socket */
-		if(fds[0].revents & POLLIN) {
+		if (fds[0].revents & POLLIN) {
 			buf = g_malloc0(256);
-			if(read(mpd_info.sockfd,buf,255) > 0)
+			if (read(mpd_info.sockfd, buf, 255) > 0)
 				mpd_parse(buf);
 			else {
-				scmpc_log(ERROR,"Failed to read from MPD, reconnecting");
+				scmpc_log(ERROR, "Failed to read from MPD, reconnecting");
 				mpd_info.status = DISCONNECTED;
 			}
 			g_free(buf);
 		}
 
 		/* Check if MPD socket disconnected */
-		if(fds[0].revents & POLLHUP) {
+		if (fds[0].revents & POLLHUP) {
 			mpd_info.status = DISCONNECTED;
-			scmpc_log(INFO,"Disconnected from MPD, reconnecting");
-			if(mpd_connect() < 0)
+			scmpc_log(INFO, "Disconnected from MPD, reconnecting");
+			if (mpd_connect() < 0)
 				mpd_last_fail = time(NULL);
 		}
 
 		/* Check if song is eligible for submission */
-		if(current_song.song_state == NEW && (g_timer_elapsed(current_song.pos,NULL) >= 240 || g_timer_elapsed(current_song.pos,NULL) >= current_song.length / 2)) {
-			queue_add(current_song.artist,current_song.title,current_song.album,current_song.length,current_song.track,current_song.date);
+		if (current_song.song_state == NEW && (g_timer_elapsed(current_song.pos, NULL) >= 240 || g_timer_elapsed(current_song.pos, NULL) >= current_song.length / 2)) {
+			queue_add(current_song.artist, current_song.title, current_song.album, current_song.length, current_song.track, current_song.date);
 			current_song.song_state = SUBMITTED;
 		}
 
 		/* save queue */
-		if(difftime(time(NULL),last_queue_save) >= prefs.cache_interval * 60) {
+		if (difftime(time(NULL), last_queue_save) >= prefs.cache_interval * 60) {
 			queue_save();
 			last_queue_save = time(NULL);
 		}
 
 		/* reconnect to MPD */
-		if(mpd_info.status == DISCONNECTED && difftime(time(NULL),mpd_last_fail) >= 1800) {
+		if (mpd_info.status == DISCONNECTED && difftime(time(NULL), mpd_last_fail) >= 1800) {
 			mpd_info.sockfd = -1;
-			if(mpd_connect() < 0)
+			if (mpd_connect() < 0)
 				mpd_last_fail = time(NULL);
 		}
 
 		/* submit queue */
-		if(queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL),as_last_fail) >= 600) {
-			if(as_submit() == 1)
+		if (queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL), as_last_fail) >= 600) {
+			if (as_submit() == 1)
 				as_last_fail = time(NULL);
 		}
 	}
@@ -146,46 +146,47 @@ int main(int argc, char *argv[])
 
 static gint scmpc_is_running(void)
 {
-	FILE *pid_file = fopen(prefs.pid_file,"r");
+	FILE *pid_file = fopen(prefs.pid_file, "r");
 	pid_t pid;
 
-	if(!pid_file && errno == ENOENT) return 0;
+	if (!pid_file && errno == ENOENT)
+		return 0;
 
-	if(!pid_file) {
+	if (!pid_file) {
 		/* Unable to open PID file, returning error */
-		scmpc_log(ERROR,"Cannot open pid file (%s) for reading: %s",
-				prefs.pid_file,g_strerror(errno));
+		scmpc_log(ERROR, "Cannot open pid file (%s) for reading: %s",
+				prefs.pid_file, g_strerror(errno));
 		return -1;
 	}
 
-	if(fscanf(pid_file,"%d",&pid) < 1) {
+	if (fscanf(pid_file, "%d", &pid) < 1) {
 		/* Read nothing from pid_file */
 		fclose(pid_file);
-		if(unlink(prefs.pid_file) < 0) {
+		if (unlink(prefs.pid_file) < 0) {
 			/* Unable to remove invalid PID file, returning error */
-			scmpc_log(ERROR,"Invalid pid file %s cannot be removed, "
+			scmpc_log(ERROR, "Invalid pid file %s cannot be removed, "
 				"please remove this file or change pid_file in "
-				"your configuration.",prefs.pid_file);
+				"your configuration.", prefs.pid_file);
 			return -1;
 		} else {
 			/* Invalid PID file removed, start new instance */
-			printf("Invalid pid file %s removed.\n",prefs.pid_file);
+			printf("Invalid pid file %s removed.\n", prefs.pid_file);
 			return 0;
 		}
 	}
 
 	fclose(pid_file);
 
-	if(!kill(pid,0)) {
+	if (!kill(pid, 0)) {
 		/* scmpc already running */
 		return pid;
-	} else if(errno == ESRCH) {
+	} else if (errno == ESRCH) {
 		/* no such process */
-		if(unlink(prefs.pid_file) < 0) {
+		if (unlink(prefs.pid_file) < 0) {
 			/* Unable to remove invalid pid file, returning error */
-			fprintf(stderr,"Old pid file %s cannot be removed,"
+			fprintf(stderr, "Old pid file %s cannot be removed, "
 				" please remove this file or change pid_file in"
-				" your configuration.",prefs.pid_file);
+				" your configuration.", prefs.pid_file);
 			return -1;
 		} else {
 			/* Old pid file removed, starting new instance */
@@ -199,22 +200,22 @@ static gint scmpc_is_running(void)
 
 static gint scmpc_pid_create(void)
 {
-	FILE *pid_file = fopen(prefs.pid_file,"w");
-	if(!pid_file) {
+	FILE *pid_file = fopen(prefs.pid_file, "w");
+	if (!pid_file) {
 		scmpc_log(ERROR, "Cannot open pid file (%s) for writing: "
-				"%s\n",prefs.pid_file,g_strerror(errno));
+				"%s\n", prefs.pid_file, g_strerror(errno));
 		return -1;
 	}
 
-	fprintf(pid_file,"%u\n",getpid());
+	fprintf(pid_file, "%u\n", getpid());
 	fclose(pid_file);
 	return 0;
 }
 
 static gint scmpc_pid_remove(void)
 {
-	if(unlink(prefs.pid_file) < 0) {
-		scmpc_log(ERROR,"Could not remove pid file: %s",g_strerror(errno));
+	if (unlink(prefs.pid_file) < 0) {
+		scmpc_log(ERROR, "Could not remove pid file: %s", g_strerror(errno));
 		return 1;
 	}
 	return 0;
@@ -223,7 +224,7 @@ static gint scmpc_pid_remove(void)
 
 static void sighandler(gint sig)
 {
-	scmpc_log(INFO,"Caught signal %d, exiting.",sig);
+	scmpc_log(INFO, "Caught signal %d, exiting.", sig);
 	cleanup();
 	exit(EXIT_SUCCESS);
 }
@@ -232,18 +233,18 @@ static void daemonise(void)
 {
 	pid_t pid;
 
-	if((pid = fork()) < 0) {
+	if ((pid = fork()) < 0) {
 		/* Something went wrong... */
 		clear_preferences();
 		g_error("Could not fork process.");
-	} else if(pid) { /* The parent */
+	} else if (pid) { /* The parent */
 		exit(EXIT_SUCCESS);
 	} else { /* The child */
 		/* Force sane umask */
 		umask(022);
 
 		/* Create the PID file */
-		if(scmpc_pid_create() < 0) {
+		if (scmpc_pid_create() < 0) {
 			clear_preferences();
 			g_error("Failed to create PID file");
 		}
@@ -252,7 +253,8 @@ static void daemonise(void)
 
 static void cleanup(void)
 {
-	if(prefs.fork) scmpc_pid_remove();
+	if (prefs.fork)
+		scmpc_pid_remove();
 	queue_save();
 	g_timer_destroy(current_song.pos);
 	clear_preferences();
@@ -262,16 +264,16 @@ static void cleanup(void)
 
 void kill_scmpc(void)
 {
-	FILE *pid_file = fopen(prefs.pid_file,"r");
+	FILE *pid_file = fopen(prefs.pid_file, "r");
 	pid_t pid;
 
-	if(!pid_file)
-		g_error("Unable to open PID file: %s",g_strerror(errno));
+	if (!pid_file)
+		g_error("Unable to open PID file: %s", g_strerror(errno));
 
-	if(fscanf(pid_file,"%d",&pid) < 1)
+	if (fscanf(pid_file, "%d", &pid) < 1)
 		g_error("Invalid PID file");
 
-	if(kill(pid,SIGTERM) < 0)
+	if (kill(pid, SIGTERM) < 0)
 		g_error("Cannot kill running scmpc");
 
 	exit(EXIT_SUCCESS);

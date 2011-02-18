@@ -1,7 +1,7 @@
 ##############################################################################
 # In general, string values should be contained in either 'single' or "double"
 # quotes. You don't need to quote the value for log_level though, as this is
-# not a string, but a set of specific choices. 
+# not a string, but a set of specific choices.
 #
 # The only options that need to be set for scmpc to do anything useful are your
 # audioscrobbler username and password in the audioscrobbler section.

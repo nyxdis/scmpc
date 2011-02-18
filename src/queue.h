@@ -2,7 +2,7 @@
  * queue.h: Song queue handling.
  *
  * ==================================================================
- * Copyright (c) 2009 Christoph Mende <angelos@unkreativ.org>
+ * Copyright (c) 2009-2011 Christoph Mende <angelos@gentoo.org>
  * Based on Jonathan Coome's work on scmpc
  *
  * This file is part of scmpc.
