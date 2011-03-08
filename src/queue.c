@@ -110,7 +110,7 @@ void queue_load(void)
 	FILE *cache_file;
 	glong date = 0;
 
-	artist = title = album = NULL;
+	artist = title = album = track = NULL;
 	scmpc_log(DEBUG, "Loading queue.");
 
 	cache_file = fopen(prefs.cache_file, "r");

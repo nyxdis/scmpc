@@ -53,7 +53,6 @@ static bool current_song_eligible_for_submit(void);
 
 int main(int argc, char *argv[])
 {
-	gchar *buf;
 	pid_t pid;
 	struct pollfd fds[1];
 	struct sigaction sa;
