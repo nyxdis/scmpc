@@ -33,7 +33,7 @@ typedef struct _queue_node {
 	gchar *title;
 	glong date;
 	guint length;
-	gushort track;
+	gchar *track;
 	struct _queue_node *next;
 } queue_node;
 
@@ -44,7 +44,8 @@ struct {
 } queue;
 
 void queue_add(const gchar *artist, const gchar *title, const gchar *album,
-	guint length, gushort track, glong date);
+	guint length, const gchar *track, glong date);
+void queue_add_current_song(void);
 void queue_load(void);
 void queue_remove_songs(queue_node *song, queue_node *keep_ptr);
 void queue_save(void);

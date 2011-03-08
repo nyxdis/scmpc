@@ -31,11 +31,13 @@
 #include "config.h"
 #endif
 
+#include <mpd/client.h>
+
 #include "misc.h"
-#include "mpd.h"
 #include "preferences.h"
 #include "audioscrobbler.h"
 #include "queue.h"
+#include "scmpc.h"
 
 static gchar curl_error_buffer[CURL_ERROR_SIZE];
 
@@ -198,20 +200,20 @@ void as_now_playing(void)
 		return;
 	}
 
-	artist = curl_easy_escape(as_conn.handle, current_song.artist, 0);
-	title = curl_easy_escape(as_conn.handle, current_song.title, 0);
-	if (current_song.album)
-		album = curl_easy_escape(as_conn.handle, current_song.album, 0);
+	artist = curl_easy_escape(as_conn.handle, mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0), 0);
+	title = curl_easy_escape(as_conn.handle, mpd_song_get_tag(mpd.song, MPD_TAG_TITLE, 0), 0);
+	if (mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0))
+		album = curl_easy_escape(as_conn.handle, mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0), 0);
 	else
 		album = g_strdup("");
 
-	querystring = g_strdup_printf("s=%s&a=%s&t=%s&b=%s&l=%d&n=%d&m=",
-		as_conn.session_id, artist, title, album, current_song.length,
-		current_song.track);
+	querystring = g_strdup_printf("s=%s&a=%s&t=%s&b=%s&l=%d&n=%s&m=",
+		as_conn.session_id, artist, title, album, mpd_song_get_duration(mpd.song),
+		mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0));
 
 	curl_free(artist);
 	curl_free(title);
-	if (current_song.album)
+	if (strlen(album) > 0)
 		curl_free(album);
 	else
 		g_free(album);

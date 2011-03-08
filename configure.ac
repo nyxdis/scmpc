@@ -24,6 +24,8 @@ PKG_CHECK_MODULES([libcurl], [libcurl >= 7.15.4])
 AC_SUBST(libcurl_LIBS)
 AC_SUBST(libcurl_CFLAGS)
 
+PKG_CHECK_MODULES([libmpdclient], [libmpdclient >= 2.4])
+
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h netdb.h stdlib.h string.h unistd.h])
 

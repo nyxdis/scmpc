@@ -26,13 +26,15 @@
 
 #include <errno.h>
 #include <poll.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
+#include <mpd/client.h>
+
 #include "misc.h"
 #include "audioscrobbler.h"
-#include "mpd.h"
 #include "preferences.h"
 #include "queue.h"
 #include "scmpc.h"
@@ -45,6 +47,9 @@ static gint scmpc_pid_remove(void);
 static void sighandler(gint sig);
 static void daemonise(void);
 static void cleanup(void);
+static bool mpd_connect(void);
+static void mpd_update(void);
+static bool current_song_eligible_for_submit(void);
 
 int main(int argc, char *argv[])
 {
@@ -52,6 +57,7 @@ int main(int argc, char *argv[])
 	pid_t pid;
 	struct pollfd fds[1];
 	struct sigaction sa;
+	bool mpd_connected = false;
 	time_t last_queue_save = 0, mpd_last_fail = 0, as_last_fail = 0;
 
 	if (init_preferences(argc, argv) < 0)
@@ -83,45 +89,64 @@ int main(int argc, char *argv[])
 		cleanup();
 		exit(EXIT_FAILURE);
 	}
-	if (mpd_connect() < 0)
+
+	mpd_connected = mpd_connect();
+	if (!mpd_connected) {
 		mpd_last_fail = time(NULL);
+		mpd_connection_free(mpd.conn);
+		mpd.conn = NULL;
+	}
+
 	as_handshake();
 	queue_load();
 	last_queue_save = time(NULL);
-	current_song.pos = g_timer_new();
+	mpd.song_pos = g_timer_new();
 
 	fds[0].events = POLLIN;
 
 	for (;;)
 	{
-		fds[0].fd = mpd_info.sockfd;
+		if (mpd_connected)
+			fds[0].fd = mpd_connection_get_fd(mpd.conn);
+		else
+			fds[0].fd = -1;
 		poll(fds, 1, prefs.mpd_interval);
+
+		/* submit queue */
+		if (queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL), as_last_fail) >= 600) {
+			if (as_submit() == 1)
+				as_last_fail = time(NULL);
+		}
 
 		/* Check for new events on MPD socket */
 		if (fds[0].revents & POLLIN) {
-			buf = g_malloc0(256);
-			if (read(mpd_info.sockfd, buf, 255) > 0)
-				mpd_parse(buf);
-			else {
-				scmpc_log(ERROR, "Failed to read from MPD, reconnecting");
-				mpd_info.status = DISCONNECTED;
+			enum mpd_idle events = mpd_recv_idle(mpd.conn, false);
+
+			if (!mpd_response_finish(mpd.conn)) {
+				scmpc_log(ERROR, "Failed to read MPD response: %s\n",
+						mpd_connection_get_error_message(mpd.conn));
+				mpd_connected = false;
+				mpd_connection_free(mpd.conn);
+				mpd.conn = NULL;
 			}
-			g_free(buf);
+
+			if (events & MPD_IDLE_PLAYER) {
+				// TODO: checks
+				mpd_update();
+			}
 		}
 
 		/* Check if MPD socket disconnected */
 		if (fds[0].revents & POLLHUP) {
-			mpd_info.status = DISCONNECTED;
+			mpd_connected = false;
+			mpd_connection_free(mpd.conn);
+			mpd.conn = NULL;
 			scmpc_log(INFO, "Disconnected from MPD, reconnecting");
-			if (mpd_connect() < 0)
-				mpd_last_fail = time(NULL);
 		}
 
 		/* Check if song is eligible for submission */
-		if (current_song.song_state == NEW && (g_timer_elapsed(current_song.pos, NULL) >= 240 || g_timer_elapsed(current_song.pos, NULL) >= current_song.length / 2)) {
-			queue_add(current_song.artist, current_song.title, current_song.album, current_song.length, current_song.track, current_song.date);
-			current_song.song_state = SUBMITTED;
-		}
+		if (current_song_eligible_for_submit())
+			queue_add_current_song();
 
 		/* save queue */
 		if (difftime(time(NULL), last_queue_save) >= prefs.cache_interval * 60) {
@@ -130,16 +155,13 @@ int main(int argc, char *argv[])
 		}
 
 		/* reconnect to MPD */
-		if (mpd_info.status == DISCONNECTED && difftime(time(NULL), mpd_last_fail) >= 1800) {
-			mpd_info.sockfd = -1;
-			if (mpd_connect() < 0)
+		if (!mpd_connected && difftime(time(NULL), mpd_last_fail) >= 1800) {
+			mpd_connected = mpd_connect();
+			if (!mpd_connected) {
+				mpd_connection_free(mpd.conn);
+				mpd.conn = NULL;
 				mpd_last_fail = time(NULL);
-		}
-
-		/* submit queue */
-		if (queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL), as_last_fail) >= 600) {
-			if (as_submit() == 1)
-				as_last_fail = time(NULL);
+			}
 		}
 	}
 }
@@ -253,13 +275,16 @@ static void daemonise(void)
 
 static void cleanup(void)
 {
+	if (current_song_eligible_for_submit())
+		queue_add_current_song();
 	if (prefs.fork)
 		scmpc_pid_remove();
 	queue_save();
-	g_timer_destroy(current_song.pos);
+	g_timer_destroy(mpd.song_pos);
 	clear_preferences();
 	as_cleanup();
-	mpd_cleanup();
+	if (mpd.conn != NULL)
+		mpd_connection_free(mpd.conn);
 }
 
 void kill_scmpc(void)
@@ -277,4 +302,72 @@ void kill_scmpc(void)
 		g_error("Cannot kill running scmpc");
 
 	exit(EXIT_SUCCESS);
+}
+
+static bool mpd_connect(void)
+{
+	mpd.conn = mpd_connection_new(prefs.mpd_hostname, prefs.mpd_port,
+			prefs.mpd_interval);
+	if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
+		scmpc_log(ERROR, "Failed to connect to MPD: %s",
+				mpd_connection_get_error_message(mpd.conn));
+		return false;
+	} else if (mpd_connection_cmp_server_version(mpd.conn, 0, 14, 0) == -1) {
+		scmpc_log(ERROR, "MPD too old, please upgrade to 0.14");
+		cleanup();
+		exit(EXIT_FAILURE);
+	} else {
+		mpd_command_list_begin(mpd.conn, true);
+		mpd_send_status(mpd.conn);
+		mpd_send_current_song(mpd.conn);
+		mpd_command_list_end(mpd.conn);
+
+		mpd.status = mpd_recv_status(mpd.conn);
+		mpd_response_next(mpd.conn);
+		mpd.song = mpd_recv_song(mpd.conn);
+		mpd_response_finish(mpd.conn);
+
+		mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
+
+		return true;
+	}
+}
+
+static void mpd_update(void)
+{
+	struct mpd_status *prev = mpd.status;
+
+	mpd.status = mpd_run_status(mpd.conn);
+	mpd_response_finish(mpd.conn);
+
+	if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY) {
+		if (mpd_status_get_state(prev) == MPD_STATE_PLAY ||
+				mpd_status_get_state(prev) == MPD_STATE_STOP) {
+			// XXX time < xfade+5? wtf?
+			if (mpd.song)
+				mpd_song_free(mpd.song);
+			mpd.song = mpd_run_current_song(mpd.conn);
+			mpd_response_finish(mpd.conn);
+			as_now_playing();
+			g_timer_start(mpd.song_pos);
+			if (queue.length > 0)
+				queue.last->finished_playing = true;
+		} else if (mpd_status_get_state(prev) == MPD_STATE_PAUSE) {
+			g_timer_continue(mpd.song_pos);
+		}
+	} else if (mpd_status_get_state(mpd.status) == MPD_STATE_PAUSE) {
+		if (mpd_status_get_state(prev) == MPD_STATE_PLAY)
+			g_timer_stop(mpd.song_pos);
+	}
+}
+
+static bool current_song_eligible_for_submit(void)
+{
+	if (!mpd.song)
+		return false;
+
+	return (!mpd.song_submitted &&
+			(g_timer_elapsed(mpd.song_pos, NULL) >= 240 ||
+			 g_timer_elapsed(mpd.song_pos, NULL) >=
+				mpd_song_get_duration(mpd.song) / 2));
 }

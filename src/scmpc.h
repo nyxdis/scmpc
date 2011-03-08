@@ -24,4 +24,16 @@
  */
 
 
+#include <glib.h>
+#include <stdbool.h>
+
+struct {
+	struct mpd_connection *conn;
+	struct mpd_status *status;
+	struct mpd_song *song;
+	GTimer *song_pos;
+	int song_date;
+	bool song_submitted;
+} mpd;
+
 void kill_scmpc(void);

@@ -29,12 +29,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <mpd/client.h>
+
 #include "misc.h"
 #include "queue.h"
 #include "preferences.h"
+#include "scmpc.h"
 
 void queue_add(const gchar *artist, const gchar *title, const gchar *album,
-	guint length, gushort track, glong date)
+	guint length, const gchar *track, glong date)
 {
 	queue_node *new_song;
 
@@ -54,7 +57,7 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 	else
 		new_song->album = g_strdup("");
 	new_song->length = length;
-	new_song->track = track;
+	new_song->track = g_strdup(track);
 	new_song->next = NULL;
 	if (!date)
 		new_song->date = time(NULL);
@@ -89,11 +92,21 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 	scmpc_log(DEBUG, "Song added to queue. Queue length: %d", queue.length);
 }
 
+void queue_add_current_song(void)
+{
+	queue_add(mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0),
+			mpd_song_get_tag(mpd.song, MPD_TAG_TITLE, 0),
+			mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0),
+			mpd_song_get_duration(mpd.song),
+			mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0),
+			mpd.song_date);
+	mpd.song_submitted = true;
+}
+
 void queue_load(void)
 {
-	gchar line[256], *artist, *album, *title;
+	gchar line[256], *artist, *album, *title, *track;
 	guint length = 0;
-	gushort track = 0;
 	FILE *cache_file;
 	glong date = 0;
 
@@ -111,8 +124,8 @@ void queue_load(void)
 	while (fgets(line, sizeof line, cache_file)) {
 		if (!strncmp(line, "# BEGIN SONG", 12)) {
 			g_free(artist); g_free(title); g_free(album);
-			artist = title = album = NULL;
-			length = track = 0;
+			artist = title = album = track = NULL;
+			length = 0;
 		} else if (!strncmp(line, "artist: ", 8)) {
 			g_free(artist);
 			artist = g_strdup(&line[8]);
@@ -127,7 +140,8 @@ void queue_load(void)
 		} else if (!strncmp(line, "length: ", 8)) {
 			length = strtol(&line[8], NULL, 10);
 		} else if (!strncmp(line, "track: ", 7)) {
-			track = strtol(&line[7], NULL, 10);
+			g_free(track);
+			track = g_strdup(&line[7]);
 		} else if (!strncmp(line, "# END SONG", 10)) {
 			queue_add(artist, title, album, length, track, date);
 			g_free(artist); g_free(title); g_free(album);
@@ -176,7 +190,7 @@ void queue_save(void)
 			"title: %s\n"
 			"album: %s\n"
 			"length: %d\n"
-			"track: %d\n"
+			"track: %s\n"
 			"date: %ld\n"
 			"# END SONG\n\n", current_song->artist,
 			current_song->title, current_song->album,
