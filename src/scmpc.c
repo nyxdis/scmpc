@@ -312,7 +312,7 @@ static bool mpd_connect(void)
 				mpd_connection_get_error_message(mpd.conn));
 		return false;
 	} else if (mpd_connection_cmp_server_version(mpd.conn, 0, 14, 0) == -1) {
-		scmpc_log(ERROR, "MPD too old, please upgrade to 0.14");
+		scmpc_log(ERROR, "MPD too old, please upgrade to 0.14 or newer");
 		cleanup();
 		exit(EXIT_FAILURE);
 	} else {
