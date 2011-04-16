@@ -1,3 +1,6 @@
+== scmpc 0.4.0 ==
+- port to libmpdclient
+
 == scmpc 0.3.0 ==
 - Last.fm Now Playing support
 - UNIX domain socket support (mpd 0.14)
