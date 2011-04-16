@@ -12,18 +12,10 @@ AC_PROG_CC
 AC_PROG_CC_C99
 
 # Checks for libraries.
+PKG_PROG_PKG_CONFIG([0.24])
 PKG_CHECK_MODULES([glib], [glib-2.0 >= 2.16])
-AC_SUBST(glib_LIBS)
-AC_SUBST(glib_CFLAGS)
-
 PKG_CHECK_MODULES([confuse], [libconfuse])
-AC_SUBST(confuse_LIBS)
-AC_SUBST(confuse_CFLAGS)
-
-PKG_CHECK_MODULES([libcurl], [libcurl >= 7.15.4])
-AC_SUBST(libcurl_LIBS)
-AC_SUBST(libcurl_CFLAGS)
-
+PKG_CHECK_MODULES([curl], [libcurl >= 7.15.4])
 PKG_CHECK_MODULES([libmpdclient], [libmpdclient >= 2.4])
 
 # Checks for header files.

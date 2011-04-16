@@ -1,6 +1,6 @@
-AM_CPPFLAGS =	$(libcurl_CFLAGS) \
+AM_CPPFLAGS =	$(glib_CFLAGS) \
 		$(confuse_CFLAGS) \
-		$(glib_CFLAGS) \
+		$(curl_CFLAGS) \
 		$(libmpdclient_CFLAGS)
 
 bin_PROGRAMS = scmpc
@@ -12,9 +12,9 @@ scmpc_SOURCES =	src/audioscrobbler.c src/audioscrobbler.h \
 		src/queue.c src/queue.h \
 		src/scmpc.c src/scmpc.h
 
-scmpc_LDADD =	$(libcurl_LIBS) \
+scmpc_LDADD =	$(glib_LIBS) \
 		$(confuse_LIBS) \
-		$(glib_LIBS) \
+		$(curl_LIBS) \
 		$(libmpdclient_LIBS)
 
 DEFS += -DSYSCONFDIR=\"$(sysconfdir)\" -D_XOPEN_SOURCE=500
