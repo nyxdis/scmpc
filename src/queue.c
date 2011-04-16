@@ -144,6 +144,7 @@ void queue_load(void)
 			track = g_strdup(&line[7]);
 		} else if (!strncmp(line, "# END SONG", 10)) {
 			queue_add(artist, title, album, length, track, date);
+			queue.last->finished_playing = TRUE;
 			g_free(artist); g_free(title); g_free(album);
 			artist = title = album = NULL;
 		}
