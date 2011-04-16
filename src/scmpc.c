@@ -49,7 +49,7 @@ static void daemonise(void);
 static void cleanup(void);
 static bool mpd_connect(void);
 static void mpd_update(void);
-static bool current_song_eligible_for_submit(void);
+static bool current_song_eligible_for_submission(void);
 
 int main(int argc, char *argv[])
 {
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 		}
 
 		/* Check if song is eligible for submission */
-		if (current_song_eligible_for_submit())
+		if (current_song_eligible_for_submission())
 			queue_add_current_song();
 
 		/* save queue */
@@ -276,7 +276,7 @@ static void daemonise(void)
 
 static void cleanup(void)
 {
-	if (current_song_eligible_for_submit())
+	if (current_song_eligible_for_submission())
 		queue_add_current_song();
 	if (prefs.fork)
 		scmpc_pid_remove();
@@ -362,7 +362,7 @@ static void mpd_update(void)
 	}
 }
 
-static bool current_song_eligible_for_submit(void)
+static bool current_song_eligible_for_submission(void)
 {
 	if (!mpd.song)
 		return false;
