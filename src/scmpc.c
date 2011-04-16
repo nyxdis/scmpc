@@ -133,6 +133,8 @@ int main(int argc, char *argv[])
 				// TODO: checks
 				mpd_update();
 			}
+
+			mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
 		}
 
 		/* Check if MPD socket disconnected */
