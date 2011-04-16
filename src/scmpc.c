@@ -351,8 +351,9 @@ static void mpd_update(void)
 			mpd_response_finish(mpd.conn);
 			as_now_playing();
 			g_timer_start(mpd.song_pos);
+			mpd.song_submitted = false;
 			if (queue.length > 0)
-				queue.last->finished_playing = true;
+				queue.last->finished_playing = TRUE;
 		} else if (mpd_status_get_state(prev) == MPD_STATE_PAUSE) {
 			g_timer_continue(mpd.song_pos);
 		}
