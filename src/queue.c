@@ -186,11 +186,11 @@ void queue_save(void)
 
 	while (current_song) {
 		fprintf(cache_file, "# BEGIN SONG\n"
-			"artist: %s\n"
-			"title: %s\n"
-			"album: %s\n"
+			"artist: %s"
+			"title: %s"
+			"album: %s"
 			"length: %d\n"
-			"track: %s\n"
+			"track: %s"
 			"date: %ld\n"
 			"# END SONG\n\n", current_song->artist,
 			current_song->title, current_song->album,
