@@ -49,6 +49,7 @@ static void daemonise(void);
 static void cleanup(void);
 static bool mpd_connect(void);
 static void mpd_update(void);
+static void check_submit(void);
 static bool current_song_eligible_for_submission(void);
 
 int main(int argc, char *argv[])
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
 	struct pollfd fds[1];
 	struct sigaction sa;
 	bool mpd_connected = false;
-	time_t last_queue_save = 0, mpd_last_fail = 0, as_last_fail = 0;
+	time_t last_queue_save = 0, mpd_last_fail = 0;
 
 	if (init_preferences(argc, argv) < 0)
 		g_error("Config file parsing failed");
@@ -111,12 +112,6 @@ int main(int argc, char *argv[])
 			fds[0].fd = -1;
 		poll(fds, 1, prefs.mpd_interval);
 
-		/* submit queue */
-		if (queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL), as_last_fail) >= 600) {
-			if (as_submit() == 1)
-				as_last_fail = time(NULL);
-		}
-
 		/* Check for new events on MPD socket */
 		if (fds[0].revents & POLLIN) {
 			enum mpd_idle events = mpd_recv_idle(mpd.conn, false);
@@ -136,6 +131,10 @@ int main(int argc, char *argv[])
 
 			mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
 		}
+
+		/* submit queue if not playing */
+		if (mpd_status_get_state(mpd.status) != MPD_STATE_PLAY)
+			check_submit();
 
 		/* Check if MPD socket disconnected */
 		if (fds[0].revents & POLLHUP) {
@@ -346,6 +345,7 @@ static void mpd_update(void)
 		if (mpd_status_get_state(prev) == MPD_STATE_PLAY ||
 				mpd_status_get_state(prev) == MPD_STATE_STOP) {
 			// XXX time < xfade+5? wtf?
+			check_submit();
 			if (mpd.song)
 				mpd_song_free(mpd.song);
 			mpd.song = mpd_run_current_song(mpd.conn);
@@ -361,6 +361,14 @@ static void mpd_update(void)
 	} else if (mpd_status_get_state(mpd.status) == MPD_STATE_PAUSE) {
 		if (mpd_status_get_state(prev) == MPD_STATE_PLAY)
 			g_timer_stop(mpd.song_pos);
+	}
+}
+
+static void check_submit(void)
+{
+	if (queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL), as_conn.last_fail) >= 600) {
+		if (as_submit() == 1)
+		as_conn.last_fail = time(NULL);
 	}
 }
 

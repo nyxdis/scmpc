@@ -35,6 +35,7 @@ struct {
 	gchar *np_url;
 	gchar password[33];
 	time_t last_handshake;
+	time_t last_fail;
 	connection_status status;
 	CURL *handle;
 	struct curl_slist *headers;
