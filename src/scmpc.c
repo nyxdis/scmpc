@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 	for (;;)
 	{
 		/* submit queue if not playing */
-		if (mpd_status_get_state(mpd.status) != MPD_STATE_PLAY || (queue.last && queue.last->finished_playing == TRUE))
+		if (mpd_status_get_state(mpd.status) != MPD_STATE_PLAY || (queue.last && queue.last->finished_playing == TRUE && mpd.song_submitted == true))
 			check_submit();
 
 		if (mpd_connected)
@@ -328,6 +328,9 @@ static bool mpd_connect(void)
 		mpd.song = mpd_recv_song(mpd.conn);
 		mpd_response_finish(mpd.conn);
 
+		// skip the song that's playing while connecting
+		mpd.song_submitted = true;
+
 		mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
 
 		return true;
@@ -345,16 +348,23 @@ static void mpd_update(void)
 		if (mpd_status_get_state(prev) == MPD_STATE_PLAY ||
 				mpd_status_get_state(prev) == MPD_STATE_STOP) {
 			// XXX time < xfade+5? wtf?
-			check_submit();
+			// initialize new song
 			if (mpd.song)
 				mpd_song_free(mpd.song);
 			mpd.song = mpd_run_current_song(mpd.conn);
 			mpd_response_finish(mpd.conn);
-			as_now_playing();
 			g_timer_start(mpd.song_pos);
+
+			// update previous songs
 			mpd.song_submitted = false;
 			if (queue.length > 0)
 				queue.last->finished_playing = TRUE;
+			// submit previous song(s)
+			check_submit();
+
+			// send now playing at the end so it won't be
+			// overwritten by the queue
+			as_now_playing();
 		} else if (mpd_status_get_state(prev) == MPD_STATE_PAUSE) {
 			g_timer_continue(mpd.song_pos);
 		}
