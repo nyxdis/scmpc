@@ -162,6 +162,7 @@ void queue_remove_songs(queue_node *song, queue_node *keep_ptr)
 		g_free(song->title);
 		g_free(song->artist);
 		g_free(song->album);
+		g_free(song->track);
 		next_song = song->next;
 		g_free(song);
 		song = next_song;

@@ -48,8 +48,10 @@ static void daemonise(void);
 static void cleanup(void);
 static gboolean mpd_connect(void);
 static void mpd_update(void);
+
 static void check_submit(void);
 static gboolean current_song_eligible_for_submission(void);
+
 
 int main(int argc, char *argv[])
 {
@@ -340,6 +342,8 @@ static void mpd_update(void)
 {
 	struct mpd_status *prev = mpd.status;
 
+	if (mpd.status)
+		mpd_status_free(mpd.status);
 	mpd.status = mpd_run_status(mpd.conn);
 	mpd_response_finish(mpd.conn);
 
