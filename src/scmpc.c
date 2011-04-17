@@ -26,7 +26,6 @@
 
 #include <errno.h>
 #include <poll.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -47,17 +46,17 @@ static gint scmpc_pid_remove(void);
 static void sighandler(gint sig);
 static void daemonise(void);
 static void cleanup(void);
-static bool mpd_connect(void);
+static gboolean mpd_connect(void);
 static void mpd_update(void);
 static void check_submit(void);
-static bool current_song_eligible_for_submission(void);
+static gboolean current_song_eligible_for_submission(void);
 
 int main(int argc, char *argv[])
 {
 	pid_t pid;
 	struct pollfd fds[1];
 	struct sigaction sa;
-	bool mpd_connected = false;
+	gboolean mpd_connected = FALSE;
 	time_t last_queue_save = 0, mpd_last_fail = 0;
 
 	if (init_preferences(argc, argv) < 0)
@@ -107,7 +106,7 @@ int main(int argc, char *argv[])
 	for (;;)
 	{
 		/* submit queue if not playing */
-		if (mpd_status_get_state(mpd.status) != MPD_STATE_PLAY || (queue.last && queue.last->finished_playing == TRUE && mpd.song_submitted == true))
+		if (mpd_status_get_state(mpd.status) != MPD_STATE_PLAY || (queue.last && queue.last->finished_playing == TRUE && mpd.song_submitted == TRUE))
 			check_submit();
 
 		if (mpd_connected)
@@ -118,12 +117,12 @@ int main(int argc, char *argv[])
 
 		/* Check for new events on MPD socket */
 		if (fds[0].revents & POLLIN) {
-			enum mpd_idle events = mpd_recv_idle(mpd.conn, false);
+			enum mpd_idle events = mpd_recv_idle(mpd.conn, FALSE);
 
 			if (!mpd_response_finish(mpd.conn)) {
 				scmpc_log(ERROR, "Failed to read MPD response: %s\n",
 						mpd_connection_get_error_message(mpd.conn));
-				mpd_connected = false;
+				mpd_connected = FALSE;
 				mpd_connection_free(mpd.conn);
 				mpd.conn = NULL;
 			}
@@ -138,7 +137,7 @@ int main(int argc, char *argv[])
 
 		/* Check if MPD socket disconnected */
 		if (fds[0].revents & POLLHUP) {
-			mpd_connected = false;
+			mpd_connected = FALSE;
 			mpd_connection_free(mpd.conn);
 			mpd.conn = NULL;
 			scmpc_log(INFO, "Disconnected from MPD, reconnecting");
@@ -305,20 +304,20 @@ void kill_scmpc(void)
 	exit(EXIT_SUCCESS);
 }
 
-static bool mpd_connect(void)
+static gboolean mpd_connect(void)
 {
 	mpd.conn = mpd_connection_new(prefs.mpd_hostname, prefs.mpd_port,
 			prefs.mpd_interval);
 	if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
 		scmpc_log(ERROR, "Failed to connect to MPD: %s",
 				mpd_connection_get_error_message(mpd.conn));
-		return false;
+		return FALSE;
 	} else if (mpd_connection_cmp_server_version(mpd.conn, 0, 14, 0) == -1) {
 		scmpc_log(ERROR, "MPD too old, please upgrade to 0.14 or newer");
 		cleanup();
 		exit(EXIT_FAILURE);
 	} else {
-		mpd_command_list_begin(mpd.conn, true);
+		mpd_command_list_begin(mpd.conn, TRUE);
 		mpd_send_status(mpd.conn);
 		mpd_send_current_song(mpd.conn);
 		mpd_command_list_end(mpd.conn);
@@ -329,11 +328,11 @@ static bool mpd_connect(void)
 		mpd_response_finish(mpd.conn);
 
 		// skip the song that's playing while connecting
-		mpd.song_submitted = true;
+		mpd.song_submitted = TRUE;
 
 		mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
 
-		return true;
+		return TRUE;
 	}
 }
 
@@ -356,7 +355,7 @@ static void mpd_update(void)
 			g_timer_start(mpd.song_pos);
 
 			// update previous songs
-			mpd.song_submitted = false;
+			mpd.song_submitted = FALSE;
 			if (queue.length > 0)
 				queue.last->finished_playing = TRUE;
 			// submit previous song(s)
@@ -382,10 +381,10 @@ static void check_submit(void)
 	}
 }
 
-static bool current_song_eligible_for_submission(void)
+static gboolean current_song_eligible_for_submission(void)
 {
 	if (!mpd.song)
-		return false;
+		return FALSE;
 
 	return (!mpd.song_submitted &&
 			(g_timer_elapsed(mpd.song_pos, NULL) >= 240 ||

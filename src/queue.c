@@ -100,7 +100,7 @@ void queue_add_current_song(void)
 			mpd_song_get_duration(mpd.song),
 			mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0),
 			mpd.song_date);
-	mpd.song_submitted = true;
+	mpd.song_submitted = TRUE;
 }
 
 void queue_load(void)
