@@ -309,12 +309,13 @@ gint as_submit(void)
 	curl_easy_setopt(as_conn.handle, CURLOPT_POSTFIELDS, querystring);
 	curl_easy_setopt(as_conn.handle, CURLOPT_URL, as_conn.submit_url);
 
-	if ((ret = curl_easy_perform(as_conn.handle))) {
+	ret = curl_easy_perform(as_conn.handle);
+	g_free(querystring);
+	if (ret != 0) {
 		scmpc_log(INFO, "Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
 		return 1;
 	}
-	g_free(querystring);
 
 	line = strtok_r(buffer, "\n", &saveptr);
 	if (!line)
