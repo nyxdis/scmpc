@@ -109,6 +109,7 @@ void queue_load(void)
 	}
 
 	while (fgets(line, sizeof line, cache_file)) {
+		*strrchr(line, '\n') = 0;
 		if (!strncmp(line, "# BEGIN SONG", 12)) {
 			g_free(artist); g_free(title); g_free(album);
 			artist = title = album = NULL;
