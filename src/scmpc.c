@@ -281,7 +281,8 @@ static void cleanup(void)
 	if (prefs.fork)
 		scmpc_pid_remove();
 	queue_save();
-	g_timer_destroy(mpd.song_pos);
+	if (mpd.song_pos)
+		g_timer_destroy(mpd.song_pos);
 	clear_preferences();
 	as_cleanup();
 	if (mpd.conn != NULL)
