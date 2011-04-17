@@ -80,8 +80,7 @@ static gint cf_validate_num_zero(cfg_t *cfg, cfg_opt_t *opt)
 
 static void free_config_files(gchar **config_files)
 {
-	gshort i;
-	for (i=0;i<3;i++)
+	for (int i = 0; i < 3; i++)
 		g_free(config_files[i]);
 }
 
