@@ -1,1 +1,2 @@
 - last.fm API 2.0
+- port queue to GLib queue
