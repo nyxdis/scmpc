@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 	for (;;)
 	{
 		/* submit queue if not playing */
-		if (mpd_status_get_state(mpd.status) != MPD_STATE_PLAY || (queue.last && queue.last->finished_playing == TRUE && mpd.song_submitted == TRUE))
+		if (mpd_connected && (mpd_status_get_state(mpd.status) != MPD_STATE_PLAY || (queue.last && queue.last->finished_playing == TRUE && mpd.song_submitted == TRUE)))
 			check_submit();
 
 		if (mpd_connected)
