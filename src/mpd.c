@@ -216,7 +216,7 @@ void mpd_parse(gchar *buf)
 								queue.last->finished_playing = TRUE;
 						}
 					}
-				} else if (current_song.mpd_state == PAUSED) {
+				} else if (current_song.mpd_state == PAUSED && current_song.pos) {
 					g_timer_continue(current_song.pos);
 				}
 				current_song.mpd_state = PLAYING;
