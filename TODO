@@ -1,0 +1,1 @@
+- read from MPD line-by-line instead of hoping the read buffer is large enough

@@ -37,6 +37,8 @@
 #include "queue.h"
 #include "scmpc.h"
 
+#define MPD_READ_BUF_SIZE 2048
+
 /* Static function prototypes */
 static gint scmpc_is_running(void);
 static gint scmpc_pid_create(void);
@@ -99,8 +101,8 @@ int main(int argc, char *argv[])
 
 		/* Check for new events on MPD socket */
 		if (fds[0].revents & POLLIN) {
-			buf = g_malloc0(256);
-			if (read(mpd_info.sockfd, buf, 255) > 0)
+			buf = g_malloc0(MPD_READ_BUF_SIZE + 1);
+			if (read(mpd_info.sockfd, buf, MPD_READ_BUF_SIZE) > 0)
 				mpd_parse(buf);
 			else {
 				scmpc_log(ERROR, "Failed to read from MPD, reconnecting");
