@@ -18,4 +18,7 @@ scmpc_LDADD = 	@libcurl_LIBS@ \
 
 DEFS += -DSYSCONFDIR=\"$(sysconfdir)\" -D_XOPEN_SOURCE=500
 
-EXTRA_DIST = scmpc.conf.example scmpc.1.in
+dist-hook:
+	git2cl > ChangeLog
+
+EXTRA_DIST = scmpc.conf.example scmpc.1.in ChangeLog
