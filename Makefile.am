@@ -21,4 +21,7 @@ DEFS += -DSYSCONFDIR=\"$(sysconfdir)\" -D_XOPEN_SOURCE=500
 dist-hook:
 	git2cl > ChangeLog
 
+distclean-local:
+	rm -f ChangeLog
+
 EXTRA_DIST = scmpc.conf.example scmpc.1.in ChangeLog
