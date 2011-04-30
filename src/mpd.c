@@ -216,7 +216,7 @@ void mpd_parse(gchar *buf)
 								queue.last->finished_playing = TRUE;
 						}
 					}
-				} else if (current_song.mpd_state == PAUSED && current_song.pos) {
+				} else if (current_song.mpd_state == PAUSED && current_song.state != INVALID) {
 					g_timer_continue(current_song.pos);
 				}
 				current_song.mpd_state = PLAYING;
@@ -258,15 +258,15 @@ void mpd_parse(gchar *buf)
 			}
 			current_song.date = ts;
 			if (current_song.artist && current_song.title && current_song.length >= 30) {
-				current_song.song_state = NEW;
+				current_song.state = NEW;
 				as_now_playing();
 				g_timer_start(current_song.pos);
 			} else if (current_song.length < 30) {
 				scmpc_log(INFO, "Song is too short.");
-				current_song.song_state = INVALID;
+				current_song.state = INVALID;
 			} else {
 				scmpc_log(INFO, "File is not tagged properly.");
-				current_song.song_state = INVALID;
+				current_song.state = INVALID;
 			}
 		} else if (!strncmp(line, "OK MPD", 6)) {
 			gushort version[2];

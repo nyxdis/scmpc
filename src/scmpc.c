@@ -91,6 +91,7 @@ int main(int argc, char *argv[])
 	queue_load();
 	last_queue_save = time(NULL);
 	current_song.pos = g_timer_new();
+	current_song.state = INVALID;
 
 	fds[0].events = POLLIN;
 
@@ -120,9 +121,9 @@ int main(int argc, char *argv[])
 		}
 
 		/* Check if song is eligible for submission */
-		if (current_song.song_state == NEW && (g_timer_elapsed(current_song.pos, NULL) >= 240 || g_timer_elapsed(current_song.pos, NULL) >= current_song.length / 2)) {
+		if (current_song.state == NEW && (g_timer_elapsed(current_song.pos, NULL) >= 240 || g_timer_elapsed(current_song.pos, NULL) >= current_song.length / 2)) {
 			queue_add(current_song.artist, current_song.title, current_song.album, current_song.length, current_song.track, current_song.date);
-			current_song.song_state = SUBMITTED;
+			current_song.state = SUBMITTED;
 		}
 
 		/* save queue */
