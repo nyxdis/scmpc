@@ -1,5 +1,6 @@
 *.o
 .deps
+ChangeLog
 INSTALL
 Makefile
 Makefile.in
