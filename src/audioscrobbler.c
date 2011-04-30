@@ -339,5 +339,7 @@ gint as_submit(void)
 		queue_remove_songs(queue.first, last_added);
 		queue.first = last_added;
 	}
+	g_free(buffer);
+
 	return 0;
 }
