@@ -53,7 +53,6 @@ static int signal_pipe[2] = { -1, -1 };
 
 int main(int argc, char *argv[])
 {
-	gchar *buf;
 	pid_t pid;
 	struct pollfd fds[2];
 	struct sigaction sa;
@@ -113,7 +112,7 @@ int main(int argc, char *argv[])
 
 		/* Check for new events on MPD socket */
 		if (fds[0].revents & POLLIN) {
-			buf = g_malloc0(MPD_READ_BUF_SIZE + 1);
+			gchar *buf = g_malloc0(MPD_READ_BUF_SIZE + 1);
 			if (read(mpd_info.sockfd, buf, MPD_READ_BUF_SIZE) > 0)
 				mpd_parse(buf);
 			else {
