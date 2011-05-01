@@ -25,6 +25,7 @@
 
 
 #include <errno.h>
+#include <fcntl.h>
 #include <poll.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -48,11 +49,13 @@ static void sighandler(gint sig);
 static void daemonise(void);
 static void cleanup(void);
 
+static int signal_pipe[2] = { -1, -1 };
+
 int main(int argc, char *argv[])
 {
 	gchar *buf;
 	pid_t pid;
-	struct pollfd fds[1];
+	struct pollfd fds[2];
 	struct sigaction sa;
 	time_t last_queue_save = 0, mpd_last_fail = 0, as_last_fail = 0;
 
@@ -74,6 +77,12 @@ int main(int argc, char *argv[])
 		daemonise();
 
 	/* Signal handler */
+	if (pipe(signal_pipe) < 0)
+		g_error("Opening signal pipe failed, signals will not be "
+				"caught: %s", g_strerror(errno));
+	else if (fcntl(signal_pipe[1], F_SETFL, fcntl(signal_pipe[1], F_GETFL) | O_NONBLOCK) < 0)
+		g_error("Setting flags on signal pipe failed, signals will "
+				"not be caught: %s", g_strerror(errno));
 	sa.sa_handler = sighandler;
 	sigfillset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
@@ -94,11 +103,13 @@ int main(int argc, char *argv[])
 	current_song.state = INVALID;
 
 	fds[0].events = POLLIN;
+	fds[1].events = POLLIN;
 
 	for (;;)
 	{
 		fds[0].fd = mpd_info.sockfd;
-		poll(fds, 1, prefs.mpd_interval);
+		fds[1].fd = signal_pipe[0];
+		poll(fds, 2, prefs.mpd_interval);
 
 		/* Check for new events on MPD socket */
 		if (fds[0].revents & POLLIN) {
@@ -110,6 +121,23 @@ int main(int argc, char *argv[])
 				mpd_info.status = DISCONNECTED;
 			}
 			g_free(buf);
+		}
+
+		/* Check for new events on signal pipe */
+		if (fds[1].revents & POLLIN) {
+			gchar sig;
+			if (read(signal_pipe[0], &sig, 1) < 0) {
+				fds[1].fd = -1;
+				scmpc_log(INFO, "Reading from signal pipe "
+						"failed, closing pipe.");
+				close(signal_pipe[0]);
+				close(signal_pipe[1]);
+				signal_pipe[0] = -1;
+				signal_pipe[1] = -1;
+			}
+			scmpc_log(INFO, "Caught signal %hhd, exiting.", sig);
+			cleanup();
+			exit(EXIT_SUCCESS);
 		}
 
 		/* Check if MPD socket disconnected */
@@ -227,9 +255,14 @@ static gint scmpc_pid_remove(void)
 
 static void sighandler(gint sig)
 {
-	scmpc_log(INFO, "Caught signal %d, exiting.", sig);
-	cleanup();
-	exit(EXIT_SUCCESS);
+	if (write(signal_pipe[1], &sig, 1) < 0) {
+		scmpc_log(INFO, "Reading from signal pipe failed, closing "
+				"pipe.");
+		close(signal_pipe[0]);
+		close(signal_pipe[1]);
+		signal_pipe[0] = -1;
+		signal_pipe[1] = -1;
+	}
 }
 
 static void daemonise(void)
@@ -258,6 +291,10 @@ static void cleanup(void)
 {
 	if (prefs.fork)
 		scmpc_pid_remove();
+	if (signal_pipe[0] > 0) {
+		close(signal_pipe[0]);
+		close(signal_pipe[1]);
+	}
 	queue_save();
 	g_timer_destroy(current_song.pos);
 	clear_preferences();
