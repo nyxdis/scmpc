@@ -52,7 +52,6 @@ static void mpd_update(void);
 static void check_submit(void);
 static gboolean current_song_eligible_for_submission(void);
 
-
 int main(int argc, char *argv[])
 {
 	pid_t pid;
@@ -98,7 +97,7 @@ int main(int argc, char *argv[])
 		mpd.conn = NULL;
 	}
 
-	as_handshake();
+	as_authenticate();
 	queue_load();
 	last_queue_save = time(NULL);
 	mpd.song_pos = g_timer_new();

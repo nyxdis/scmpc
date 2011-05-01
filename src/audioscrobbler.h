@@ -34,7 +34,7 @@ struct {
 	gchar *submit_url;
 	gchar *np_url;
 	gchar password[33];
-	time_t last_handshake;
+	time_t last_auth;
 	time_t last_fail;
 	connection_status status;
 	CURL *handle;
@@ -46,5 +46,5 @@ gchar *buffer;
 gint as_connection_init(void);
 gint as_submit(void);
 void as_cleanup(void);
-void as_handshake(void);
+void as_authenticate(void);
 void as_now_playing(void);
