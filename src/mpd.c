@@ -52,7 +52,7 @@ static gint server_connect_unix(const gchar *path)
 	g_strlcpy(addr.sun_path, path, strlen(path)+1);
 	len = strlen(addr.sun_path) + sizeof(addr.sun_family);
 
-	if (fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL, 0) | O_NONBLOCK) < 0)
+	if (fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL) | O_NONBLOCK) < 0)
 		return -1;
 
 	if (connect(sockfd, (struct sockaddr *)&addr, len) < 0)
