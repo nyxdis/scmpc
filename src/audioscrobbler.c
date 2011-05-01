@@ -134,7 +134,7 @@ void as_authenticate(void)
 
 	scmpc_log(DEBUG, "auth_url = %s", auth_url);
 
-	curl_easy_setopt(as_conn.handle, CURLOPT_WRITEDATA, (void *)buffer);
+	curl_easy_setopt(as_conn.handle, CURLOPT_WRITEDATA, buffer);
 	curl_easy_setopt(as_conn.handle, CURLOPT_HTTPGET, 1);
 	curl_easy_setopt(as_conn.handle, CURLOPT_URL, auth_url);
 
@@ -292,7 +292,7 @@ gint as_submit(void)
 
 	scmpc_log(DEBUG, "querystring = %s", querystring);
 
-	curl_easy_setopt(as_conn.handle, CURLOPT_WRITEDATA, (void *)buffer);
+	curl_easy_setopt(as_conn.handle, CURLOPT_WRITEDATA, buffer);
 	curl_easy_setopt(as_conn.handle, CURLOPT_POSTFIELDS, querystring);
 	curl_easy_setopt(as_conn.handle, CURLOPT_URL, as_conn.submit_url);
 
@@ -325,6 +325,8 @@ gint as_submit(void)
 		queue_remove_songs(queue.first, last_added);
 		queue.first = last_added;
 	}
+	g_free(buffer);
+	buffer = NULL;
 	return 0;
 }
 
