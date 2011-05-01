@@ -70,6 +70,7 @@ void as_cleanup(void)
 {
 	curl_slist_free_all(as_conn.headers);
 	curl_easy_cleanup(as_conn.handle);
+	as_conn.headers = as_conn.handle = NULL;
 	g_free(as_conn.session_id);
 	g_free(as_conn.np_url);
 	g_free(as_conn.submit_url);
