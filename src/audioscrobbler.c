@@ -193,7 +193,6 @@ void as_now_playing(void)
 			"methodtrack.updateNowPlayingsk%strack%strackNumber%s"
 			API_SECRET, album, artist, duration, as_conn.session_id,
 			title, tracknumber);
-	printf("sig: %s\n", tmp);
 	sig = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
 	g_free(tmp);
 
@@ -245,34 +244,70 @@ void as_now_playing(void)
 
 static gint build_querystring(gchar **qs, queue_node **last_song)
 {
-	gchar *artist, *title, *album;
+	gchar *sig, *tmp;
 	GString *nqs;
-	gint num = 0;
+	GString *albums, *artists, *durations, *timestamps, *titles;
+	GString *tracknumbers;
+	gshort num = 0;
 	queue_node *song = queue.first;
 
-	nqs = g_string_new("s=");
+	nqs = g_string_new("api_key=" API_KEY "&method=track.scrobble&sk=");
 	g_string_append(nqs, as_conn.session_id);
 
+	albums = g_string_new("");
+	artists = g_string_new("");
+	durations = g_string_new("");
+	timestamps = g_string_new("");
+	titles = g_string_new("");
+	tracknumbers = g_string_new("");
+
 	while (song && num < 10) {
+		gchar *album, *artist, *title, *tracknumber;
+
 		if (!song->finished_playing) {
 			song = song->next;
 			continue;
 		}
 
+		g_string_append_printf(albums, "album[%d]%s", num, song->album);
+		g_string_append_printf(artists, "artist[%d]%s", num, song->artist);
+		g_string_append_printf(durations, "duration[%d]%d", num, song->length);
+		g_string_append_printf(timestamps, "timestamp[%d]%ld", num, song->date);
+		g_string_append_printf(titles, "track[%d]%s", num, song->title);
+		g_string_append_printf(tracknumbers, "trackNumber[%d]%s", num, song->track);
+
+		album = curl_easy_escape(as_conn.handle, song->album, 0);
 		artist = curl_easy_escape(as_conn.handle, song->artist, 0);
 		title = curl_easy_escape(as_conn.handle, song->title, 0);
-		album = curl_easy_escape(as_conn.handle, song->album, 0);
+		tracknumber = curl_easy_escape(as_conn.handle, song->track, 0);
 
-		g_string_append_printf(nqs, "&a[%d]=%s&t[%d]=%s&i[%d]=%ld"
-				"&o[%d]=P&r[%d]=&l[%d]=%d&b[%d]=%s&n[%d]="
-				"&m[%d]=", num, artist, num, title, num,
-				song->date, num, num, num, song->length, num,
-				album, num, num);
-		curl_free(artist); curl_free(title); curl_free(album);
+		g_string_append_printf(nqs, "&album[%d]=%s&artist[%d]=%s"
+				"&duration[%d]=%d&timestamp[%d]=%ld"
+				"&track[%d]=%s&trackNumber[%d]=%s",
+				num, album, num, artist, num, song->length, num,
+				song->date, num, title, num, tracknumber);
+
+		curl_free(album); curl_free(artist); curl_free(title);
+		curl_free(tracknumber);
 
 		num++;
 		song = song->next;
 	}
+
+	tmp = g_strdup_printf("%sapi_key" API_KEY "%s%smethodtrack.scrobble"
+			"sk%s%s%s%s" API_SECRET,
+			g_string_free(albums, FALSE),
+			g_string_free(artists, FALSE),
+			g_string_free(durations, FALSE),
+			as_conn.session_id,
+			g_string_free(timestamps, FALSE),
+			g_string_free(tracknumbers, FALSE),
+			g_string_free(titles, FALSE));
+	sig = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
+	g_free(tmp);
+
+	g_string_append_printf(nqs, "&api_sig=%s", sig);
+	g_free(sig);
 
 	*qs = g_string_free(nqs, FALSE);
 	*last_song = song;
@@ -281,10 +316,9 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 
 gint as_submit(void)
 {
-	gchar *querystring, *line, *saveptr = NULL;
+	gchar *querystring;
 	queue_node *last_added;
 	gint ret, num_songs;
-	static gchar last_failed[512];
 
 	if (!queue.first)
 		return -1;
@@ -299,7 +333,7 @@ gint as_submit(void)
 
 	curl_easy_setopt(as_conn.handle, CURLOPT_WRITEDATA, buffer);
 	curl_easy_setopt(as_conn.handle, CURLOPT_POSTFIELDS, querystring);
-	curl_easy_setopt(as_conn.handle, CURLOPT_URL, as_conn.submit_url);
+	curl_easy_setopt(as_conn.handle, CURLOPT_URL, API_URL);
 
 	ret = curl_easy_perform(as_conn.handle);
 	g_free(querystring);
@@ -309,29 +343,20 @@ gint as_submit(void)
 		return 1;
 	}
 
-	line = strtok_r(buffer, "\n", &saveptr);
-	if (!line)
-		scmpc_log(INFO, "Could not parse Audioscrobbler submit"
-				" response.");
-	else if (!strncmp(line, "FAILED", 6)) {
-		if (strcmp(last_failed, &line[7])) {
-			g_strlcpy(last_failed, &line[7], sizeof(last_failed));
-			scmpc_log(INFO, "Audioscrobbler returned FAILED: %s",
-				&line[7]);
-		}
-	} else if (!strncmp(line, "BADSESSION", 10)) {
-		last_failed[0] = '\0';
-		scmpc_log(INFO, "Received bad session from Audioscrobbler,"
-				" re-handshaking.");
-		as_authenticate();
-	} else if (!strncmp(line, "OK", 2)) {
-		last_failed[0] = '\0';
+	if (strstr(buffer, "<lfm status=\"ok\">")) {
 		scmpc_log(INFO, "%d song%s submitted.", num_songs, (num_songs > 1 ? "s" : ""));
 		queue_remove_songs(queue.first, last_added);
 		queue.first = last_added;
+	} else if (strstr(buffer, "<lfm status=\"failed\">")) {
+		as_parse_error(buffer);
+	} else {
+		scmpc_log(INFO, "Could not parse Audioscrobbler submit"
+				" response.");
 	}
+
 	g_free(buffer);
 	buffer = NULL;
+
 	return 0;
 }
 

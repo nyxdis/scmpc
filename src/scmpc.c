@@ -386,6 +386,9 @@ static void mpd_update(void)
 	if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY) {
 		if (mpd_status_get_state(prev) == MPD_STATE_PLAY ||
 				mpd_status_get_state(prev) == MPD_STATE_STOP) {
+			GTimeVal tv;
+			g_get_current_time(&tv);
+
 			// XXX time < xfade+5? wtf?
 			// initialize new song
 			if (mpd.song)
@@ -393,6 +396,7 @@ static void mpd_update(void)
 			mpd.song = mpd_run_current_song(mpd.conn);
 			mpd_response_finish(mpd.conn);
 			g_timer_start(mpd.song_pos);
+			mpd.song_date = tv.tv_sec;
 
 			// update previous songs
 			mpd.song_submitted = FALSE;
