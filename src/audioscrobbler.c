@@ -51,7 +51,7 @@ gint as_connection_init(void)
 	as_conn.handle = curl_easy_init();
 	if (!as_conn.handle)
 		return -1;
-	as_conn.submit_url = as_conn.np_url = as_conn.session_id = NULL;
+	as_conn.submit_url = as_conn.session_id = NULL;
 	as_conn.last_auth = 0;
 	as_conn.status = DISCONNECTED;
 	as_conn.headers = curl_slist_append(as_conn.headers,
@@ -72,7 +72,6 @@ void as_cleanup(void)
 	curl_easy_cleanup(as_conn.handle);
 	as_conn.headers = as_conn.handle = NULL;
 	g_free(as_conn.session_id);
-	g_free(as_conn.np_url);
 	g_free(as_conn.submit_url);
 }
 
@@ -174,8 +173,8 @@ void as_authenticate(void)
 
 void as_now_playing(void)
 {
-	gchar *querystring, *artist, *album, *title, *line;
-	gint ret;
+	gchar *querystring, *tmp, *sig, *artist, *album, *title, *tracknumber;
+	gint ret, duration;
 
 	if (as_conn.status != CONNECTED) {
 		scmpc_log(INFO, "Not sending Now Playing notification:"
@@ -183,33 +182,43 @@ void as_now_playing(void)
 		return;
 	}
 
-	artist = curl_easy_escape(as_conn.handle, mpd_song_get_tag(mpd.song,
-				MPD_TAG_ARTIST, 0), 0);
-	title = curl_easy_escape(as_conn.handle, mpd_song_get_tag(mpd.song,
-				MPD_TAG_TITLE, 0), 0);
-	if (mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0))
-		album = curl_easy_escape(as_conn.handle, mpd_song_get_tag(
-					mpd.song, MPD_TAG_ALBUM, 0), 0);
-	else
-		album = g_strdup("");
+	// TODO: implement this without casts
+	artist = (gchar*) mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0);
+	title = (gchar*) mpd_song_get_tag(mpd.song, MPD_TAG_TITLE, 0);
+	album = (gchar*) mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0);
+	tracknumber = (gchar*) mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0);
+	duration = mpd_song_get_duration(mpd.song);
 
-	querystring = g_strdup_printf("s=%s&a=%s&t=%s&b=%s&l=%d&n=%s&m=",
-		as_conn.session_id, artist, title, album,
-		mpd_song_get_duration(mpd.song),
-		mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0));
+	tmp = g_strdup_printf("album%sapi_key" API_KEY "artist%sduration%d"
+			"methodtrack.updateNowPlayingsk%strack%strackNumber%s"
+			API_SECRET, album, artist, duration, as_conn.session_id,
+			title, tracknumber);
+	printf("sig: %s\n", tmp);
+	sig = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
+	g_free(tmp);
 
+	artist = curl_easy_escape(as_conn.handle, artist, 0);
+	title = curl_easy_escape(as_conn.handle, title, 0);
+	album = curl_easy_escape(as_conn.handle, album, 0);
+	tracknumber = curl_easy_escape(as_conn.handle, tracknumber, 0);
+
+	querystring = g_strdup_printf("album=%s&api_key=" API_KEY "&artist=%s"
+			"&duration=%d&method=track.updateNowPlaying&sk=%s"
+			"&track=%s&trackNumber=%s&api_sig=%s",
+			album, artist, duration, as_conn.session_id, title,
+			tracknumber, sig);
+
+	curl_free(album);
 	curl_free(artist);
 	curl_free(title);
-	if (strlen(album) > 0)
-		curl_free(album);
-	else
-		g_free(album);
+	curl_free(tracknumber);
+	g_free(sig);
 
 	scmpc_log(DEBUG, "querystring = %s", querystring);
 
 	curl_easy_setopt(as_conn.handle, CURLOPT_WRITEDATA, buffer);
 	curl_easy_setopt(as_conn.handle, CURLOPT_POSTFIELDS, querystring);
-	curl_easy_setopt(as_conn.handle, CURLOPT_URL, as_conn.np_url);
+	curl_easy_setopt(as_conn.handle, CURLOPT_URL, API_URL);
 
 	ret = curl_easy_perform(as_conn.handle);
 	g_free(querystring);
@@ -221,20 +230,15 @@ void as_now_playing(void)
 		return;
 	}
 
-	line = strtok(buffer, "\n");
-	if (!line)  {
-		scmpc_log(INFO, "Could not parse Audioscrobbler submit"
-				" response.");
-	} else if (!strncmp(line, "BADSESSION", 10)) {
-		scmpc_log(INFO, "Received bad session response from "
-			"Audioscrobbler, re-handshaking.");
-		as_authenticate();
-	} else if (!strncmp(line, "OK", 2)) {
+	if (strstr(buffer, "<lfm status=\"ok\">")) {
 		scmpc_log(INFO, "Sent Now Playing notification.");
+	} else if (strstr(buffer, "<lfm status=\"failed\">")) {
+		as_parse_error(buffer);
 	} else {
 		scmpc_log(DEBUG, "Unknown response from Audioscrobbler while "
 			"sending Now Playing notification.");
 	}
+
 	g_free(buffer);
 	buffer = NULL;
 }
@@ -338,7 +342,6 @@ static void as_parse_error(char *response)
 
 	tmp = strstr(response, "<error code=\"") + 13;
 	code = g_ascii_strtoll(tmp, NULL, 0);
-	printf("%d\n", code);
 
 	switch(code) {
 		case 4:

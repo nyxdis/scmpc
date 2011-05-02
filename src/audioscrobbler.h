@@ -32,7 +32,6 @@
 struct {
 	gchar *session_id;
 	gchar *submit_url;
-	gchar *np_url;
 	gchar password[33];
 	time_t last_auth;
 	time_t last_fail;
