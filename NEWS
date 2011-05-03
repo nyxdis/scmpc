@@ -1,5 +1,6 @@
 == scmpc 0.4.0 ==
 - port to libmpdclient
+- support for the Last.fm protocol v2.0
 
 == scmpc 0.3.0 ==
 - Last.fm Now Playing support
