@@ -262,7 +262,7 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 	tracks = g_string_new("");
 
 	while (song && num < 10) {
-		gchar *album, *artist, *title, *tracks;
+		gchar *album, *artist, *title, *track;
 
 		if (!song->finished_playing) {
 			song = song->next;
@@ -279,7 +279,7 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 		album = curl_easy_escape(as_conn.handle, song->album, 0);
 		artist = curl_easy_escape(as_conn.handle, song->artist, 0);
 		title = curl_easy_escape(as_conn.handle, song->title, 0);
-		tracks = curl_easy_escape(as_conn.handle, song->track, 0);
+		track = curl_easy_escape(as_conn.handle, song->track, 0);
 
 		g_string_append_printf(nqs, "&album[%d]=%s&artist[%d]=%s"
 				"&duration[%d]=%d&timestamp[%d]=%ld"
