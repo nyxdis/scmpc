@@ -246,20 +246,21 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 {
 	gchar *sig, *tmp;
 	GString *nqs;
-	GString *albums, *artists, *lengths, *timestamps, *titles;
-	GString *tracks;
+	gchar *albums, *artists, *lengths, *timestamps, *titles, *tracks;
+	GString *gsalbums, *gsartists, *gslengths, *gstimestamps, *gstitles;
+	GString *gstracks;
 	gshort num = 0;
 	queue_node *song = queue.first;
 
 	nqs = g_string_new("api_key=" API_KEY "&method=track.scrobble&sk=");
 	g_string_append(nqs, as_conn.session_id);
 
-	albums = g_string_new("");
-	artists = g_string_new("");
-	lengths = g_string_new("");
-	timestamps = g_string_new("");
-	titles = g_string_new("");
-	tracks = g_string_new("");
+	gsalbums = g_string_new("");
+	gsartists = g_string_new("");
+	gslengths = g_string_new("");
+	gstimestamps = g_string_new("");
+	gstitles = g_string_new("");
+	gstracks = g_string_new("");
 
 	while (song && num < 10) {
 		gchar *album, *artist, *title, *track;
@@ -269,12 +270,12 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 			continue;
 		}
 
-		g_string_append_printf(albums, "album[%d]%s", num, song->album);
-		g_string_append_printf(artists, "artist[%d]%s", num, song->artist);
-		g_string_append_printf(lengths, "duration[%d]%d", num, song->length);
-		g_string_append_printf(timestamps, "timestamp[%d]%ld", num, song->date);
-		g_string_append_printf(titles, "track[%d]%s", num, song->title);
-		g_string_append_printf(tracks, "trackNumber[%d]%s", num, song->track);
+		g_string_append_printf(gsalbums, "album[%d]%s", num, song->album);
+		g_string_append_printf(gsartists, "artist[%d]%s", num, song->artist);
+		g_string_append_printf(gslengths, "duration[%d]%d", num, song->length);
+		g_string_append_printf(gstimestamps, "timestamp[%d]%ld", num, song->date);
+		g_string_append_printf(gstitles, "track[%d]%s", num, song->title);
+		g_string_append_printf(gstracks, "trackNumber[%d]%s", num, song->track);
 
 		album = curl_easy_escape(as_conn.handle, song->album, 0);
 		artist = curl_easy_escape(as_conn.handle, song->artist, 0);
@@ -294,17 +295,20 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 		song = song->next;
 	}
 
+	albums = g_string_free(gsalbums, FALSE);
+	artists = g_string_free(gsartists, FALSE);
+	lengths = g_string_free(gslengths, FALSE);
+	timestamps = g_string_free(gstimestamps, FALSE);
+	tracks = g_string_free(gstracks, FALSE);
+	titles = g_string_free(gstitles, FALSE);
+
 	tmp = g_strdup_printf("%sapi_key" API_KEY "%s%smethodtrack.scrobble"
 			"sk%s%s%s%s" API_SECRET,
-			g_string_free(albums, FALSE),
-			g_string_free(artists, FALSE),
-			g_string_free(lengths, FALSE),
-			as_conn.session_id,
-			g_string_free(timestamps, FALSE),
-			g_string_free(tracks, FALSE),
-			g_string_free(titles, FALSE));
+			albums, artists, lengths, as_conn.session_id,
+			timestamps, tracks, titles);
 	sig = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
-	g_free(tmp);
+	g_free(tmp); g_free(albums); g_free(artists); g_free(lengths);
+	g_free(timestamps); g_free(tracks); g_free(titles);
 
 	g_string_append_printf(nqs, "&api_sig=%s", sig);
 	g_free(sig);
