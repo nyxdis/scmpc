@@ -2,7 +2,7 @@
  * preferences.c: Preferences parsing
  *
  * ==================================================================
- * Copyright (c) 2009-2011 Christoph Mende <angelos@gentoo.org>
+ * Copyright (c) 2009-2011 Christoph Mende <angelos@unkreativ.org>
  * Based on Jonathan Coome's work on scmpc
  *
  * This file is part of scmpc.
@@ -242,7 +242,7 @@ static gint parse_command_line(gint argc, gchar **argv)
 	if (version) {
 		puts(PACKAGE_STRING);
 		puts("An Audioscrobbler client for MPD.");
-		puts("Copyright 2009-2011 Christoph Mende <angelos@gentoo.org>");
+		puts("Copyright 2009-2011 Christoph Mende <angelos@unkreativ.org>");
 		puts("Based on Jonathan Coome's work on scmpc");
 		exit(EXIT_SUCCESS);
 	}
