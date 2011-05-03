@@ -173,8 +173,8 @@ void as_authenticate(void)
 
 void as_now_playing(void)
 {
-	gchar *querystring, *tmp, *sig, *artist, *album, *title, *tracknumber;
-	gint ret, duration;
+	gchar *querystring, *tmp, *sig, *artist, *album, *title, *track;
+	gint ret, length;
 
 	if (as_conn.status != CONNECTED) {
 		scmpc_log(INFO, "Not sending Now Playing notification:"
@@ -186,31 +186,31 @@ void as_now_playing(void)
 	artist = (gchar*) mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0);
 	title = (gchar*) mpd_song_get_tag(mpd.song, MPD_TAG_TITLE, 0);
 	album = (gchar*) mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0);
-	tracknumber = (gchar*) mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0);
-	duration = mpd_song_get_duration(mpd.song);
+	track = (gchar*) mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0);
+	length = mpd_song_get_duration(mpd.song);
 
 	tmp = g_strdup_printf("album%sapi_key" API_KEY "artist%sduration%d"
 			"methodtrack.updateNowPlayingsk%strack%strackNumber%s"
-			API_SECRET, album, artist, duration, as_conn.session_id,
-			title, tracknumber);
+			API_SECRET, album, artist, length, as_conn.session_id,
+			title, track);
 	sig = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
 	g_free(tmp);
 
 	artist = curl_easy_escape(as_conn.handle, artist, 0);
 	title = curl_easy_escape(as_conn.handle, title, 0);
 	album = curl_easy_escape(as_conn.handle, album, 0);
-	tracknumber = curl_easy_escape(as_conn.handle, tracknumber, 0);
+	track = curl_easy_escape(as_conn.handle, track, 0);
 
 	querystring = g_strdup_printf("album=%s&api_key=" API_KEY "&artist=%s"
 			"&duration=%d&method=track.updateNowPlaying&sk=%s"
 			"&track=%s&trackNumber=%s&api_sig=%s",
-			album, artist, duration, as_conn.session_id, title,
-			tracknumber, sig);
+			album, artist, length, as_conn.session_id, title,
+			track, sig);
 
 	curl_free(album);
 	curl_free(artist);
 	curl_free(title);
-	curl_free(tracknumber);
+	curl_free(track);
 	g_free(sig);
 
 	scmpc_log(DEBUG, "querystring = %s", querystring);
@@ -246,8 +246,8 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 {
 	gchar *sig, *tmp;
 	GString *nqs;
-	GString *albums, *artists, *durations, *timestamps, *titles;
-	GString *tracknumbers;
+	GString *albums, *artists, *lengths, *timestamps, *titles;
+	GString *tracks;
 	gshort num = 0;
 	queue_node *song = queue.first;
 
@@ -256,13 +256,13 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 
 	albums = g_string_new("");
 	artists = g_string_new("");
-	durations = g_string_new("");
+	lengths = g_string_new("");
 	timestamps = g_string_new("");
 	titles = g_string_new("");
-	tracknumbers = g_string_new("");
+	tracks = g_string_new("");
 
 	while (song && num < 10) {
-		gchar *album, *artist, *title, *tracknumber;
+		gchar *album, *artist, *title, *tracks;
 
 		if (!song->finished_playing) {
 			song = song->next;
@@ -271,24 +271,24 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 
 		g_string_append_printf(albums, "album[%d]%s", num, song->album);
 		g_string_append_printf(artists, "artist[%d]%s", num, song->artist);
-		g_string_append_printf(durations, "duration[%d]%d", num, song->length);
+		g_string_append_printf(lengths, "duration[%d]%d", num, song->length);
 		g_string_append_printf(timestamps, "timestamp[%d]%ld", num, song->date);
 		g_string_append_printf(titles, "track[%d]%s", num, song->title);
-		g_string_append_printf(tracknumbers, "trackNumber[%d]%s", num, song->track);
+		g_string_append_printf(tracks, "trackNumber[%d]%s", num, song->track);
 
 		album = curl_easy_escape(as_conn.handle, song->album, 0);
 		artist = curl_easy_escape(as_conn.handle, song->artist, 0);
 		title = curl_easy_escape(as_conn.handle, song->title, 0);
-		tracknumber = curl_easy_escape(as_conn.handle, song->track, 0);
+		tracks = curl_easy_escape(as_conn.handle, song->track, 0);
 
 		g_string_append_printf(nqs, "&album[%d]=%s&artist[%d]=%s"
 				"&duration[%d]=%d&timestamp[%d]=%ld"
 				"&track[%d]=%s&trackNumber[%d]=%s",
 				num, album, num, artist, num, song->length, num,
-				song->date, num, title, num, tracknumber);
+				song->date, num, title, num, track);
 
 		curl_free(album); curl_free(artist); curl_free(title);
-		curl_free(tracknumber);
+		curl_free(track);
 
 		num++;
 		song = song->next;
@@ -298,10 +298,10 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 			"sk%s%s%s%s" API_SECRET,
 			g_string_free(albums, FALSE),
 			g_string_free(artists, FALSE),
-			g_string_free(durations, FALSE),
+			g_string_free(lengths, FALSE),
 			as_conn.session_id,
 			g_string_free(timestamps, FALSE),
-			g_string_free(tracknumbers, FALSE),
+			g_string_free(tracks, FALSE),
 			g_string_free(titles, FALSE));
 	sig = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
 	g_free(tmp);
