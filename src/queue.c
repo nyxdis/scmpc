@@ -147,10 +147,11 @@ void queue_load(void)
 			queue_add(artist, title, album, length, track, date);
 			queue.last->finished_playing = TRUE;
 			g_free(artist); g_free(title); g_free(album);
-			artist = title = album = NULL;
+			g_free(track);
+			artist = title = album = track = NULL;
 		}
 	}
-	g_free(artist); g_free(title); g_free(album);
+	g_free(artist); g_free(title); g_free(album); g_free(track);
 	fclose(cache_file);
 }
 
