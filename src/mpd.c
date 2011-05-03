@@ -258,9 +258,11 @@ void mpd_parse(gchar *buf)
 			}
 			current_song.date = ts;
 			if (current_song.artist && current_song.title && current_song.length >= 30) {
-				current_song.state = NEW;
-				as_now_playing();
-				g_timer_start(current_song.pos);
+				if (current_song.mpd_state == PLAYING) {
+					current_song.state = NEW;
+					as_now_playing();
+					g_timer_start(current_song.pos);
+				}
 			} else if (current_song.length < 30) {
 				scmpc_log(INFO, "Song is too short.");
 				current_song.state = INVALID;
@@ -280,6 +282,8 @@ void mpd_parse(gchar *buf)
 			scmpc_log(INFO, "Connected to MPD.");
 			current_song.mpd_state = UNKNOWN;
 			if (write(mpd_info.sockfd, "status\n", 7) < 0)
+				return;
+			if (write(mpd_info.sockfd, "currentsong\n", 12) < 0)
 				return;
 		}
 	} while ((line = strtok_r(NULL, "\n", &saveptr)));
