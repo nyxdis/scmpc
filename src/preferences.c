@@ -201,7 +201,7 @@ static gint parse_config_file(void)
 	prefs.mpd_hostname = g_strdup(cfg_getstr(sec_mpd, "host"));
 	prefs.mpd_port = cfg_getint(sec_mpd, "port");
 	prefs.mpd_timeout = cfg_getint(sec_mpd, "timeout");
-	prefs.mpd_interval = cfg_getint(sec_mpd, "interval");
+	prefs.mpd_interval = cfg_getint(sec_mpd, "interval") * 1000;
 	prefs.mpd_password = g_strdup(cfg_getstr(sec_mpd, "password"));
 
 	sec_as = cfg_getsec(cfg, "audioscrobbler");
