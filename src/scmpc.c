@@ -98,6 +98,7 @@ int main(int argc, char *argv[])
 		cleanup();
 		exit(EXIT_FAILURE);
 	}
+	as_authenticate();
 
 	mpd_connected = mpd_connect();
 	if (!mpd_connected) {
@@ -106,7 +107,6 @@ int main(int argc, char *argv[])
 		mpd.conn = NULL;
 	}
 
-	as_authenticate();
 	queue_load();
 	last_queue_save = time(NULL);
 	mpd.song_pos = g_timer_new();
@@ -365,7 +365,9 @@ static gboolean mpd_connect(void)
 		mpd.song = mpd_recv_song(mpd.conn);
 		mpd_response_finish(mpd.conn);
 
-		// skip the song that's playing while connecting
+		// only send now playing, don't queue the song
+		if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY)
+			as_now_playing();
 		mpd.song_submitted = TRUE;
 
 		mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
