@@ -19,7 +19,9 @@ scmpc_LDADD =	$(glib_LIBS) \
 
 DEFS += -DSYSCONFDIR=\"$(sysconfdir)\" -D_XOPEN_SOURCE=500
 
-dist-hook:
+dist-hook: ChangeLog
+
+ChangeLog:
 	git2cl > ChangeLog
 
 distclean-local:
