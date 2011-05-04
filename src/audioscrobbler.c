@@ -78,8 +78,6 @@ void as_cleanup(void)
 void as_authenticate(void)
 {
 	gchar *auth_token, *api_sig, *auth_url, *tmp;
-	GTimeVal tv;
-	glong timestamp;
 	gint ret;
 
 	if (as_conn.status == BADAUTH) {
@@ -96,9 +94,6 @@ void as_authenticate(void)
 		as_conn.status = BADAUTH;
 		return;
 	}
-
-	g_get_current_time(&tv);
-	timestamp = tv.tv_sec;
 
 	if (difftime(time(NULL), as_conn.last_auth) < 1800) {
 		scmpc_log(DEBUG, "Requested authentication, but last try "
