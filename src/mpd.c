@@ -106,3 +106,24 @@ void mpd_update(void)
 			g_timer_stop(mpd.song_pos);
 	}
 }
+
+gboolean mpd_parse(void)
+{
+	enum mpd_idle events = mpd_recv_idle(mpd.conn, FALSE);
+
+	if (!mpd_response_finish(mpd.conn)) {
+		g_warning("Failed to read MPD response: %s",
+				mpd_connection_get_error_message(mpd.conn));
+		mpd_connection_free(mpd.conn);
+		mpd.conn = NULL;
+		return FALSE;
+	}
+
+	if (events & MPD_IDLE_PLAYER) {
+		// TODO: checks
+		mpd_update();
+	}
+
+	mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
+	return TRUE;
+}

@@ -37,3 +37,4 @@ struct {
 
 gboolean mpd_connect(void);
 void mpd_update(void);
+gboolean mpd_parse(void);

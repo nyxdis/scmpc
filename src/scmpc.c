@@ -131,22 +131,7 @@ int main(int argc, char *argv[])
 
 		/* Check for new events on MPD socket */
 		if (fds[0].revents & POLLIN) {
-			enum mpd_idle events = mpd_recv_idle(mpd.conn, FALSE);
-
-			if (!mpd_response_finish(mpd.conn)) {
-				g_warning("Failed to read MPD response: %s",
-						mpd_connection_get_error_message(mpd.conn));
-				mpd_connected = FALSE;
-				mpd_connection_free(mpd.conn);
-				mpd.conn = NULL;
-			}
-
-			if (events & MPD_IDLE_PLAYER) {
-				// TODO: checks
-				mpd_update();
-			}
-
-			mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
+			mpd_connected = mpd_parse();
 		}
 
 		/* Check for new events on signal pipe */
