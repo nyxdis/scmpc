@@ -7,6 +7,7 @@ bin_PROGRAMS = scmpc
 man_MANS = scmpc.1
 
 scmpc_SOURCES =	src/audioscrobbler.c src/audioscrobbler.h \
+		src/mpd.c src/mpd.h \
 		src/misc.c src/misc.h \
 		src/preferences.c src/preferences.h \
 		src/queue.c src/queue.h \

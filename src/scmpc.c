@@ -38,6 +38,7 @@
 #include "preferences.h"
 #include "queue.h"
 #include "scmpc.h"
+#include "mpd.h"
 
 /* Static function prototypes */
 static gint scmpc_is_running(void);
@@ -47,10 +48,7 @@ static gint scmpc_pid_remove(void);
 static void sighandler(gint sig);
 static void daemonise(void);
 static void cleanup(void);
-static gboolean mpd_connect(void);
-static void mpd_update(void);
 
-static void check_submit(void);
 static gboolean current_song_eligible_for_submission(void);
 
 static int signal_pipe[2] = { -1, -1 };
@@ -122,7 +120,7 @@ int main(int argc, char *argv[])
 	{
 		/* submit queue if not playing */
 		if (mpd_connected && (mpd_status_get_state(mpd.status) != MPD_STATE_PLAY || (queue.last && queue.last->finished_playing == TRUE && mpd.song_submitted == TRUE)))
-			check_submit();
+			as_check_submit();
 
 		if (mpd_connected)
 			fds[0].fd = mpd_connection_get_fd(mpd.conn);
@@ -344,91 +342,6 @@ void kill_scmpc(void)
 		g_critical("Cannot kill running scmpc");
 
 	exit(EXIT_SUCCESS);
-}
-
-static gboolean mpd_connect(void)
-{
-	mpd.conn = mpd_connection_new(prefs.mpd_hostname, prefs.mpd_port,
-			prefs.mpd_interval);
-	if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
-		g_warning("Failed to connect to MPD: %s",
-				mpd_connection_get_error_message(mpd.conn));
-		return FALSE;
-	} else if (mpd_connection_cmp_server_version(mpd.conn, 0, 14, 0) == -1) {
-		g_warning("MPD too old, please upgrade to 0.14 or newer");
-		cleanup();
-		exit(EXIT_FAILURE);
-	} else {
-		mpd_command_list_begin(mpd.conn, TRUE);
-		mpd_send_status(mpd.conn);
-		mpd_send_current_song(mpd.conn);
-		mpd_command_list_end(mpd.conn);
-
-		mpd.status = mpd_recv_status(mpd.conn);
-		mpd_response_next(mpd.conn);
-		mpd.song = mpd_recv_song(mpd.conn);
-		mpd_response_finish(mpd.conn);
-
-		// only send now playing, don't queue the song
-		if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY)
-			as_now_playing();
-		mpd.song_submitted = TRUE;
-
-		mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
-
-		return TRUE;
-	}
-}
-
-static void mpd_update(void)
-{
-	struct mpd_status *prev = mpd.status;
-
-	if (mpd.status)
-		mpd_status_free(mpd.status);
-	mpd.status = mpd_run_status(mpd.conn);
-	mpd_response_finish(mpd.conn);
-
-	if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY) {
-		if (mpd_status_get_state(prev) == MPD_STATE_PLAY ||
-				mpd_status_get_state(prev) == MPD_STATE_STOP) {
-			GTimeVal tv;
-			g_get_current_time(&tv);
-
-			// XXX time < xfade+5? wtf?
-			// initialize new song
-			if (mpd.song)
-				mpd_song_free(mpd.song);
-			mpd.song = mpd_run_current_song(mpd.conn);
-			mpd_response_finish(mpd.conn);
-			g_timer_start(mpd.song_pos);
-			mpd.song_date = tv.tv_sec;
-
-			// update previous songs
-			mpd.song_submitted = FALSE;
-			if (queue.length > 0)
-				queue.last->finished_playing = TRUE;
-			// submit previous song(s)
-			check_submit();
-
-			// send now playing at the end so it won't be
-			// overwritten by the queue
-			as_now_playing();
-		} else if (mpd_status_get_state(prev) == MPD_STATE_PAUSE) {
-			g_timer_continue(mpd.song_pos);
-		}
-	} else if (mpd_status_get_state(mpd.status) == MPD_STATE_PAUSE) {
-		if (mpd_status_get_state(prev) == MPD_STATE_PLAY)
-			g_timer_stop(mpd.song_pos);
-	}
-}
-
-static void check_submit(void)
-{
-	if (queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL), as_conn.last_fail) >= 600) {
-		if (as_submit() == 1)
-		as_conn.last_fail = time(NULL);
-	}
 }
 
 static gboolean current_song_eligible_for_submission(void)

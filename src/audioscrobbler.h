@@ -29,6 +29,8 @@
 #include <curl/curl.h>
 #include <glib.h>
 
+#include "misc.h"
+
 struct {
 	gchar *session_id;
 	gchar *submit_url;
@@ -43,7 +45,7 @@ struct {
 gchar *buffer;
 
 gint as_connection_init(void);
-gint as_submit(void);
-void as_cleanup(void);
 void as_authenticate(void);
+void as_check_submit(void);
+void as_cleanup(void);
 void as_now_playing(void);

@@ -34,6 +34,7 @@
 #include "queue.h"
 #include "preferences.h"
 #include "scmpc.h"
+#include "mpd.h"
 
 void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 	guint length, const gchar *track, glong date)

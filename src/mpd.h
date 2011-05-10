@@ -1,5 +1,5 @@
 /**
- * misc.h: Misc helper functions
+ * mpd.c: MPD back end.
  *
  * ==================================================================
  * Copyright (c) 2009-2011 Christoph Mende <angelos@unkreativ.org>
@@ -24,22 +24,16 @@
  */
 
 
-#ifndef HAVE_MISC_H
-#define HAVE_MISC_H
-
 #include <glib.h>
 
-typedef enum {
-	DISCONNECTED,
-	CONNECTED,
-	BADAUTH
-} connection_status;
+struct {
+	struct mpd_connection *conn;
+	struct mpd_status *status;
+	struct mpd_song *song;
+	GTimer *song_pos;
+	gint song_date;
+	gboolean song_submitted;
+} mpd;
 
-void open_log(const gchar *filename);
-void scmpc_log(G_GNUC_UNUSED const gchar *log_domain, GLogLevelFlags log_level,
-		const gchar *message, G_GNUC_UNUSED gpointer user_data);
-
-/* used by curl */
-gsize buffer_write(void *input, gsize size, gsize nmemb, void *buf);
-
-#endif // HAVE_MISC_H
+gboolean mpd_connect(void);
+void mpd_update(void);

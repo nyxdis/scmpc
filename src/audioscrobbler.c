@@ -38,9 +38,11 @@
 #include "audioscrobbler.h"
 #include "queue.h"
 #include "scmpc.h"
+#include "mpd.h"
 
 static gchar curl_error_buffer[CURL_ERROR_SIZE];
 static void as_parse_error(char *response);
+static gint as_submit(void);
 
 #define API_URL "http://ws.audioscrobbler.com/2.0/"
 #define API_KEY "3ec5638071c41a864bf0c8d451566476"
@@ -310,7 +312,7 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 	return num;
 }
 
-gint as_submit(void)
+static gint as_submit(void)
 {
 	gchar *querystring;
 	queue_node *last_added;
@@ -379,4 +381,12 @@ static void as_parse_error(char *response)
 	message = g_strndup(tmp, strcspn(tmp, "<"));
 	g_warning("%s", message);
 	g_free(message);
+}
+
+void as_check_submit(void)
+{
+	if (queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL), as_conn.last_fail) >= 600) {
+		if (as_submit() == 1)
+		as_conn.last_fail = time(NULL);
+	}
 }
