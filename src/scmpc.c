@@ -63,17 +63,21 @@ int main(int argc, char *argv[])
 	gboolean mpd_connected = FALSE;
 	time_t last_queue_save = 0, mpd_last_fail = 0;
 
+	g_log_set_always_fatal(G_LOG_LEVEL_CRITICAL);
+
 	if (init_preferences(argc, argv) < 0)
-		g_error("Config file parsing failed");
+		g_critical("Config file parsing failed");
 
 	/* Open the log file before forking, so that if there is an error, the
 	 * user will get some idea what is going on */
 	open_log(prefs.log_file);
 
+	g_log_set_default_handler(scmpc_log, NULL);
+
 	/* Check if scmpc is already running */
 	if ((pid = scmpc_is_running()) > 0) {
 		clear_preferences();
-		g_error("Daemon is already running with PID: %ld", (long)pid);
+		g_critical("Daemon is already running with PID: %ld", (long)pid);
 	}
 
 	/* Daemonise if wanted */
@@ -82,10 +86,10 @@ int main(int argc, char *argv[])
 
 	/* Signal handler */
 	if (pipe(signal_pipe) < 0)
-		g_error("Opening signal pipe failed, signals will not be "
+		g_critical("Opening signal pipe failed, signals will not be "
 				"caught: %s", g_strerror(errno));
 	else if (fcntl(signal_pipe[1], F_SETFL, fcntl(signal_pipe[1], F_GETFL) | O_NONBLOCK) < 0)
-		g_error("Setting flags on signal pipe failed, signals will "
+		g_critical("Setting flags on signal pipe failed, signals will "
 				"not be caught: %s", g_strerror(errno));
 	sa.sa_handler = sighandler;
 	sigfillset(&sa.sa_mask);
@@ -132,7 +136,7 @@ int main(int argc, char *argv[])
 			enum mpd_idle events = mpd_recv_idle(mpd.conn, FALSE);
 
 			if (!mpd_response_finish(mpd.conn)) {
-				scmpc_log(ERROR, "Failed to read MPD response: %s\n",
+				g_warning("Failed to read MPD response: %s",
 						mpd_connection_get_error_message(mpd.conn));
 				mpd_connected = FALSE;
 				mpd_connection_free(mpd.conn);
@@ -152,14 +156,14 @@ int main(int argc, char *argv[])
 			gchar sig;
 			if (read(signal_pipe[0], &sig, 1) < 0) {
 				fds[1].fd = -1;
-				scmpc_log(INFO, "Reading from signal pipe "
-						"failed, closing pipe.");
+				g_message("Reading from signal pipe failed, "
+						"closing pipe.");
 				close(signal_pipe[0]);
 				close(signal_pipe[1]);
 				signal_pipe[0] = -1;
 				signal_pipe[1] = -1;
 			}
-			scmpc_log(INFO, "Caught signal %hhd, exiting.", sig);
+			g_message("Caught signal %hhd, exiting.", sig);
 			cleanup();
 			exit(EXIT_SUCCESS);
 		}
@@ -169,7 +173,7 @@ int main(int argc, char *argv[])
 			mpd_connected = FALSE;
 			mpd_connection_free(mpd.conn);
 			mpd.conn = NULL;
-			scmpc_log(INFO, "Disconnected from MPD, reconnecting");
+			g_message("Disconnected from MPD, reconnecting");
 		}
 
 		/* Check if song is eligible for submission */
@@ -204,7 +208,7 @@ static gint scmpc_is_running(void)
 
 	if (!pid_file) {
 		/* Unable to open PID file, returning error */
-		scmpc_log(ERROR, "Cannot open pid file (%s) for reading: %s",
+		g_warning("Cannot open pid file (%s) for reading: %s",
 				prefs.pid_file, g_strerror(errno));
 		return -1;
 	}
@@ -214,13 +218,14 @@ static gint scmpc_is_running(void)
 		fclose(pid_file);
 		if (unlink(prefs.pid_file) < 0) {
 			/* Unable to remove invalid PID file, returning error */
-			scmpc_log(ERROR, "Invalid pid file %s cannot be removed, "
+			g_warning("Invalid pid file %s cannot be removed, "
 				"please remove this file or change pid_file in "
 				"your configuration.", prefs.pid_file);
 			return -1;
 		} else {
 			/* Invalid PID file removed, start new instance */
-			printf("Invalid pid file %s removed.\n", prefs.pid_file);
+			g_message("Invalid pid file %s removed.",
+					prefs.pid_file);
 			return 0;
 		}
 	}
@@ -252,8 +257,8 @@ static gint scmpc_pid_create(void)
 {
 	FILE *pid_file = fopen(prefs.pid_file, "w");
 	if (!pid_file) {
-		scmpc_log(ERROR, "Cannot open pid file (%s) for writing: "
-				"%s\n", prefs.pid_file, g_strerror(errno));
+		g_warning("Cannot open pid file (%s) for writing: %s",
+				prefs.pid_file, g_strerror(errno));
 		return -1;
 	}
 
@@ -265,7 +270,7 @@ static gint scmpc_pid_create(void)
 static gint scmpc_pid_remove(void)
 {
 	if (unlink(prefs.pid_file) < 0) {
-		scmpc_log(ERROR, "Could not remove pid file: %s", g_strerror(errno));
+		g_warning("Could not remove pid file: %s", g_strerror(errno));
 		return 1;
 	}
 	return 0;
@@ -275,8 +280,7 @@ static gint scmpc_pid_remove(void)
 static void sighandler(gint sig)
 {
 	if (write(signal_pipe[1], &sig, 1) < 0) {
-		scmpc_log(INFO, "Reading from signal pipe failed, closing "
-				"pipe.");
+		g_message("Reading from signal pipe failed, closing pipe.");
 		close(signal_pipe[0]);
 		close(signal_pipe[1]);
 		signal_pipe[0] = -1;
@@ -291,7 +295,7 @@ static void daemonise(void)
 	if ((pid = fork()) < 0) {
 		/* Something went wrong... */
 		clear_preferences();
-		g_error("Could not fork process.");
+		g_critical("Could not fork process.");
 	} else if (pid) { /* The parent */
 		exit(EXIT_SUCCESS);
 	} else { /* The child */
@@ -301,7 +305,7 @@ static void daemonise(void)
 		/* Create the PID file */
 		if (scmpc_pid_create() < 0) {
 			clear_preferences();
-			g_error("Failed to create PID file");
+			g_critical("Failed to create PID file");
 		}
 	}
 }
@@ -331,13 +335,13 @@ void kill_scmpc(void)
 	pid_t pid;
 
 	if (!pid_file)
-		g_error("Unable to open PID file: %s", g_strerror(errno));
+		g_critical("Unable to open PID file: %s", g_strerror(errno));
 
 	if (fscanf(pid_file, "%d", &pid) < 1)
-		g_error("Invalid PID file");
+		g_critical("Invalid PID file");
 
 	if (kill(pid, SIGTERM) < 0)
-		g_error("Cannot kill running scmpc");
+		g_critical("Cannot kill running scmpc");
 
 	exit(EXIT_SUCCESS);
 }
@@ -347,11 +351,11 @@ static gboolean mpd_connect(void)
 	mpd.conn = mpd_connection_new(prefs.mpd_hostname, prefs.mpd_port,
 			prefs.mpd_interval);
 	if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
-		scmpc_log(ERROR, "Failed to connect to MPD: %s",
+		g_warning("Failed to connect to MPD: %s",
 				mpd_connection_get_error_message(mpd.conn));
 		return FALSE;
 	} else if (mpd_connection_cmp_server_version(mpd.conn, 0, 14, 0) == -1) {
-		scmpc_log(ERROR, "MPD too old, please upgrade to 0.14 or newer");
+		g_warning("MPD too old, please upgrade to 0.14 or newer");
 		cleanup();
 		exit(EXIT_FAILURE);
 	} else {

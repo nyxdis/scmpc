@@ -47,13 +47,13 @@ void open_log(const gchar *filename)
 	}
 }
 
-void scmpc_log(loglevel level, const gchar *format, ...)
+void scmpc_log(G_GNUC_UNUSED const gchar *log_domain, GLogLevelFlags log_level,
+		const gchar *message, G_GNUC_UNUSED gpointer user_data)
 {
 	gchar *ts;
 	time_t t;
-	va_list ap;
 
-	if (level > prefs.log_level)
+	if (log_level > prefs.log_level)
 		return;
 
 	t = time(NULL);
@@ -62,10 +62,7 @@ void scmpc_log(loglevel level, const gchar *format, ...)
 	fputs(ts, log_file);
 	g_free(ts);
 
-	va_start(ap, format);
-	vfprintf(log_file, format, ap);
-	va_end(ap);
-
+	fputs(message, log_file);
 	fputs("\n", log_file);
 	fflush(log_file);
 }

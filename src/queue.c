@@ -31,7 +31,6 @@
 
 #include <mpd/client.h>
 
-#include "misc.h"
 #include "queue.h"
 #include "preferences.h"
 #include "scmpc.h"
@@ -42,7 +41,7 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 	queue_node *new_song;
 
 	if (!artist || !title || length < 30) {
-		scmpc_log(DEBUG, "Invalid song passed to queue_add(). Rejecting.");
+		g_debug("Invalid song passed to queue_add(). Rejecting.");
 		return;
 	}
 
@@ -69,7 +68,7 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 	if (!queue.first) {
 		queue.first = queue.last = new_song;
 		queue.length = 1;
-		scmpc_log(DEBUG, "Song added to queue. Queue length: 1");
+		g_debug("Song added to queue. Queue length: 1");
 		return;
 	}
 
@@ -77,19 +76,19 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 	if (queue.length == prefs.queue_length) {
 		queue_node *new_first_song = queue.first->next;
 		if (!new_first_song) {
-			scmpc_log(DEBUG, "Queue is too long, but there is only "
+			g_debug("Queue is too long, but there is only "
 				"one accessible song in the list. New song not added.");
 			return;
 		}
 		queue_remove_songs(queue.first, new_first_song);
 		queue.first = new_first_song;
-		scmpc_log(INFO, "The queue of songs to be submitted is too long."
+		g_message("The queue of songs to be submitted is too long."
 				"The oldest song has been removed.");
 	}
 	queue.last->next = new_song;
 	queue.last = new_song;
 	queue.length++;
-	scmpc_log(DEBUG, "Song added to queue. Queue length: %d", queue.length);
+	g_debug("Song added to queue. Queue length: %d", queue.length);
 }
 
 void queue_add_current_song(void)
@@ -111,12 +110,12 @@ void queue_load(void)
 	glong date = 0;
 
 	artist = title = album = track = NULL;
-	scmpc_log(DEBUG, "Loading queue.");
+	g_debug("Loading queue.");
 
 	cache_file = fopen(prefs.cache_file, "r");
 	if (!cache_file) {
 		if (errno != ENOENT)
-			scmpc_log(INFO, "Failed to open cache file for reading: %s",
+			g_message("Failed to open cache file for reading: %s",
 				g_strerror(errno));
 		return;
 	}
@@ -183,7 +182,7 @@ void queue_save(void)
 
 	cache_file = fopen(prefs.cache_file, "w");
 	if (!cache_file) {
-		scmpc_log(ERROR, "Failed to open cache file for writing: %s",
+		g_warning("Failed to open cache file for writing: %s",
 			g_strerror(errno));
 		return;
 	}
@@ -203,5 +202,5 @@ void queue_save(void)
 		current_song = current_song->next;
 	}
 	fclose(cache_file);
-	scmpc_log(DEBUG, "Cache saved.");
+	g_debug("Cache saved.");
 }

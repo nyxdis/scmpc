@@ -33,7 +33,7 @@ struct {
 	gint mpd_timeout;
 	gchar *mpd_password;
 	gboolean fork;
-	loglevel log_level;
+	GLogLevelFlags log_level;
 	gchar *config_file;
 	gchar *log_file;
 	gchar *pid_file;

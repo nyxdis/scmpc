@@ -1,2 +1,2 @@
 - port queue to GLib queue
-- port to GLib main loop?
+- port to GLib main loop

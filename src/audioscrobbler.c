@@ -81,7 +81,7 @@ void as_authenticate(void)
 	gint ret;
 
 	if (as_conn.status == BADAUTH) {
-		scmpc_log(INFO, "Refusing authentication, please check your "
+		g_message("Refusing authentication, please check your "
 			"Audioscrobbler credentials and restart %s",
 			PACKAGE_NAME);
 		return;
@@ -89,14 +89,14 @@ void as_authenticate(void)
 
 	if (!strlen(prefs.as_username) || (!strlen(prefs.as_password) &&
 		!strlen(prefs.as_password_hash))) {
-		scmpc_log(INFO, "No username or password specified. "
+		g_message("No username or password specified. "
 				"Not connecting to Audioscrobbler.");
 		as_conn.status = BADAUTH;
 		return;
 	}
 
 	if (difftime(time(NULL), as_conn.last_auth) < 1800) {
-		scmpc_log(DEBUG, "Requested authentication, but last try "
+		g_debug("Requested authentication, but last try "
 				"was less than 30 minutes ago.");
 		return;
 	}
@@ -127,7 +127,7 @@ void as_authenticate(void)
 	g_free(auth_token);
 	g_free(api_sig);
 
-	scmpc_log(DEBUG, "auth_url = %s", auth_url);
+	g_debug("auth_url = %s", auth_url);
 
 	curl_easy_setopt(as_conn.handle, CURLOPT_WRITEDATA, buffer);
 	curl_easy_setopt(as_conn.handle, CURLOPT_HTTPGET, 1);
@@ -137,7 +137,7 @@ void as_authenticate(void)
 	g_free(auth_url);
 
 	if (ret) {
-		scmpc_log(ERROR, "Could not connect to the Audioscrobbler: %s",
+		g_warning("Could not connect to the Audioscrobbler: %s",
 			curl_easy_strerror(ret));
 		g_free(buffer);
 		buffer = NULL;
@@ -146,7 +146,7 @@ void as_authenticate(void)
 
 	as_conn.last_auth = time(NULL);
 	if (!buffer) {
-		scmpc_log(DEBUG, "Could not parse Audioscrobbler response.");
+		g_debug("Could not parse Audioscrobbler response.");
 		g_free(buffer);
 		buffer = NULL;
 		return;
@@ -155,12 +155,12 @@ void as_authenticate(void)
 	if (strstr(buffer, "<lfm status=\"ok\">")) {
 		char *tmp = strstr(buffer, "<key>") + 5;
 		as_conn.session_id = g_strndup(tmp, strcspn(tmp, "<"));
-		scmpc_log(INFO, "Connected to Audioscrobbler.");
+		g_message("Connected to Audioscrobbler.");
 		as_conn.status = CONNECTED;
 	} else if (strstr(buffer, "<lfm status=\"failed\">")) {
 		as_parse_error(buffer);
 	} else {
-		scmpc_log(DEBUG, "Could not parse Audioscrobbler response");
+		g_debug("Could not parse Audioscrobbler response");
 	}
 	g_free(buffer);
 	buffer = NULL;
@@ -172,7 +172,7 @@ void as_now_playing(void)
 	gint ret, length;
 
 	if (as_conn.status != CONNECTED) {
-		scmpc_log(INFO, "Not sending Now Playing notification:"
+		g_message("Not sending Now Playing notification:"
 				" not connected");
 		return;
 	}
@@ -208,7 +208,7 @@ void as_now_playing(void)
 	curl_free(track);
 	g_free(sig);
 
-	scmpc_log(DEBUG, "querystring = %s", querystring);
+	g_debug("querystring = %s", querystring);
 
 	curl_easy_setopt(as_conn.handle, CURLOPT_WRITEDATA, buffer);
 	curl_easy_setopt(as_conn.handle, CURLOPT_POSTFIELDS, querystring);
@@ -217,7 +217,7 @@ void as_now_playing(void)
 	ret = curl_easy_perform(as_conn.handle);
 	g_free(querystring);
 	if (ret) {
-		scmpc_log(ERROR, "Failed to connect to Audioscrobbler: %s",
+		g_warning("Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
 		g_free(buffer);
 		buffer = NULL;
@@ -225,11 +225,11 @@ void as_now_playing(void)
 	}
 
 	if (strstr(buffer, "<lfm status=\"ok\">")) {
-		scmpc_log(INFO, "Sent Now Playing notification.");
+		g_message("Sent Now Playing notification.");
 	} else if (strstr(buffer, "<lfm status=\"failed\">")) {
 		as_parse_error(buffer);
 	} else {
-		scmpc_log(DEBUG, "Unknown response from Audioscrobbler while "
+		g_debug("Unknown response from Audioscrobbler while "
 			"sending Now Playing notification.");
 	}
 
@@ -325,7 +325,7 @@ gint as_submit(void)
 		return -1;
 	}
 
-	scmpc_log(DEBUG, "querystring = %s", querystring);
+	g_debug("querystring = %s", querystring);
 
 	curl_easy_setopt(as_conn.handle, CURLOPT_WRITEDATA, buffer);
 	curl_easy_setopt(as_conn.handle, CURLOPT_POSTFIELDS, querystring);
@@ -334,19 +334,19 @@ gint as_submit(void)
 	ret = curl_easy_perform(as_conn.handle);
 	g_free(querystring);
 	if (ret != 0) {
-		scmpc_log(INFO, "Failed to connect to Audioscrobbler: %s",
+		g_message("Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
 		return 1;
 	}
 
 	if (strstr(buffer, "<lfm status=\"ok\">")) {
-		scmpc_log(INFO, "%d song%s submitted.", num_songs, (num_songs > 1 ? "s" : ""));
+		g_message("%d song%s submitted.", num_songs, (num_songs > 1 ? "s" : ""));
 		queue_remove_songs(queue.first, last_added);
 		queue.first = last_added;
 	} else if (strstr(buffer, "<lfm status=\"failed\">")) {
 		as_parse_error(buffer);
 	} else {
-		scmpc_log(INFO, "Could not parse Audioscrobbler submit"
+		g_message("Could not parse Audioscrobbler submit"
 				" response.");
 	}
 
@@ -377,6 +377,6 @@ static void as_parse_error(char *response)
 
 	tmp = strstr(tmp, "\">") + 2;
 	message = g_strndup(tmp, strcspn(tmp, "<"));
-	scmpc_log(ERROR, message);
+	g_warning("%s", message);
 	g_free(message);
 }

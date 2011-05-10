@@ -34,19 +34,20 @@
 #endif
 
 #include "scmpc.h"
-#include "misc.h"
 #include "preferences.h"
 
 static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
 	if (!strncmp(value, "none", 4))
-		*(loglevel *)result = NONE;
+		*(GLogLevelFlags *)result = G_LOG_LEVEL_ERROR;
 	else if (!strncmp(value, "error", 5))
-		*(loglevel *)result = ERROR;
+		*(GLogLevelFlags *)result = G_LOG_LEVEL_ERROR;
+	else if (!strncmp(value, "warning", 7))
+		*(GLogLevelFlags *)result = G_LOG_LEVEL_WARNING;
 	else if (!strncmp(value, "info", 4))
-		*(loglevel *)result = INFO;
+		*(GLogLevelFlags *)result = G_LOG_LEVEL_MESSAGE;
 	else if (!strncmp(value, "debug", 5))
-		*(loglevel *)result = DEBUG;
+		*(GLogLevelFlags *)result = G_LOG_LEVEL_DEBUG;
 	else {
 		cfg_error(cfg, "Invalid value for option '%s': '%s'",
 			cfg_opt_name(opt), value);
@@ -157,7 +158,7 @@ static gint parse_config_file(void)
 		CFG_END()
 	};
 	cfg_opt_t opts[] = {
-		CFG_INT_CB("log_level", ERROR, CFGF_NONE, &cf_log_level),
+		CFG_INT_CB("log_level", G_LOG_LEVEL_ERROR, CFGF_NONE, &cf_log_level),
 		CFG_STR("log_file", "/var/log/scmpc.log", CFGF_NONE),
 		CFG_STR("pid_file", "/var/run/scmpc.pid", CFGF_NONE),
 		CFG_STR("cache_file", "/var/lib/scmpc/scmpc.cache", CFGF_NONE),
@@ -262,9 +263,9 @@ static gint parse_command_line(gint argc, gchar **argv)
 		fputs("Specifying --debug and --quiet at the same time makes no sense.", stderr);
 		return -1;
 	} else if (quiet)
-		prefs.log_level = NONE;
+		prefs.log_level = G_LOG_LEVEL_ERROR;
 	else if (debug)
-		prefs.log_level = DEBUG;
+		prefs.log_level = G_LOG_LEVEL_DEBUG;
 	if (!fork)
 		prefs.fork = FALSE;
 	if (dokill)
