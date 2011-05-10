@@ -255,8 +255,7 @@ static gint scmpc_pid_remove(void)
 static void sighandler(gint sig)
 {
 	if (write(signal_pipe[1], &sig, 1) < 0) {
-		scmpc_log(INFO, "Reading from signal pipe failed, closing "
-				"pipe.");
+		scmpc_log(INFO, "Writing to signal pipe failed, closing pipe.");
 		close(signal_pipe[0]);
 		close(signal_pipe[1]);
 		signal_pipe[0] = -1;
