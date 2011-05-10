@@ -1,6 +1,8 @@
 == scmpc 0.3.1 ==
 - increased mpd read buffer size to avoid truncation
 - fixed disappearing queue loaded from cache
+- send now playing immediately after connecting to mpd
+- some minor bugs and memory leaks fixed here and there
 
 == scmpc 0.3.0 ==
 - Last.fm Now Playing support
