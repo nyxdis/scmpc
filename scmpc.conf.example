@@ -14,7 +14,7 @@
 # log_level
 #
 # Select the amount of logging you would like scmpc to do. Valid options are:
-# none, error, info and debug
+# error, warning, info and debug
 #log_level = error
 
 # log_file

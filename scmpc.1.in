@@ -95,7 +95,7 @@ and options isn't significant.
 .B log_level
 Select the amount of logging you would like scmpc to do. This is a choice of
 four identifiers, not a text string, so don't quote it. Valid options are:
-none, error, info and debug.
+error, warning, info and debug.
 .TP
 .B log_file
 The file that scmpc should write the log to. It will be created if necessary.
