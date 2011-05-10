@@ -46,6 +46,7 @@ static gint scmpc_pid_create(void);
 static gint scmpc_pid_remove(void);
 
 static void sighandler(gint sig);
+static void signal_parse(void);
 static void daemonise(void);
 static void cleanup(void);
 
@@ -136,19 +137,7 @@ int main(int argc, char *argv[])
 
 		/* Check for new events on signal pipe */
 		if (fds[1].revents & POLLIN) {
-			gchar sig;
-			if (read(signal_pipe[0], &sig, 1) < 0) {
-				fds[1].fd = -1;
-				g_message("Reading from signal pipe failed, "
-						"closing pipe.");
-				close(signal_pipe[0]);
-				close(signal_pipe[1]);
-				signal_pipe[0] = -1;
-				signal_pipe[1] = -1;
-			}
-			g_message("Caught signal %hhd, exiting.", sig);
-			cleanup();
-			exit(EXIT_SUCCESS);
+			signal_parse();
 		}
 
 		/* Check if MPD socket disconnected */
@@ -269,6 +258,22 @@ static void sighandler(gint sig)
 		signal_pipe[0] = -1;
 		signal_pipe[1] = -1;
 	}
+}
+
+static void signal_parse(void)
+{
+	gchar sig;
+	if (read(signal_pipe[0], &sig, 1) < 0) {
+		g_message("Reading from signal pipe failed, "
+				"closing pipe.");
+		close(signal_pipe[0]);
+		close(signal_pipe[1]);
+		signal_pipe[0] = -1;
+		signal_pipe[1] = -1;
+	}
+	g_message("Caught signal %hhd, exiting.", sig);
+	cleanup();
+	exit(EXIT_SUCCESS);
 }
 
 static void daemonise(void)
