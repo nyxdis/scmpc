@@ -118,15 +118,6 @@ int main(int argc, char *argv[])
 	// set up main loop events
 	loop = g_main_loop_new(NULL, FALSE);
 
-	// check for new events on MPD socket
-	if (mpd.connected) {
-		GIOChannel *channel = g_io_channel_unix_new(
-				mpd_connection_get_fd(mpd.conn));
-		mpd.source = g_io_add_watch(channel, G_IO_IN | G_IO_HUP,
-				mpd_parse, NULL);
-		g_io_channel_unref(channel);
-	}
-
 	// check for new events on signal pipe
 	{
 		GIOChannel *channel = g_io_channel_unix_new(signal_pipe[0]);

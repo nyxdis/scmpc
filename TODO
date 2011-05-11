@@ -1,4 +1,3 @@
 - port queue to GLib queue
 - remove mpd_interval/check_source and replace it with a dynamically added source on song beginning
-- re-add mpd fd to main loop after reconnect
 - same for signal pipe?

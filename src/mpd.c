@@ -58,6 +58,8 @@ gboolean mpd_connect(void)
 		mpd.song = mpd_recv_song(mpd.conn);
 		mpd_response_finish(mpd.conn);
 
+		g_message("Connected to MPD");
+
 		// only send now playing, don't queue the song
 		if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY)
 			as_now_playing();
@@ -65,7 +67,12 @@ gboolean mpd_connect(void)
 
 		mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
 
-		g_message("Connected to MPD");
+		GIOChannel *channel = g_io_channel_unix_new(
+				mpd_connection_get_fd(mpd.conn));
+		mpd.source = g_io_add_watch(channel, G_IO_IN | G_IO_HUP,
+				mpd_parse, NULL);
+		g_io_channel_unref(channel);
+
 		return TRUE;
 	}
 }
