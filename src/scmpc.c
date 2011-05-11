@@ -49,11 +49,13 @@ static void scmpc_cleanup(void);
 static void sighandler(gint sig);
 static gboolean signal_parse(GIOChannel *source, GIOCondition condition,
 		gpointer data);
-static void daemonise(void);
+static gboolean open_signal_pipe(void);
+static void close_signal_pipe(void);
+static int signal_pipe[2] = { -1, -1 };
 
+static void daemonise(void);
 static gboolean current_song_eligible_for_submission(void);
 
-static int signal_pipe[2] = { -1, -1 };
 static guint signal_source, cache_save_source, check_source, reconnect_source;
 static GMainLoop *loop;
 
@@ -82,13 +84,7 @@ int main(int argc, char *argv[])
 		daemonise();
 
 	/* Signal handler */
-	if (pipe(signal_pipe) < 0)
-		g_error("Opening signal pipe failed, signals will not be "
-				"caught: %s", g_strerror(errno));
-	else if (fcntl(signal_pipe[1], F_SETFL, fcntl(signal_pipe[1], F_GETFL)
-				| O_NONBLOCK) < 0)
-		g_error("Setting flags on signal pipe failed, signals will "
-				"not be caught: %s", g_strerror(errno));
+	open_signal_pipe();
 	sa.sa_handler = sighandler;
 	sigfillset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
@@ -117,14 +113,6 @@ int main(int argc, char *argv[])
 
 	// set up main loop events
 	loop = g_main_loop_new(NULL, FALSE);
-
-	// check for new events on signal pipe
-	{
-		GIOChannel *channel = g_io_channel_unix_new(signal_pipe[0]);
-		signal_source = g_io_add_watch(channel, G_IO_IN, signal_parse,
-				NULL);
-		g_io_channel_unref(channel);
-	}
 
 	// save queue
 	cache_save_source = g_timeout_add_seconds(prefs.cache_interval * 60,
@@ -224,12 +212,44 @@ static gint scmpc_pid_remove(void)
 static void sighandler(gint sig)
 {
 	if (write(signal_pipe[1], &sig, 1) < 0) {
-		g_message("Writing to signal pipe failed, closing pipe.");
-		close(signal_pipe[0]);
-		close(signal_pipe[1]);
-		signal_pipe[0] = -1;
-		signal_pipe[1] = -1;
+		g_message("Writing to signal pipe failed, re-opening pipe.");
+		close_signal_pipe();
+		open_signal_pipe();
 	}
+}
+
+static gboolean open_signal_pipe(void)
+{
+	GIOChannel *channel;
+
+	if (pipe(signal_pipe) < 0) {
+		g_critical("Opening signal pipe failed, signals will not be "
+				"caught: %s", g_strerror(errno));
+		return FALSE;
+	}
+
+	if (fcntl(signal_pipe[1], F_SETFL, fcntl(signal_pipe[1], F_GETFL)
+				| O_NONBLOCK) < 0) {
+		g_critical("Setting flags on signal pipe failed, signals will "
+				"not be caught: %s", g_strerror(errno));
+		return FALSE;
+	}
+
+	channel = g_io_channel_unix_new(signal_pipe[0]);
+	signal_source = g_io_add_watch(channel, G_IO_IN, signal_parse,
+			NULL);
+	g_io_channel_unref(channel);
+	return TRUE;
+}
+
+static void close_signal_pipe(void)
+{
+	if (signal_pipe[0] > 0)
+		close(signal_pipe[0]);
+	if (signal_pipe[1] > 0)
+		close(signal_pipe[1]);
+	signal_pipe[0] = -1;
+	signal_pipe[1] = -1;
 }
 
 static gboolean signal_parse(GIOChannel *source,
@@ -239,12 +259,10 @@ static gboolean signal_parse(GIOChannel *source,
 	gint fd = g_io_channel_unix_get_fd(source);
 	gchar sig;
 	if (read(fd, &sig, 1) < 0) {
-		g_message("Reading from signal pipe failed, closing pipe.");
-		close(signal_pipe[0]);
-		close(signal_pipe[1]);
-		signal_pipe[0] = -1;
-		signal_pipe[1] = -1;
-		return FALSE;
+		g_message("Reading from signal pipe failed, re-opening pipe.");
+		close_signal_pipe();
+		open_signal_pipe();
+		return TRUE;
 	} else {
 		g_message("Caught signal %hhd, exiting.", sig);
 		scmpc_shutdown();
@@ -292,10 +310,7 @@ static void scmpc_cleanup(void)
 		queue_add_current_song();
 	if (prefs.fork)
 		scmpc_pid_remove();
-	if (signal_pipe[0] > 0) {
-		close(signal_pipe[0]);
-		close(signal_pipe[1]);
-	}
+	close_signal_pipe();
 	queue_save(NULL);
 	if (mpd.song_pos)
 		g_timer_destroy(mpd.song_pos);

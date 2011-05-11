@@ -1,3 +1,2 @@
 - port queue to GLib queue
 - remove mpd_interval/check_source and replace it with a dynamically added source on song beginning
-- same for signal pipe?
