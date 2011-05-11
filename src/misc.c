@@ -51,16 +51,24 @@ void scmpc_log(G_GNUC_UNUSED const gchar *log_domain, GLogLevelFlags log_level,
 		const gchar *message, G_GNUC_UNUSED gpointer user_data)
 {
 	gchar *ts;
-	time_t t;
+	const gchar format[] = "%Y-%m-%d %H:%M:%S  ";
 
 	if (log_level > prefs.log_level)
 		return;
 
-	t = time(NULL);
+#if GLIB_CHECK_VERSION (2, 26, 0)
+	GDateTime *datetime = g_date_time_new_now_local();
+	ts = g_date_time_format(datetime, format);
+#else
+	time_t t = time(NULL);
 	ts = g_malloc(22);
-	strftime(ts, 22, "%Y-%m-%d %H:%M:%S  ", localtime(&t));
+	strftime(ts, 22, format, localtime(&t));
+#endif
 	fputs(ts, log_file);
 	g_free(ts);
+#if GLIB_CHECK_VERSION (2, 26, 0)
+	g_date_time_unref(datetime);
+#endif
 
 	fputs(message, log_file);
 	fputs("\n", log_file);
