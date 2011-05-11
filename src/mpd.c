@@ -33,6 +33,7 @@
 #include "scmpc.h"
 
 static void mpd_update(void);
+static void mpd_disconnect(void);
 
 gboolean mpd_connect(void)
 {
@@ -118,9 +119,7 @@ gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source, GIOCondition condition,
 		G_GNUC_UNUSED gpointer data)
 {
 	if (condition & G_IO_HUP) {
-		mpd.connected = FALSE;
-		mpd_connection_free(mpd.conn);
-		mpd.conn = NULL;
+		mpd_disconnect();
 		g_message("Disconnected from MPD, reconnecting");
 		return TRUE;
 	} else if (condition & G_IO_IN) {
@@ -130,8 +129,7 @@ gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source, GIOCondition condition,
 			g_warning("Failed to read MPD response: %s",
 					mpd_connection_get_error_message(
 						mpd.conn));
-			mpd_connection_free(mpd.conn);
-			mpd.conn = NULL;
+			mpd_disconnect();
 			return FALSE;
 		}
 
@@ -142,6 +140,7 @@ gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source, GIOCondition condition,
 		mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
 		return TRUE;
 	} else {
+		// this shouldn't happen
 		return FALSE;
 	}
 }
@@ -153,10 +152,17 @@ gboolean mpd_reconnect(G_GNUC_UNUSED gpointer data)
 
 	mpd.connected = mpd_connect();
 	if (!mpd.connected) {
-		mpd_connection_free(mpd.conn);
-		mpd.conn = NULL;
-		return FALSE;
+		mpd_disconnect();
+		return TRUE;
 	}
 
 	return TRUE;
+}
+
+static void mpd_disconnect(void)
+{
+	if (mpd.conn)
+		mpd_connection_free(mpd.conn);
+	mpd.connected = FALSE;
+	mpd.conn = NULL;
 }
