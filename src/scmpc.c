@@ -47,7 +47,8 @@ static gint scmpc_pid_remove(void);
 static void scmpc_cleanup(void);
 
 static void sighandler(gint sig);
-static gboolean signal_parse(GIOChannel *source, GIOCondition condition, gpointer data);
+static gboolean signal_parse(GIOChannel *source, GIOCondition condition,
+		gpointer data);
 static void daemonise(void);
 
 static gboolean current_song_eligible_for_submission(void);
@@ -84,7 +85,8 @@ int main(int argc, char *argv[])
 	if (pipe(signal_pipe) < 0)
 		g_error("Opening signal pipe failed, signals will not be "
 				"caught: %s", g_strerror(errno));
-	else if (fcntl(signal_pipe[1], F_SETFL, fcntl(signal_pipe[1], F_GETFL) | O_NONBLOCK) < 0)
+	else if (fcntl(signal_pipe[1], F_SETFL, fcntl(signal_pipe[1], F_GETFL)
+				| O_NONBLOCK) < 0)
 		g_error("Setting flags on signal pipe failed, signals will "
 				"not be caught: %s", g_strerror(errno));
 	sa.sa_handler = sighandler;
@@ -118,26 +120,31 @@ int main(int argc, char *argv[])
 
 	// check for new events on MPD socket
 	if (mpd.connected) {
-		GIOChannel *channel = g_io_channel_unix_new(mpd_connection_get_fd(mpd.conn));
-		mpd.source = g_io_add_watch(channel, G_IO_IN | G_IO_HUP, mpd_parse, NULL);
+		GIOChannel *channel = g_io_channel_unix_new(
+				mpd_connection_get_fd(mpd.conn));
+		mpd.source = g_io_add_watch(channel, G_IO_IN | G_IO_HUP,
+				mpd_parse, NULL);
 		g_io_channel_unref(channel);
 	}
 
 	// check for new events on signal pipe
 	{
 		GIOChannel *channel = g_io_channel_unix_new(signal_pipe[0]);
-		signal_source = g_io_add_watch(channel, G_IO_IN, signal_parse, NULL);
+		signal_source = g_io_add_watch(channel, G_IO_IN, signal_parse,
+				NULL);
 		g_io_channel_unref(channel);
 	}
 
 	// save queue
-	cache_save_source = g_timeout_add_seconds(prefs.cache_interval * 60, queue_save, NULL);
+	cache_save_source = g_timeout_add_seconds(prefs.cache_interval * 60,
+			queue_save, NULL);
 
 	// reconnect if disconnected
 	reconnect_source = g_timeout_add_seconds(300, mpd_reconnect, NULL);
 
 	// check if song is eligible for submission
-	check_source = g_timeout_add_seconds(prefs.mpd_interval, scmpc_check, NULL);
+	check_source = g_timeout_add_seconds(prefs.mpd_interval, scmpc_check,
+			NULL);
 
 	g_main_loop_run(loop);
 
@@ -234,7 +241,9 @@ static void sighandler(gint sig)
 	}
 }
 
-static gboolean signal_parse(GIOChannel *source, G_GNUC_UNUSED GIOCondition condition, G_GNUC_UNUSED gpointer data)
+static gboolean signal_parse(GIOChannel *source,
+		G_GNUC_UNUSED GIOCondition condition,
+		G_GNUC_UNUSED gpointer data)
 {
 	gint fd = g_io_channel_unix_get_fd(source);
 	gchar sig;

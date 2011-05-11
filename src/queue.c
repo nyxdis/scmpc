@@ -77,8 +77,9 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 	if (queue.length == prefs.queue_length) {
 		queue_node *new_first_song = queue.first->next;
 		if (!new_first_song) {
-			g_debug("Queue is too long, but there is only "
-				"one accessible song in the list. New song not added.");
+			g_debug("Queue is too long, but there is only one "
+					"accessible song in the list. New "
+					"song not added.");
 			return;
 		}
 		queue_remove_songs(queue.first, new_first_song);

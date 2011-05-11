@@ -36,7 +36,8 @@
 #include "scmpc.h"
 #include "preferences.h"
 
-static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
+static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const char *value,
+		void *result)
 {
 	if (!strncmp(value, "none", 4))
 		*(GLogLevelFlags *)result = G_LOG_LEVEL_ERROR;
@@ -72,8 +73,8 @@ static gint cf_validate_num_zero(cfg_t *cfg, cfg_opt_t *opt)
 {
 	gint value = cfg_opt_getnint(opt, 0);
 	if (value < 0) {
-		cfg_error(cfg, "'%s' in section '%s' cannot be a negative value.",
-			cfg_opt_name(opt), cfg_name(cfg));
+		cfg_error(cfg, "'%s' in section '%s' cannot be a negative "
+				"value.", cfg_opt_name(opt), cfg_name(cfg));
 		return -1;
 	}
 	return 0;
@@ -158,7 +159,8 @@ static gint parse_config_file(void)
 		CFG_END()
 	};
 	cfg_opt_t opts[] = {
-		CFG_INT_CB("log_level", G_LOG_LEVEL_ERROR, CFGF_NONE, &cf_log_level),
+		CFG_INT_CB("log_level", G_LOG_LEVEL_ERROR, CFGF_NONE,
+				&cf_log_level),
 		CFG_STR("log_file", "/var/log/scmpc.log", CFGF_NONE),
 		CFG_STR("pid_file", "/var/run/scmpc.pid", CFGF_NONE),
 		CFG_STR("cache_file", "/var/lib/scmpc/scmpc.cache", CFGF_NONE),
@@ -219,15 +221,25 @@ static gint parse_command_line(gint argc, gchar **argv)
 {
 	GError *error = NULL;
 	gchar *pid_file = NULL, *conf_file = NULL;
-	gboolean dokill = FALSE, debug = FALSE, quiet = FALSE, version = FALSE, fork = TRUE;
+	gboolean dokill = FALSE, debug = FALSE, quiet = FALSE, version = FALSE;
+	gboolean fork = TRUE;
 	GOptionEntry entries[] = {
-		{ "debug", 'd', 0, G_OPTION_ARG_NONE, &debug, "Log everything.", NULL },
-		{ "kill", 'k', 0, G_OPTION_ARG_NONE, &dokill, "Kill the running scmpc", NULL },
-		{ "quiet", 'q', 0, G_OPTION_ARG_NONE, &quiet, "Disable logging.", NULL },
-		{ "config-file", 'f', 0, G_OPTION_ARG_FILENAME, &conf_file, "The location of the configuration file.", "<config_file>" },
-		{ "pid-file", 'i', 0, G_OPTION_ARG_FILENAME, &pid_file, "The location of the pid file.", "<pid_file>" },
-		{ "version", 'v', 0, G_OPTION_ARG_NONE, &version, "Print the program version.", NULL },
-		{ "foreground", 'n', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &fork, "Run the program in the foreground rather than as a daemon.", NULL },
+		{ "debug", 'd', 0, G_OPTION_ARG_NONE, &debug,
+			"Log everything.", NULL },
+		{ "kill", 'k', 0, G_OPTION_ARG_NONE, &dokill
+			, "Kill the running scmpc", NULL },
+		{ "quiet", 'q', 0, G_OPTION_ARG_NONE, &quiet,
+			"Disable logging.", NULL },
+		{ "config-file", 'f', 0, G_OPTION_ARG_FILENAME, &conf_file,
+			"The location of the configuration file.",
+			"<config_file>" },
+		{ "pid-file", 'i', 0, G_OPTION_ARG_FILENAME, &pid_file,
+			"The location of the pid file.", "<pid_file>" },
+		{ "version", 'v', 0, G_OPTION_ARG_NONE, &version,
+			"Print the program version.", NULL },
+		{ "foreground", 'n', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE,
+			&fork, "Run the program in the foreground rather "
+				"than as a daemon.", NULL },
 		{ NULL, 0, 0, 0, NULL, NULL, NULL }
 	};
 
@@ -243,7 +255,8 @@ static gint parse_command_line(gint argc, gchar **argv)
 	if (version) {
 		puts(PACKAGE_STRING);
 		puts("An Audioscrobbler client for MPD.");
-		puts("Copyright 2009-2011 Christoph Mende <angelos@unkreativ.org>");
+		puts("Copyright 2009-2011 Christoph Mende "
+				"<angelos@unkreativ.org>");
 		puts("Based on Jonathan Coome's work on scmpc");
 		exit(EXIT_SUCCESS);
 	}
@@ -260,7 +273,8 @@ static gint parse_command_line(gint argc, gchar **argv)
 		prefs.pid_file = g_strdup(pid_file);
 	}
 	if (quiet && debug) {
-		fputs("Specifying --debug and --quiet at the same time makes no sense.", stderr);
+		fputs("Specifying --debug and --quiet at the same time does "
+				"not make any sense.", stderr);
 		return -1;
 	} else if (quiet)
 		prefs.log_level = G_LOG_LEVEL_ERROR;
@@ -290,8 +304,10 @@ gint init_preferences(gint argc, gchar **argv)
 		g_free(prefs.mpd_password);
 		g_free(prefs.mpd_hostname);
 		if (g_strrstr(tmp, "@")) {
-			prefs.mpd_password = g_strdup(strtok_r(tmp, "@", &saveptr));
-			prefs.mpd_hostname = g_strdup(strtok_r(NULL, "@", &saveptr));
+			prefs.mpd_password = g_strdup(strtok_r(tmp, "@",
+						&saveptr));
+			prefs.mpd_hostname = g_strdup(strtok_r(NULL, "@",
+						&saveptr));
 		} else {
 			prefs.mpd_password = g_strdup("");
 			prefs.mpd_hostname = g_strdup(tmp);

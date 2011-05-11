@@ -42,7 +42,7 @@ gboolean mpd_connect(void)
 		g_warning("Failed to connect to MPD: %s",
 				mpd_connection_get_error_message(mpd.conn));
 		return FALSE;
-	} else if (mpd_connection_cmp_server_version(mpd.conn, 0, 14, 0) == -1) {
+	} else if (mpd_connection_cmp_server_version(mpd.conn, 0, 14, 0) < 0) {
 		g_critical("MPD too old, please upgrade to 0.14 or newer");
 		scmpc_shutdown();
 		return FALSE;
@@ -114,7 +114,8 @@ static void mpd_update(void)
 	}
 }
 
-gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source, GIOCondition condition, G_GNUC_UNUSED gpointer data)
+gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source, GIOCondition condition,
+		G_GNUC_UNUSED gpointer data)
 {
 	if (condition & G_IO_HUP) {
 		mpd.connected = FALSE;
@@ -127,7 +128,8 @@ gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source, GIOCondition condition, G_G
 
 		if (!mpd_response_finish(mpd.conn)) {
 			g_warning("Failed to read MPD response: %s",
-					mpd_connection_get_error_message(mpd.conn));
+					mpd_connection_get_error_message(
+						mpd.conn));
 			mpd_connection_free(mpd.conn);
 			mpd.conn = NULL;
 			return FALSE;

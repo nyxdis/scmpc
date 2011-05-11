@@ -267,11 +267,15 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 		}
 
 		g_string_append_printf(albums, "album[%d]%s", num, song->album);
-		g_string_append_printf(artists, "artist[%d]%s", num, song->artist);
-		g_string_append_printf(lengths, "duration[%d]%d", num, song->length);
-		g_string_append_printf(timestamps, "timestamp[%d]%ld", num, song->date);
+		g_string_append_printf(artists, "artist[%d]%s", num,
+				song->artist);
+		g_string_append_printf(lengths, "duration[%d]%d", num,
+				song->length);
+		g_string_append_printf(timestamps, "timestamp[%d]%ld", num,
+				song->date);
 		g_string_append_printf(titles, "track[%d]%s", num, song->title);
-		g_string_append_printf(tracks, "trackNumber[%d]%s", num, song->track);
+		g_string_append_printf(tracks, "trackNumber[%d]%s", num,
+				song->track);
 
 		album = curl_easy_escape(as_conn.handle, song->album, 0);
 		artist = curl_easy_escape(as_conn.handle, song->artist, 0);
@@ -342,7 +346,8 @@ static gint as_submit(void)
 	}
 
 	if (strstr(buffer, "<lfm status=\"ok\">")) {
-		g_message("%d song%s submitted.", num_songs, (num_songs > 1 ? "s" : ""));
+		g_message("%d song%s submitted.", num_songs,
+				(num_songs > 1 ? "s" : ""));
 		queue_remove_songs(queue.first, last_added);
 		queue.first = last_added;
 	} else if (strstr(buffer, "<lfm status=\"failed\">")) {
@@ -385,7 +390,8 @@ static void as_parse_error(char *response)
 
 void as_check_submit(void)
 {
-	if (queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL), as_conn.last_fail) >= 600) {
+	if (queue.length > 0 && as_conn.status == CONNECTED &&
+			difftime(time(NULL), as_conn.last_fail) >= 600) {
 		if (as_submit() == 1)
 		as_conn.last_fail = time(NULL);
 	}

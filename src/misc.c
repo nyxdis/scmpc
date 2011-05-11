@@ -67,7 +67,8 @@ void scmpc_log(G_GNUC_UNUSED const gchar *log_domain, GLogLevelFlags log_level,
 	fflush(log_file);
 }
 
-gsize buffer_write(void *input, gsize size, gsize nmemb, G_GNUC_UNUSED void *buf)
+gsize buffer_write(void *input, gsize size, gsize nmemb,
+		G_GNUC_UNUSED void *buf)
 {
 	gsize len = size*nmemb;
 	buffer = g_strdup(input);
