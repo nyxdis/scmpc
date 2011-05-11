@@ -33,8 +33,10 @@ struct {
 	GTimer *song_pos;
 	gint song_date;
 	gboolean song_submitted;
+	guint source;
+	gboolean connected;
 } mpd;
 
 gboolean mpd_connect(void);
-void mpd_update(void);
-gboolean mpd_parse(void);
+gboolean mpd_parse(GIOChannel *source, GIOCondition condition, gpointer data);
+gboolean mpd_reconnect(gpointer data);

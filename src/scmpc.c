@@ -26,7 +26,6 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <poll.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -41,31 +40,29 @@
 #include "mpd.h"
 
 /* Static function prototypes */
+static gboolean scmpc_check(gpointer data);
 static gint scmpc_is_running(void);
 static gint scmpc_pid_create(void);
 static gint scmpc_pid_remove(void);
+static void scmpc_cleanup(void);
 
 static void sighandler(gint sig);
-static void signal_parse(void);
+static gboolean signal_parse(GIOChannel *source, GIOCondition condition, gpointer data);
 static void daemonise(void);
-static void cleanup(void);
 
 static gboolean current_song_eligible_for_submission(void);
 
 static int signal_pipe[2] = { -1, -1 };
+static guint signal_source, cache_save_source, check_source, reconnect_source;
+static GMainLoop *loop;
 
 int main(int argc, char *argv[])
 {
 	pid_t pid;
-	struct pollfd fds[2];
 	struct sigaction sa;
-	gboolean mpd_connected = FALSE;
-	time_t last_queue_save = 0, mpd_last_fail = 0;
-
-	g_log_set_always_fatal(G_LOG_LEVEL_CRITICAL);
 
 	if (init_preferences(argc, argv) < 0)
-		g_critical("Config file parsing failed");
+		g_error("Config file parsing failed");
 
 	/* Open the log file before forking, so that if there is an error, the
 	 * user will get some idea what is going on */
@@ -76,7 +73,7 @@ int main(int argc, char *argv[])
 	/* Check if scmpc is already running */
 	if ((pid = scmpc_is_running()) > 0) {
 		clear_preferences();
-		g_critical("Daemon is already running with PID: %ld", (long)pid);
+		g_error("Daemon is already running with PID: %ld", (long)pid);
 	}
 
 	/* Daemonise if wanted */
@@ -85,10 +82,10 @@ int main(int argc, char *argv[])
 
 	/* Signal handler */
 	if (pipe(signal_pipe) < 0)
-		g_critical("Opening signal pipe failed, signals will not be "
+		g_error("Opening signal pipe failed, signals will not be "
 				"caught: %s", g_strerror(errno));
 	else if (fcntl(signal_pipe[1], F_SETFL, fcntl(signal_pipe[1], F_GETFL) | O_NONBLOCK) < 0)
-		g_critical("Setting flags on signal pipe failed, signals will "
+		g_error("Setting flags on signal pipe failed, signals will "
 				"not be caught: %s", g_strerror(errno));
 	sa.sa_handler = sighandler;
 	sigfillset(&sa.sa_mask);
@@ -98,76 +95,53 @@ int main(int argc, char *argv[])
 	sigaction(SIGQUIT, &sa, NULL);
 
 	if (as_connection_init() < 0) {
-		cleanup();
+		scmpc_cleanup();
 		exit(EXIT_FAILURE);
 	}
 	as_authenticate();
 
-	mpd_connected = mpd_connect();
-	if (!mpd_connected) {
-		mpd_last_fail = time(NULL);
+	queue_load();
+
+	// submit the loaded queue
+	as_check_submit();
+
+	mpd.connected = mpd_connect();
+	if (!mpd.connected) {
 		mpd_connection_free(mpd.conn);
 		mpd.conn = NULL;
 	}
 
-	queue_load();
-	last_queue_save = time(NULL);
 	mpd.song_pos = g_timer_new();
 
-	fds[0].events = POLLIN;
-	fds[1].events = POLLIN;
+	// set up main loop events
+	loop = g_main_loop_new(NULL, FALSE);
 
-	for (;;)
-	{
-		/* submit queue if not playing */
-		if (mpd_connected && (mpd_status_get_state(mpd.status) != MPD_STATE_PLAY || (queue.last && queue.last->finished_playing == TRUE && mpd.song_submitted == TRUE)))
-			as_check_submit();
-
-		if (mpd_connected)
-			fds[0].fd = mpd_connection_get_fd(mpd.conn);
-		else
-			fds[0].fd = -1;
-		fds[1].fd = signal_pipe[0];
-		poll(fds, 2, prefs.mpd_interval);
-
-		/* Check for new events on MPD socket */
-		if (fds[0].revents & POLLIN) {
-			mpd_connected = mpd_parse();
-		}
-
-		/* Check for new events on signal pipe */
-		if (fds[1].revents & POLLIN) {
-			signal_parse();
-		}
-
-		/* Check if MPD socket disconnected */
-		if (fds[0].revents & POLLHUP) {
-			mpd_connected = FALSE;
-			mpd_connection_free(mpd.conn);
-			mpd.conn = NULL;
-			g_message("Disconnected from MPD, reconnecting");
-		}
-
-		/* Check if song is eligible for submission */
-		if (current_song_eligible_for_submission())
-			queue_add_current_song();
-
-		/* save queue */
-		if (difftime(time(NULL), last_queue_save) >= prefs.cache_interval * 60) {
-			queue_save();
-			last_queue_save = time(NULL);
-		}
-
-		/* reconnect to MPD */
-		if (!mpd_connected && difftime(time(NULL), mpd_last_fail) >= 1800) {
-			mpd_connected = mpd_connect();
-			if (!mpd_connected) {
-				mpd_connection_free(mpd.conn);
-				mpd.conn = NULL;
-				mpd_last_fail = time(NULL);
-			}
-		}
+	// check for new events on MPD socket
+	if (mpd.connected) {
+		GIOChannel *channel = g_io_channel_unix_new(mpd_connection_get_fd(mpd.conn));
+		mpd.source = g_io_add_watch(channel, G_IO_IN | G_IO_HUP, mpd_parse, NULL);
+		g_io_channel_unref(channel);
 	}
+
+	// check for new events on signal pipe
+	{
+		GIOChannel *channel = g_io_channel_unix_new(signal_pipe[0]);
+		signal_source = g_io_add_watch(channel, G_IO_IN, signal_parse, NULL);
+		g_io_channel_unref(channel);
+	}
+
+	// save queue
+	cache_save_source = g_timeout_add_seconds(prefs.cache_interval * 60, queue_save, NULL);
+
+	// reconnect if disconnected
+	reconnect_source = g_timeout_add_seconds(300, mpd_reconnect, NULL);
+
+	// check if song is eligible for submission
+	check_source = g_timeout_add_seconds(prefs.mpd_interval, scmpc_check, NULL);
+
+	g_main_loop_run(loop);
+
+	scmpc_cleanup();
 }
 
 static gint scmpc_is_running(void)
@@ -252,7 +226,7 @@ static gint scmpc_pid_remove(void)
 static void sighandler(gint sig)
 {
 	if (write(signal_pipe[1], &sig, 1) < 0) {
-		g_message("Reading from signal pipe failed, closing pipe.");
+		g_message("Writing to signal pipe failed, closing pipe.");
 		close(signal_pipe[0]);
 		close(signal_pipe[1]);
 		signal_pipe[0] = -1;
@@ -260,20 +234,22 @@ static void sighandler(gint sig)
 	}
 }
 
-static void signal_parse(void)
+static gboolean signal_parse(GIOChannel *source, G_GNUC_UNUSED GIOCondition condition, G_GNUC_UNUSED gpointer data)
 {
+	gint fd = g_io_channel_unix_get_fd(source);
 	gchar sig;
-	if (read(signal_pipe[0], &sig, 1) < 0) {
-		g_message("Reading from signal pipe failed, "
-				"closing pipe.");
+	if (read(fd, &sig, 1) < 0) {
+		g_message("Reading from signal pipe failed, closing pipe.");
 		close(signal_pipe[0]);
 		close(signal_pipe[1]);
 		signal_pipe[0] = -1;
 		signal_pipe[1] = -1;
+		return FALSE;
+	} else {
+		g_message("Caught signal %hhd, exiting.", sig);
+		scmpc_shutdown();
+		return TRUE;
 	}
-	g_message("Caught signal %hhd, exiting.", sig);
-	cleanup();
-	exit(EXIT_SUCCESS);
 }
 
 static void daemonise(void)
@@ -283,7 +259,7 @@ static void daemonise(void)
 	if ((pid = fork()) < 0) {
 		/* Something went wrong... */
 		clear_preferences();
-		g_critical("Could not fork process.");
+		g_error("Could not fork process.");
 	} else if (pid) { /* The parent */
 		exit(EXIT_SUCCESS);
 	} else { /* The child */
@@ -293,13 +269,25 @@ static void daemonise(void)
 		/* Create the PID file */
 		if (scmpc_pid_create() < 0) {
 			clear_preferences();
-			g_critical("Failed to create PID file");
+			g_error("Failed to create PID file");
 		}
 	}
 }
 
-static void cleanup(void)
+void scmpc_shutdown(void)
 {
+	if (g_main_loop_is_running(loop))
+		g_main_loop_quit(loop);
+}
+
+static void scmpc_cleanup(void)
+{
+	g_source_remove(signal_source);
+	g_source_remove(mpd.source);
+	g_source_remove(cache_save_source);
+	g_source_remove(check_source);
+	g_source_remove(reconnect_source);
+
 	if (current_song_eligible_for_submission())
 		queue_add_current_song();
 	if (prefs.fork)
@@ -308,7 +296,7 @@ static void cleanup(void)
 		close(signal_pipe[0]);
 		close(signal_pipe[1]);
 	}
-	queue_save();
+	queue_save(NULL);
 	if (mpd.song_pos)
 		g_timer_destroy(mpd.song_pos);
 	clear_preferences();
@@ -343,4 +331,11 @@ static gboolean current_song_eligible_for_submission(void)
 			(g_timer_elapsed(mpd.song_pos, NULL) >= 240 ||
 			 g_timer_elapsed(mpd.song_pos, NULL) >=
 				mpd_song_get_duration(mpd.song) / 2));
+}
+
+static gboolean scmpc_check(G_GNUC_UNUSED gpointer data)
+{
+	if (current_song_eligible_for_submission())
+		queue_add_current_song();
+	return TRUE;
 }

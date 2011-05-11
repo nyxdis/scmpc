@@ -174,7 +174,7 @@ void queue_remove_songs(queue_node *song, queue_node *keep_ptr)
 		queue.first = queue.last = NULL;
 }
 
-void queue_save(void)
+gboolean queue_save(G_GNUC_UNUSED gpointer data)
 {
 	FILE *cache_file;
 	queue_node *current_song;
@@ -185,7 +185,7 @@ void queue_save(void)
 	if (!cache_file) {
 		g_warning("Failed to open cache file for writing: %s",
 			g_strerror(errno));
-		return;
+		return FALSE;
 	}
 
 	while (current_song) {
@@ -204,4 +204,5 @@ void queue_save(void)
 	}
 	fclose(cache_file);
 	g_debug("Cache saved.");
+	return TRUE;
 }

@@ -25,3 +25,4 @@
 
 
 void kill_scmpc(void);
+void scmpc_shutdown(void);

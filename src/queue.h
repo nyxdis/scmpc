@@ -48,4 +48,4 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 void queue_add_current_song(void);
 void queue_load(void);
 void queue_remove_songs(queue_node *song, queue_node *keep_ptr);
-void queue_save(void);
+gboolean queue_save(gpointer data);

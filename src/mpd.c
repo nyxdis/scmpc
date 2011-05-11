@@ -30,17 +30,21 @@
 #include "preferences.h"
 #include "audioscrobbler.h"
 #include "queue.h"
+#include "scmpc.h"
+
+static void mpd_update(void);
 
 gboolean mpd_connect(void)
 {
 	mpd.conn = mpd_connection_new(prefs.mpd_hostname, prefs.mpd_port,
-			prefs.mpd_interval);
+			prefs.mpd_interval * 1000);
 	if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
 		g_warning("Failed to connect to MPD: %s",
 				mpd_connection_get_error_message(mpd.conn));
 		return FALSE;
 	} else if (mpd_connection_cmp_server_version(mpd.conn, 0, 14, 0) == -1) {
 		g_critical("MPD too old, please upgrade to 0.14 or newer");
+		scmpc_shutdown();
 		return FALSE;
 	} else {
 		mpd_command_list_begin(mpd.conn, TRUE);
@@ -60,11 +64,12 @@ gboolean mpd_connect(void)
 
 		mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
 
+		g_message("Connected to MPD");
 		return TRUE;
 	}
 }
 
-void mpd_update(void)
+static void mpd_update(void)
 {
 	struct mpd_status *prev = mpd.status;
 
@@ -104,26 +109,52 @@ void mpd_update(void)
 	} else if (mpd_status_get_state(mpd.status) == MPD_STATE_PAUSE) {
 		if (mpd_status_get_state(prev) == MPD_STATE_PLAY)
 			g_timer_stop(mpd.song_pos);
+	} else if (mpd_status_get_state(mpd.status) == MPD_STATE_STOP) {
+		as_check_submit();
 	}
 }
 
-gboolean mpd_parse(void)
+gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source, GIOCondition condition, G_GNUC_UNUSED gpointer data)
 {
-	enum mpd_idle events = mpd_recv_idle(mpd.conn, FALSE);
+	if (condition & G_IO_HUP) {
+		mpd.connected = FALSE;
+		mpd_connection_free(mpd.conn);
+		mpd.conn = NULL;
+		g_message("Disconnected from MPD, reconnecting");
+		return TRUE;
+	} else if (condition & G_IO_IN) {
+		enum mpd_idle events = mpd_recv_idle(mpd.conn, FALSE);
 
-	if (!mpd_response_finish(mpd.conn)) {
-		g_warning("Failed to read MPD response: %s",
-				mpd_connection_get_error_message(mpd.conn));
+		if (!mpd_response_finish(mpd.conn)) {
+			g_warning("Failed to read MPD response: %s",
+					mpd_connection_get_error_message(mpd.conn));
+			mpd_connection_free(mpd.conn);
+			mpd.conn = NULL;
+			return FALSE;
+		}
+
+		if (events & MPD_IDLE_PLAYER) {
+			mpd_update();
+		}
+
+		mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
+
+gboolean mpd_reconnect(G_GNUC_UNUSED gpointer data)
+{
+	if (mpd.connected)
+		return TRUE;
+
+	mpd.connected = mpd_connect();
+	if (!mpd.connected) {
 		mpd_connection_free(mpd.conn);
 		mpd.conn = NULL;
 		return FALSE;
 	}
 
-	if (events & MPD_IDLE_PLAYER) {
-		// TODO: checks
-		mpd_update();
-	}
-
-	mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
 	return TRUE;
 }
