@@ -1,0 +1,32 @@
+body {
+	font-family: "Bitstream Vera Sans", "sans";
+	font-size: 10pt;
+	padding: 2em;
+	background-color: #333;
+}
+
+div#content, header {
+	width: 80%;
+	background-color: white;
+	padding: 2em;
+	margin-left: auto;
+	margin-right: auto;
+	margin-bottom: 2em;
+	border-radius: 1em;;
+}
+
+h1 {
+	color: #555;
+	margin: 0;
+}
+
+footer {
+	text-align: center;
+	margin-top: 1em;
+}
+
+div#content a {
+	color: #555;
+	text-decoration: none;
+	border-bottom: 0.1em dotted black;
+}
