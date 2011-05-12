@@ -24,5 +24,10 @@
  */
 
 
+#ifndef HAVE_SCMPC_H
+#define HAVE_SCMPC_H
+
 void kill_scmpc(void);
 void scmpc_shutdown(void);
+
+#endif /* HAVE_SCMPC_H */

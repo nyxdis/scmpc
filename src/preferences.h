@@ -24,6 +24,9 @@
  */
 
 
+#ifndef HAVE_PREFERENCES_H
+#define HAVE_PREFERENCES_H
+
 #include <glib.h>
 
 struct {
@@ -47,3 +50,5 @@ struct {
 
 gint init_preferences(gint argc, gchar *argv[]);
 void clear_preferences(void);
+
+#endif /* HAVE_PREFERENCES_H */

@@ -24,6 +24,9 @@
  */
 
 
+#ifndef HAVE_QUEUE_H
+#define HAVE_QUEUE_H
+
 #include <glib.h>
 
 typedef struct _queue_node {
@@ -49,3 +52,5 @@ void queue_add_current_song(void);
 void queue_load(void);
 void queue_remove_songs(queue_node *song, queue_node *keep_ptr);
 gboolean queue_save(gpointer data);
+
+#endif /* HAVE_QUEUE_H */

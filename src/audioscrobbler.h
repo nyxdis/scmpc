@@ -24,6 +24,9 @@
  */
 
 
+#ifndef HAVE_AUDIOSCROBBLER_H
+#define HAVE_AUDIOSCROBBLER_H
+
 /* curl/curl.h requires sys/select.h but doesn't include it on FreeBSD */
 #include <sys/select.h>
 #include <curl/curl.h>
@@ -49,3 +52,5 @@ void as_authenticate(void);
 void as_check_submit(void);
 void as_cleanup(void);
 void as_now_playing(void);
+
+#endif /* HAVE_AUDIOSCROBBLER_H */

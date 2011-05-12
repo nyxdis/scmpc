@@ -24,6 +24,9 @@
  */
 
 
+#ifndef HAVE_MPD_H
+#define HAVE_MPD_H
+
 #include <glib.h>
 
 struct {
@@ -40,3 +43,5 @@ struct {
 gboolean mpd_connect(void);
 gboolean mpd_parse(GIOChannel *source, GIOCondition condition, gpointer data);
 gboolean mpd_reconnect(gpointer data);
+
+#endif /* HAVE_MPD_H */

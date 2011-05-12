@@ -42,4 +42,4 @@ void scmpc_log(const gchar *log_domain, GLogLevelFlags log_level,
 /* used by curl */
 gsize buffer_write(void *input, gsize size, gsize nmemb, void *buf);
 
-#endif // HAVE_MISC_H
+#endif /* HAVE_MISC_H */
