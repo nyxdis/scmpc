@@ -6,4 +6,4 @@ libconfuse	http://www.nongnu.org/confuse/
 libcurl		http://curl.haxx.se/libcurl (requires >= 7.15.4)
 
 This version of scmpc also requires MPD 0.14 or later,
-it will not workwith 0.13.
+it will not work with 0.13.
