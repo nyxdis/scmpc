@@ -34,6 +34,7 @@
 
 static void mpd_update(void);
 static void mpd_disconnect(void);
+static void mpd_schedule_check(void);
 
 gboolean mpd_connect(void)
 {
@@ -74,6 +75,9 @@ gboolean mpd_connect(void)
 		g_io_channel_unref(channel);
 		mpd.check_source = 0;
 
+		if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY)
+			mpd_schedule_check();
+
 		return TRUE;
 	}
 }
@@ -91,7 +95,6 @@ static void mpd_update(void)
 		if (mpd_status_get_state(prev) == MPD_STATE_PLAY ||
 				mpd_status_get_state(prev) == MPD_STATE_STOP) {
 			GTimeVal tv;
-			guint timeout;
 			g_get_current_time(&tv);
 
 			// XXX time < xfade+5? wtf?
@@ -112,14 +115,7 @@ static void mpd_update(void)
 			as_now_playing();
 
 			// schedule queueing
-			if (mpd.check_source > 0)
-				g_source_remove(mpd.check_source);
-			if (mpd_song_get_duration(mpd.song) >= 480)
-				timeout = 240;
-			else
-				timeout = mpd_song_get_duration(mpd.song) / 2;
-			mpd.check_source = g_timeout_add_seconds(timeout,
-					scmpc_check, NULL);
+			mpd_schedule_check();
 		} else if (mpd_status_get_state(prev) == MPD_STATE_PAUSE) {
 			g_timer_continue(mpd.song_pos);
 		}
@@ -131,6 +127,21 @@ static void mpd_update(void)
 		g_source_remove(mpd.check_source);
 		mpd.check_source = 0;
 	}
+}
+
+static void mpd_schedule_check(void)
+{
+	guint timeout;
+
+	if (mpd.check_source > 0)
+		g_source_remove(mpd.check_source);
+
+	if (mpd_song_get_duration(mpd.song) >= 480)
+		timeout = 240;
+	else
+		timeout = mpd_song_get_duration(mpd.song) / 2;
+
+	mpd.check_source = g_timeout_add_seconds(timeout, scmpc_check, NULL);
 }
 
 gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source, GIOCondition condition,
