@@ -27,7 +27,11 @@
 #ifndef HAVE_SCMPC_H
 #define HAVE_SCMPC_H
 
+#include <glib.h>
+
+
 void kill_scmpc(void);
 void scmpc_shutdown(void);
+gboolean scmpc_check(gpointer data);
 
 #endif /* HAVE_SCMPC_H */

@@ -37,6 +37,7 @@ struct {
 	gint song_date;
 	gboolean song_submitted;
 	guint source;
+	guint check_source;
 	gboolean connected;
 } mpd;
 

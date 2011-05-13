@@ -40,7 +40,6 @@
 #include "mpd.h"
 
 /* Static function prototypes */
-static gboolean scmpc_check(gpointer data);
 static gint scmpc_is_running(void);
 static gint scmpc_pid_create(void);
 static gint scmpc_pid_remove(void);
@@ -56,7 +55,7 @@ static int signal_pipe[2] = { -1, -1 };
 static void daemonise(void);
 static gboolean current_song_eligible_for_submission(void);
 
-static guint signal_source, cache_save_source, check_source, reconnect_source;
+static guint signal_source, cache_save_source, reconnect_source;
 static GMainLoop *loop;
 
 int main(int argc, char *argv[])
@@ -120,10 +119,6 @@ int main(int argc, char *argv[])
 
 	// reconnect if disconnected
 	reconnect_source = g_timeout_add_seconds(300, mpd_reconnect, NULL);
-
-	// check if song is eligible for submission
-	check_source = g_timeout_add_seconds(prefs.mpd_interval, scmpc_check,
-			NULL);
 
 	g_main_loop_run(loop);
 
@@ -302,8 +297,9 @@ static void scmpc_cleanup(void)
 {
 	g_source_remove(signal_source);
 	g_source_remove(mpd.source);
+	if (mpd.check_source > 0)
+		g_source_remove(mpd.check_source);
 	g_source_remove(cache_save_source);
-	g_source_remove(check_source);
 	g_source_remove(reconnect_source);
 
 	if (current_song_eligible_for_submission())
@@ -348,9 +344,13 @@ static gboolean current_song_eligible_for_submission(void)
 				mpd_song_get_duration(mpd.song) / 2));
 }
 
-static gboolean scmpc_check(G_GNUC_UNUSED gpointer data)
+gboolean scmpc_check(G_GNUC_UNUSED gpointer data)
 {
-	if (current_song_eligible_for_submission())
+	if (current_song_eligible_for_submission()) {
 		queue_add_current_song();
+		return FALSE; // remove from main event loop
+	}
+
+	// TODO don't return true, reschedule this properly
 	return TRUE;
 }
