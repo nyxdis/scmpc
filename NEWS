@@ -1,3 +1,6 @@
+== scmpc 0.3.2 ==
+
+
 == scmpc 0.3.1 ==
 - increased mpd read buffer size to avoid truncation
 - fixed disappearing queue loaded from cache
