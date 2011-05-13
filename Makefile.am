@@ -1,8 +1,3 @@
-AM_CPPFLAGS =	$(glib_CFLAGS) \
-		$(confuse_CFLAGS) \
-		$(curl_CFLAGS) \
-		$(libmpdclient_CFLAGS)
-
 bin_PROGRAMS = scmpc
 man_MANS = scmpc.1
 
@@ -17,6 +12,11 @@ scmpc_LDADD =	$(glib_LIBS) \
 		$(confuse_LIBS) \
 		$(curl_LIBS) \
 		$(libmpdclient_LIBS)
+
+scmpc_CFLAGS =	$(glib_CFLAGS) \
+		$(confuse_CFLAGS) \
+		$(curl_CFLAGS) \
+		$(libmpdclient_CFLAGS)
 
 DEFS += -DSYSCONFDIR=\"$(sysconfdir)\" -D_XOPEN_SOURCE=500
 
