@@ -288,7 +288,7 @@ static gint build_querystring(gchar **qs)
 		queue_free_song(song, NULL);
 
 		num++;
-		song = g_queue_pop_nth(queue, num);
+		song = g_queue_pop_head(queue);
 	}
 
 	tmp = g_strdup_printf("%sapi_key" API_KEY "%s%smethodtrack.scrobble"
