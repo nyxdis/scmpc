@@ -32,7 +32,6 @@
 struct {
 	gchar *mpd_hostname;
 	gint mpd_port;
-	gint mpd_interval;
 	gint mpd_timeout;
 	gchar *mpd_password;
 	gboolean fork;

@@ -176,7 +176,6 @@ static gint parse_config_file(void)
 	cfg_set_validate_func(cfg, "cache_interval", &cf_validate_num_zero);
 	cfg_set_validate_func(cfg, "mpd|port", &cf_validate_num);
 	cfg_set_validate_func(cfg, "mpd|timeout", &cf_validate_num);
-	cfg_set_validate_func(cfg, "mpd|interval", &cf_validate_num);
 
 	if (parse_files(cfg) < 0) {
 		cfg_free(cfg);
@@ -203,7 +202,6 @@ static gint parse_config_file(void)
 	prefs.mpd_hostname = g_strdup(cfg_getstr(sec_mpd, "host"));
 	prefs.mpd_port = cfg_getint(sec_mpd, "port");
 	prefs.mpd_timeout = cfg_getint(sec_mpd, "timeout");
-	prefs.mpd_interval = cfg_getint(sec_mpd, "interval");
 	prefs.mpd_password = g_strdup(cfg_getstr(sec_mpd, "password"));
 
 	sec_as = cfg_getsec(cfg, "audioscrobbler");
