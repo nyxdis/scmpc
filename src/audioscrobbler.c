@@ -245,8 +245,8 @@ static gint build_querystring(gchar **qs)
 	GString *nqs;
 	GString *albums, *artists, *lengths, *timestamps, *titles;
 	GString *tracks;
-	gshort num = 0, i = 0;
-	queue_node *song = g_queue_peek_head(queue);
+	gshort num = 0;
+	queue_node *song = g_queue_pop_head(queue);
 
 	nqs = g_string_new("api_key=" API_KEY "&method=track.scrobble&sk=");
 	g_string_append(nqs, as_conn.session_id);
@@ -260,14 +260,6 @@ static gint build_querystring(gchar **qs)
 
 	while (song && num < 10) {
 		gchar *album, *artist, *title, *track;
-
-		if (!song->finished_playing) {
-			i++;
-			song = g_queue_peek_nth(queue, i);
-			continue;
-		}
-
-		song = g_queue_pop_nth(queue, i);
 
 		g_string_append_printf(albums, "album[%d]%s", num, song->album);
 		g_string_append_printf(artists, "artist[%d]%s", num,
@@ -295,8 +287,8 @@ static gint build_querystring(gchar **qs)
 		curl_free(track);
 		queue_free_song(song, NULL);
 
-		num++; i++;
-		song = g_queue_peek_nth(queue, i);
+		num++;
+		song = g_queue_pop_nth(queue, num);
 	}
 
 	tmp = g_strdup_printf("%sapi_key" API_KEY "%s%smethodtrack.scrobble"

@@ -76,7 +76,6 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 		new_song->date = time(NULL);
 	else
 		new_song->date = date;
-	new_song->finished_playing = FALSE;
 
 	/* Queue is full, remove the first item and add the new one */
 	if (g_queue_get_length(queue) >= prefs.queue_length) {
@@ -148,7 +147,6 @@ void queue_load(void)
 			track = g_strdup(&line[7]);
 		} else if (!strncmp(line, "# END SONG", 10)) {
 			queue_add(artist, title, album, length, track, date);
-			((queue_node*)g_queue_peek_tail(queue))->finished_playing = TRUE;
 			g_free(artist); g_free(title); g_free(album);
 			g_free(track);
 			artist = title = album = track = NULL;

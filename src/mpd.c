@@ -102,12 +102,8 @@ static void mpd_update(void)
 			mpd_response_finish(mpd.conn);
 			g_timer_start(mpd.song_pos);
 			mpd.song_date = tv.tv_sec;
-
-			// update previous songs
 			mpd.song_submitted = FALSE;
-			if (g_queue_get_length(queue) > 0)
-				((queue_node*)g_queue_peek_tail(queue))
-					->finished_playing = TRUE;
+
 			// submit previous song(s)
 			as_check_submit();
 

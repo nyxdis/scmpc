@@ -30,7 +30,6 @@
 #include <glib.h>
 
 typedef struct {
-	gboolean finished_playing;
 	gchar *album;
 	gchar *artist;
 	gchar *title;
