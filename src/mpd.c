@@ -38,7 +38,7 @@ static void mpd_disconnect(void);
 gboolean mpd_connect(void)
 {
 	mpd.conn = mpd_connection_new(prefs.mpd_hostname, prefs.mpd_port,
-			prefs.mpd_interval * 1000);
+			prefs.mpd_timeout * 1000);
 	if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
 		g_warning("Failed to connect to MPD: %s",
 				mpd_connection_get_error_message(mpd.conn));
