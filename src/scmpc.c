@@ -97,6 +97,7 @@ int main(int argc, char *argv[])
 	}
 	as_authenticate();
 
+	queue_init();
 	queue_load();
 
 	// submit the loaded queue
@@ -308,6 +309,7 @@ static void scmpc_cleanup(void)
 		scmpc_pid_remove();
 	close_signal_pipe();
 	queue_save(NULL);
+	queue_cleanup();
 	if (mpd.song_pos)
 		g_timer_destroy(mpd.song_pos);
 	clear_preferences();

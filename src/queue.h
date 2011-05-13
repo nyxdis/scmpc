@@ -29,7 +29,7 @@
 
 #include <glib.h>
 
-typedef struct _queue_node {
+typedef struct {
 	gboolean finished_playing;
 	gchar *album;
 	gchar *artist;
@@ -37,20 +37,17 @@ typedef struct _queue_node {
 	glong date;
 	guint length;
 	gchar *track;
-	struct _queue_node *next;
 } queue_node;
 
-struct {
-	queue_node *first;
-	queue_node *last;
-	gint length;
-} queue;
+extern GQueue *queue;
 
 void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 	guint length, const gchar *track, glong date);
 void queue_add_current_song(void);
+void queue_cleanup(void);
+void queue_init(void);
+void queue_free_song(gpointer song, G_GNUC_UNUSED gpointer user_data);
 void queue_load(void);
-void queue_remove_songs(queue_node *song, queue_node *keep_ptr);
 gboolean queue_save(gpointer data);
 
 #endif /* HAVE_QUEUE_H */

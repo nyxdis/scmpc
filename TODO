@@ -1,1 +1,1 @@
-- port queue to GLib queue
+- fix finished_playing madness

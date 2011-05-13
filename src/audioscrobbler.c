@@ -239,14 +239,14 @@ void as_now_playing(void)
 	buffer = NULL;
 }
 
-static gint build_querystring(gchar **qs, queue_node **last_song)
+static gint build_querystring(gchar **qs)
 {
 	gchar *sig, *tmp;
 	GString *nqs;
 	GString *albums, *artists, *lengths, *timestamps, *titles;
 	GString *tracks;
-	gshort num = 0;
-	queue_node *song = queue.first;
+	gshort num = 0, i = 0;
+	queue_node *song = g_queue_peek_head(queue);
 
 	nqs = g_string_new("api_key=" API_KEY "&method=track.scrobble&sk=");
 	g_string_append(nqs, as_conn.session_id);
@@ -262,9 +262,12 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 		gchar *album, *artist, *title, *track;
 
 		if (!song->finished_playing) {
-			song = song->next;
+			i++;
+			song = g_queue_peek_nth(queue, i);
 			continue;
 		}
+
+		song = g_queue_pop_nth(queue, i);
 
 		g_string_append_printf(albums, "album[%d]%s", num, song->album);
 		g_string_append_printf(artists, "artist[%d]%s", num,
@@ -290,9 +293,10 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 
 		curl_free(album); curl_free(artist); curl_free(title);
 		curl_free(track);
+		queue_free_song(song, NULL);
 
-		num++;
-		song = song->next;
+		num++; i++;
+		song = g_queue_peek_nth(queue, i);
 	}
 
 	tmp = g_strdup_printf("%sapi_key" API_KEY "%s%smethodtrack.scrobble"
@@ -312,20 +316,18 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 	g_free(sig);
 
 	*qs = g_string_free(nqs, FALSE);
-	*last_song = song;
 	return num;
 }
 
 static gint as_submit(void)
 {
 	gchar *querystring;
-	queue_node *last_added;
 	gint ret, num_songs;
 
-	if (!queue.first)
+	if (g_queue_get_length(queue) < 1)
 		return -1;
 
-	num_songs = build_querystring(&querystring, &last_added);
+	num_songs = build_querystring(&querystring);
 	if (num_songs <= 0) {
 		g_free(querystring);
 		return -1;
@@ -348,8 +350,6 @@ static gint as_submit(void)
 	if (strstr(buffer, "<lfm status=\"ok\">")) {
 		g_message("%d song%s submitted.", num_songs,
 				(num_songs > 1 ? "s" : ""));
-		queue_remove_songs(queue.first, last_added);
-		queue.first = last_added;
 	} else if (strstr(buffer, "<lfm status=\"failed\">")) {
 		as_parse_error(buffer);
 	} else {
@@ -390,7 +390,7 @@ static void as_parse_error(char *response)
 
 void as_check_submit(void)
 {
-	if (queue.length > 0 && as_conn.status == CONNECTED &&
+	if (g_queue_get_length(queue) > 0 && as_conn.status == CONNECTED &&
 			difftime(time(NULL), as_conn.last_fail) >= 600) {
 		if (as_submit() == 1)
 		as_conn.last_fail = time(NULL);

@@ -105,8 +105,9 @@ static void mpd_update(void)
 
 			// update previous songs
 			mpd.song_submitted = FALSE;
-			if (queue.length > 0)
-				queue.last->finished_playing = TRUE;
+			if (g_queue_get_length(queue) > 0)
+				((queue_node*)g_queue_peek_tail(queue))
+					->finished_playing = TRUE;
 			// submit previous song(s)
 			as_check_submit();
 

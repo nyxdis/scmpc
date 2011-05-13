@@ -43,7 +43,7 @@ struct {
 	gchar *as_password;
 	gchar *as_password_hash;
 	gchar *cache_file;
-	gint queue_length;
+	guint queue_length;
 	gint cache_interval;
 } prefs;
 
