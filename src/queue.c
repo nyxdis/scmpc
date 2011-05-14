@@ -53,7 +53,7 @@ void queue_cleanup(void)
 }
 
 void queue_add(const gchar *artist, const gchar *title, const gchar *album,
-	guint length, const gchar *track, glong date)
+	guint length, gint track, glong date)
 {
 	queue_node *new_song;
 
@@ -71,7 +71,7 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 	else
 		new_song->album = g_strdup("");
 	new_song->length = length;
-	new_song->track = g_strdup(track);
+	new_song->track = track;
 	if (!date)
 		new_song->date = time(NULL);
 	else
@@ -91,23 +91,26 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 
 void queue_add_current_song(void)
 {
+	gint track = strtol(mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0),
+			NULL, 10);
+
 	queue_add(mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0),
 			mpd_song_get_tag(mpd.song, MPD_TAG_TITLE, 0),
 			mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0),
 			mpd_song_get_duration(mpd.song),
-			mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0),
-			mpd.song_date);
+			track, mpd.song_date);
 	mpd.song_submitted = TRUE;
 }
 
 void queue_load(void)
 {
-	gchar line[256], *artist, *album, *title, *track;
+	gchar line[256], *artist, *album, *title;
 	guint length = 0;
 	FILE *cache_file;
 	glong date = 0;
+	gint track = 0;
 
-	artist = title = album = track = NULL;
+	artist = title = album = NULL;
 	g_debug("Loading queue.");
 
 	cache_file = fopen(prefs.cache_file, "r");
@@ -121,7 +124,7 @@ void queue_load(void)
 	while (fgets(line, sizeof line, cache_file)) {
 		*strrchr(line, '\n') = 0;
 		if (!strncmp(line, "# BEGIN SONG", 12)) {
-			artist = title = album = track = NULL;
+			artist = title = album = NULL;
 			length = 0;
 		} else if (!strncmp(line, "artist: ", 8)) {
 			g_free(artist);
@@ -137,16 +140,14 @@ void queue_load(void)
 		} else if (!strncmp(line, "length: ", 8)) {
 			length = strtol(&line[8], NULL, 10);
 		} else if (!strncmp(line, "track: ", 7)) {
-			g_free(track);
-			track = g_strdup(&line[7]);
+			track = strtol(&line[7], NULL, 10);
 		} else if (!strncmp(line, "# END SONG", 10)) {
 			queue_add(artist, title, album, length, track, date);
 			g_free(artist); g_free(title); g_free(album);
-			g_free(track);
-			artist = title = album = track = NULL;
+			artist = title = album = NULL;
 		}
 	}
-	g_free(artist); g_free(title); g_free(album); g_free(track);
+	g_free(artist); g_free(title); g_free(album);
 	fclose(cache_file);
 }
 
@@ -156,7 +157,6 @@ void queue_free_song(gpointer data, G_GNUC_UNUSED gpointer user_data)
 	g_free(song->album);
 	g_free(song->artist);
 	g_free(song->title);
-	g_free(song->track);
 	g_free(song);
 }
 
@@ -184,7 +184,7 @@ static void write_element(gpointer data, G_GNUC_UNUSED gpointer user_data)
 		"title: %s\n"
 		"album: %s\n"
 		"length: %d\n"
-		"track: %s\n"
+		"track: %d\n"
 		"date: %ld\n"
 		"# END SONG\n\n", song->artist, song->title, song->album,
 		song->length, song->track, song->date);

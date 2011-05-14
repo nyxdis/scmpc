@@ -97,7 +97,6 @@ static void mpd_update(void)
 			GTimeVal tv;
 			g_get_current_time(&tv);
 
-			// XXX time < xfade+5? wtf?
 			// initialize new song
 			if (mpd.song)
 				mpd_song_free(mpd.song);

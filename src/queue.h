@@ -35,13 +35,13 @@ typedef struct {
 	gchar *title;
 	glong date;
 	guint length;
-	gchar *track;
+	gint track;
 } queue_node;
 
 extern GQueue *queue;
 
 void queue_add(const gchar *artist, const gchar *title, const gchar *album,
-	guint length, const gchar *track, glong date);
+	guint length, gint track, glong date);
 void queue_add_current_song(void);
 void queue_cleanup(void);
 void queue_clear_n(guint num);
