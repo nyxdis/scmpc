@@ -38,8 +38,8 @@ struct {
 	gchar *session_id;
 	gchar *submit_url;
 	gchar password[33];
-	time_t last_auth;
-	time_t last_fail;
+	gint64 last_auth;
+	gint64 last_fail;
 	connection_status status;
 	CURL *handle;
 	struct curl_slist *headers;

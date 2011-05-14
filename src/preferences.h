@@ -31,8 +31,8 @@
 
 struct {
 	gchar *mpd_hostname;
-	gint mpd_port;
-	gint mpd_timeout;
+	guint mpd_port;
+	guint mpd_timeout;
 	gchar *mpd_password;
 	gboolean fork;
 	GLogLevelFlags log_level;
@@ -44,7 +44,7 @@ struct {
 	gchar *as_password_hash;
 	gchar *cache_file;
 	guint queue_length;
-	gint cache_interval;
+	guint cache_interval;
 } prefs;
 
 gint init_preferences(gint argc, gchar *argv[]);

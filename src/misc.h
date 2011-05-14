@@ -38,6 +38,8 @@ typedef enum {
 void open_log(const gchar *filename);
 void scmpc_log(const gchar *log_domain, GLogLevelFlags log_level,
 		const gchar *message, gpointer user_data);
+gint64 get_time(void);
+gint64 elapsed(gint64 since);
 
 /* used by curl */
 gsize buffer_write(void *input, gsize size, gsize nmemb, void *buf);

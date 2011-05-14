@@ -35,7 +35,7 @@ typedef struct {
 	gchar *title;
 	glong date;
 	guint length;
-	gint track;
+	guint track;
 } queue_node;
 
 extern GQueue *queue;

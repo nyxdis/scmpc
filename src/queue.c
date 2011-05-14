@@ -37,7 +37,7 @@
 #include "mpd.h"
 
 static void queue_add(const gchar *artist, const gchar *title, const gchar *album,
-	guint length, gint track, glong date);
+	guint length, gint track, gint64 date);
 static void write_element(gpointer data, G_GNUC_UNUSED gpointer user_data);
 
 static FILE *cache_file;
@@ -55,7 +55,7 @@ void queue_cleanup(void)
 }
 
 static void queue_add(const gchar *artist, const gchar *title, const gchar *album,
-	guint length, gint track, glong date)
+	guint length, gint track, gint64 date)
 {
 	queue_node *new_song;
 

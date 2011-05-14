@@ -34,7 +34,7 @@ struct {
 	struct mpd_status *status;
 	struct mpd_song *song;
 	GTimer *song_pos;
-	gint song_date;
+	gint64 song_date;
 	gboolean song_submitted;
 	guint source;
 	guint check_source;

@@ -100,7 +100,7 @@ void as_authenticate(void)
 		return;
 	}
 
-	if (difftime(time(NULL), as_conn.last_auth) < 1800) {
+	if (elapsed(as_conn.last_auth) < 1800) {
 		g_debug("Requested authentication, but last try "
 				"was less than 30 minutes ago.");
 		return;
@@ -149,7 +149,7 @@ void as_authenticate(void)
 		return;
 	}
 
-	as_conn.last_auth = time(NULL);
+	as_conn.last_auth = get_time();
 	if (!buffer) {
 		g_debug("Could not parse Audioscrobbler response.");
 		g_free(buffer);
@@ -174,7 +174,8 @@ void as_authenticate(void)
 void as_now_playing(void)
 {
 	gchar *querystring, *tmp, *sig, *artist, *album, *title;
-	gint ret, length, track;
+	gint ret;
+	guint length, track;
 
 	if (as_conn.status != CONNECTED) {
 		g_message("Not sending Now Playing notification:"
@@ -414,8 +415,8 @@ static void as_parse_error(char *response)
 void as_check_submit(void)
 {
 	if (g_queue_get_length(queue) > 0 && as_conn.status == CONNECTED &&
-			difftime(time(NULL), as_conn.last_fail) >= 600) {
+			elapsed(as_conn.last_fail) >= 600) {
 		if (as_submit() == 1)
-		as_conn.last_fail = time(NULL);
+			as_conn.last_fail = get_time();
 	}
 }
