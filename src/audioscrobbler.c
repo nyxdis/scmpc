@@ -43,6 +43,9 @@
 static gchar curl_error_buffer[CURL_ERROR_SIZE];
 static void as_parse_error(char *response);
 static gint as_submit(void);
+static gint build_querystring(gchar **qs);
+static gint build_querystring_multi(gchar **qs);
+static gint build_querystring_single(gchar **qs);
 
 #define API_URL "http://ws.audioscrobbler.com/2.0/"
 #define API_KEY "3ec5638071c41a864bf0c8d451566476"
@@ -240,6 +243,39 @@ void as_now_playing(void)
 }
 
 static gint build_querystring(gchar **qs)
+{
+	if (g_queue_get_length(queue) > 1)
+		return build_querystring_multi(qs);
+	else
+		return build_querystring_single(qs);
+}
+
+static gint build_querystring_single(gchar **qs)
+{
+	gchar *sig, *tmp;
+	queue_node *song = g_queue_pop_head(queue);
+
+	tmp = g_strdup_printf("album%sapi_key" API_KEY "artist%sduration%d"
+			"methodtrack.scrobblesk%stimestamp%ldtrack%s"
+			"tracknumber%s" API_SECRET,
+			song->album, song->artist, song->length,
+			as_conn.session_id, song->date, song->title,
+			song->track);
+	sig = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
+	g_free(tmp);
+
+	*qs = g_strdup_printf("api_key=" API_KEY "&method=track.scrobble&sk=%s"
+			"&album=%s&artist=%s&duration=%d&timestamp=%ld&track=%s"
+			"&tracknumber=%s&api_sig=%s",
+			as_conn.session_id, song->album, song->artist,
+			song->length, song->date, song->title, song->track,
+			sig);
+	g_free(sig);
+	queue_free_song(song, NULL);
+	return 1;
+}
+
+static gint build_querystring_multi(gchar **qs)
 {
 	gchar *sig, *tmp;
 	GString *nqs;
