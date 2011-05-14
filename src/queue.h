@@ -40,8 +40,6 @@ typedef struct {
 
 extern GQueue *queue;
 
-void queue_add(const gchar *artist, const gchar *title, const gchar *album,
-	guint length, gint track, glong date);
 void queue_add_current_song(void);
 void queue_cleanup(void);
 void queue_clear_n(guint num);
