@@ -61,20 +61,8 @@ static gint cf_validate_num(cfg_t *cfg, cfg_opt_t *opt)
 {
 	gint value = cfg_opt_getnint(opt, 0);
 	if (value <= 0) {
-		cfg_error(cfg, "'%s' in section '%s' cannot be a negative value"
-			" or zero.",
+		cfg_error(cfg, "'%s' in section '%s' must be a positive value",
 			cfg_opt_name(opt), cfg_name(cfg));
-		return -1;
-	}
-	return 0;
-}
-
-static gint cf_validate_num_zero(cfg_t *cfg, cfg_opt_t *opt)
-{
-	gint value = cfg_opt_getnint(opt, 0);
-	if (value < 0) {
-		cfg_error(cfg, "'%s' in section '%s' cannot be a negative "
-				"value.", cfg_opt_name(opt), cfg_name(cfg));
 		return -1;
 	}
 	return 0;
@@ -173,7 +161,7 @@ static gint parse_config_file(void)
 
 	cfg = cfg_init(opts, CFGF_NONE);
 	cfg_set_validate_func(cfg, "queue_length", &cf_validate_num);
-	cfg_set_validate_func(cfg, "cache_interval", &cf_validate_num_zero);
+	cfg_set_validate_func(cfg, "cache_interval", &cf_validate_num);
 	cfg_set_validate_func(cfg, "mpd|port", &cf_validate_num);
 	cfg_set_validate_func(cfg, "mpd|timeout", &cf_validate_num);
 
@@ -274,10 +262,11 @@ static gint parse_command_line(gint argc, gchar **argv)
 		fputs("Specifying --debug and --quiet at the same time does "
 				"not make any sense.", stderr);
 		return -1;
-	} else if (quiet)
+	} else if (quiet) {
 		prefs.log_level = G_LOG_LEVEL_ERROR;
-	else if (debug)
+	} else if (debug) {
 		prefs.log_level = G_LOG_LEVEL_DEBUG;
+	}
 	if (!fork)
 		prefs.fork = FALSE;
 	if (dokill)
