@@ -40,7 +40,6 @@ static void queue_add(const gchar *artist, const gchar *title, const gchar *albu
 	guint length, gint track, gint64 date);
 static void write_element(gpointer data, G_GNUC_UNUSED gpointer user_data);
 
-static FILE *cache_file;
 GQueue *queue;
 
 void queue_init(void)
@@ -160,23 +159,26 @@ void queue_free_song(gpointer data, G_GNUC_UNUSED gpointer user_data)
 
 gboolean queue_save(G_GNUC_UNUSED gpointer data)
 {
-	cache_file = fopen(prefs.cache_file, "w");
+	FILE *cache_file = fopen(prefs.cache_file, "w");
+
 	if (!cache_file) {
 		g_warning("Failed to open cache file for writing: %s",
 			g_strerror(errno));
 		return FALSE;
 	}
 
-	g_queue_foreach(queue, write_element, NULL);
+	g_queue_foreach(queue, write_element, cache_file);
 
 	fclose(cache_file);
 	g_debug("Cache saved.");
 	return TRUE;
 }
 
-static void write_element(gpointer data, G_GNUC_UNUSED gpointer user_data)
+static void write_element(gpointer data, gpointer user_data)
 {
+	FILE *cache_file = user_data;
 	queue_node *song = data;
+
 	fprintf(cache_file, "# BEGIN SONG\n"
 		"artist: %s\n"
 		"title: %s\n"
