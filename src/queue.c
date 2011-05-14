@@ -79,13 +79,7 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 
 	/* Queue is full, remove the first item and add the new one */
 	if (g_queue_get_length(queue) >= prefs.queue_length) {
-		queue_node *song;
-		if (g_queue_get_length(queue) == 1) {
-			g_debug("Queue is too long, but there is only one song"
-					" in the list. New song not added.");
-			return;
-		}
-		song = g_queue_pop_head(queue);
+		queue_node *song = g_queue_pop_head(queue);
 		queue_free_song(song, NULL);
 		g_message("The queue of songs to be submitted is too long. "
 				"The oldest song has been removed.");
