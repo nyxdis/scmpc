@@ -74,10 +74,7 @@ static void queue_add(const gchar *artist, const gchar *title, const gchar *albu
 		new_song->album = g_strdup("");
 	new_song->length = length;
 	new_song->track = track;
-	if (!date)
-		new_song->date = time(NULL);
-	else
-		new_song->date = date;
+	new_song->date = date;
 
 	/* Queue is full, remove the first item and add the new one */
 	if (g_queue_get_length(queue) >= prefs.queue_length) {
