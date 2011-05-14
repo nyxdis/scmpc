@@ -253,7 +253,7 @@ static gint build_querystring(gchar **qs)
 static gint build_querystring_single(gchar **qs)
 {
 	gchar *sig, *tmp;
-	queue_node *song = g_queue_pop_head(queue);
+	queue_node *song = g_queue_peek_head(queue);
 
 	tmp = g_strdup_printf("album%sapi_key" API_KEY "artist%sduration%d"
 			"methodtrack.scrobblesk%stimestamp%ldtrack%s"
@@ -271,7 +271,6 @@ static gint build_querystring_single(gchar **qs)
 			song->length, song->date, song->title, song->track,
 			sig);
 	g_free(sig);
-	queue_free_song(song, NULL);
 	return 1;
 }
 
@@ -282,7 +281,7 @@ static gint build_querystring_multi(gchar **qs)
 	GString *albums, *artists, *lengths, *timestamps, *titles;
 	GString *tracks;
 	gshort num = 0;
-	queue_node *song = g_queue_pop_head(queue);
+	queue_node *song = g_queue_peek_head(queue);
 
 	nqs = g_string_new("api_key=" API_KEY "&method=track.scrobble&sk=");
 	g_string_append(nqs, as_conn.session_id);
@@ -321,10 +320,9 @@ static gint build_querystring_multi(gchar **qs)
 
 		curl_free(album); curl_free(artist); curl_free(title);
 		curl_free(track);
-		queue_free_song(song, NULL);
 
 		num++;
-		song = g_queue_pop_head(queue);
+		song = g_queue_peek_nth(queue, num);
 	}
 
 	tmp = g_strdup_printf("%sapi_key" API_KEY "%s%smethodtrack.scrobble"
@@ -378,6 +376,7 @@ static gint as_submit(void)
 	if (strstr(buffer, "<lfm status=\"ok\">")) {
 		g_message("%d song%s submitted.", num_songs,
 				(num_songs > 1 ? "s" : ""));
+		queue_clear_n(num_songs);
 	} else if (strstr(buffer, "<lfm status=\"failed\">")) {
 		as_parse_error(buffer);
 	} else {

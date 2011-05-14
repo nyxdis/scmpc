@@ -195,3 +195,14 @@ static void write_element(gpointer data, G_GNUC_UNUSED gpointer user_data)
 		"# END SONG\n\n", song->artist, song->title, song->album,
 		song->length, song->track, song->date);
 }
+
+void queue_clear_n(guint num)
+{
+	if (num > g_queue_get_length(queue))
+		num = g_queue_get_length(queue);
+
+	for (guint i = 0; i < num; i++) {
+		queue_node *song = g_queue_pop_head(queue);
+		queue_free_song(song, NULL);
+	}
+}

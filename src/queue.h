@@ -44,6 +44,7 @@ void queue_add(const gchar *artist, const gchar *title, const gchar *album,
 	guint length, const gchar *track, glong date);
 void queue_add_current_song(void);
 void queue_cleanup(void);
+void queue_clear_n(guint num);
 void queue_init(void);
 void queue_free_song(gpointer song, G_GNUC_UNUSED gpointer user_data);
 void queue_load(void);
