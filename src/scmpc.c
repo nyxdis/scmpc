@@ -41,8 +41,8 @@
 
 /* Static function prototypes */
 static gint scmpc_is_running(void);
-static gint scmpc_pid_create(void);
-static gint scmpc_pid_remove(void);
+static gboolean scmpc_pid_create(void);
+static void scmpc_pid_remove(void);
 static void scmpc_cleanup(void);
 
 static void sighandler(gint sig);
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 	pid_t pid;
 	struct sigaction sa;
 
-	if (init_preferences(argc, argv) < 0)
+	if (init_preferences(argc, argv) == FALSE)
 		g_error("Config file parsing failed");
 
 	/* Open the log file before forking, so that if there is an error, the
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 	sigaction(SIGTERM, &sa, NULL);
 	sigaction(SIGQUIT, &sa, NULL);
 
-	if (as_connection_init() < 0) {
+	if (as_connection_init() == FALSE) {
 		scmpc_cleanup();
 		exit(EXIT_FAILURE);
 	}
@@ -181,28 +181,24 @@ static gint scmpc_is_running(void)
 	return 0;
 }
 
-static gint scmpc_pid_create(void)
+static gboolean scmpc_pid_create(void)
 {
 	FILE *pid_file = fopen(prefs.pid_file, "w");
 	if (!pid_file) {
 		g_warning("Cannot open pid file (%s) for writing: %s",
 				prefs.pid_file, g_strerror(errno));
-		return -1;
+		return FALSE;
 	}
 
 	fprintf(pid_file, "%u\n", getpid());
 	fclose(pid_file);
-	return 0;
+	return TRUE;
 }
 
-static gint scmpc_pid_remove(void)
+static void scmpc_pid_remove(void)
 {
-	if (unlink(prefs.pid_file) < 0) {
+	if (unlink(prefs.pid_file) < 0)
 		g_warning("Could not remove pid file: %s", g_strerror(errno));
-		return 1;
-	}
-	return 0;
-
 }
 
 static void sighandler(gint sig)
@@ -281,7 +277,7 @@ static void daemonise(void)
 		umask(022);
 
 		/* Create the PID file */
-		if (scmpc_pid_create() < 0) {
+		if (scmpc_pid_create() == FALSE) {
 			clear_preferences();
 			g_error("Failed to create PID file");
 		}

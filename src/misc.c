@@ -78,9 +78,8 @@ void scmpc_log(G_GNUC_UNUSED const gchar *log_domain, GLogLevelFlags log_level,
 gsize buffer_write(void *input, gsize size, gsize nmemb,
 		G_GNUC_UNUSED void *buf)
 {
-	gsize len = size*nmemb;
 	buffer = g_strdup(input);
-	return len;
+	return size * nmemb;
 }
 
 gint64 get_time(void)

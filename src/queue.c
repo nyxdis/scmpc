@@ -90,7 +90,7 @@ static void queue_add(const gchar *artist, const gchar *title, const gchar *albu
 
 void queue_add_current_song(void)
 {
-	gint track = strtol(mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0),
+	guint track = strtol(mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0),
 			NULL, 10);
 
 	queue_add(mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0),
@@ -104,10 +104,9 @@ void queue_add_current_song(void)
 void queue_load(void)
 {
 	gchar line[256], *artist, *album, *title;
-	guint length = 0;
 	FILE *cache_file;
-	glong date = 0;
-	gint track = 0;
+	gint64 date = 0;
+	guint track = 0, length = 0;
 
 	artist = title = album = NULL;
 	g_debug("Loading queue.");

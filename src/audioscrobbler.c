@@ -42,20 +42,20 @@
 
 static gchar curl_error_buffer[CURL_ERROR_SIZE];
 static void as_parse_error(char *response);
-static gint as_submit(void);
-static gint build_querystring(gchar **qs);
-static gint build_querystring_multi(gchar **qs);
-static gint build_querystring_single(gchar **qs);
+static gboolean as_submit(void);
+static gushort build_querystring(gchar **qs);
+static gushort build_querystring_multi(gchar **qs);
+static gushort build_querystring_single(gchar **qs);
 
 #define API_URL "http://ws.audioscrobbler.com/2.0/"
 #define API_KEY "3ec5638071c41a864bf0c8d451566476"
 #define API_SECRET "365e18391ccdee3bf820cb3d2ba466f6"
 
-gint as_connection_init(void)
+gboolean as_connection_init(void)
 {
 	as_conn.handle = curl_easy_init();
 	if (!as_conn.handle)
-		return -1;
+		return FALSE;
 	as_conn.submit_url = as_conn.session_id = NULL;
 	as_conn.last_auth = 0;
 	as_conn.status = DISCONNECTED;
@@ -68,7 +68,7 @@ gint as_connection_init(void)
 	curl_easy_setopt(as_conn.handle, CURLOPT_NOSIGNAL, 1L);
 	curl_easy_setopt(as_conn.handle, CURLOPT_CONNECTTIMEOUT, 5L);
 	curl_easy_setopt(as_conn.handle, CURLOPT_TIMEOUT, 5L);
-	return 0;
+	return TRUE;
 }
 
 void as_cleanup(void)
@@ -241,7 +241,7 @@ void as_now_playing(void)
 	buffer = NULL;
 }
 
-static gint build_querystring(gchar **qs)
+static gushort build_querystring(gchar **qs)
 {
 	if (g_queue_get_length(queue) > 1)
 		return build_querystring_multi(qs);
@@ -249,7 +249,7 @@ static gint build_querystring(gchar **qs)
 		return build_querystring_single(qs);
 }
 
-static gint build_querystring_single(gchar **qs)
+static gushort build_querystring_single(gchar **qs)
 {
 	gchar *sig, *tmp;
 	queue_node *song = g_queue_peek_head(queue);
@@ -273,13 +273,13 @@ static gint build_querystring_single(gchar **qs)
 	return 1;
 }
 
-static gint build_querystring_multi(gchar **qs)
+static gushort build_querystring_multi(gchar **qs)
 {
 	gchar *sig, *tmp;
 	GString *nqs;
 	GString *albums, *artists, *lengths, *timestamps, *titles;
 	GString *tracks;
-	gshort num = 0;
+	gushort num = 0;
 	queue_node *song = g_queue_peek_head(queue);
 
 	nqs = g_string_new("api_key=" API_KEY "&method=track.scrobble&sk=");
@@ -342,18 +342,19 @@ static gint build_querystring_multi(gchar **qs)
 	return num;
 }
 
-static gint as_submit(void)
+static gboolean as_submit(void)
 {
 	gchar *querystring;
-	gint ret, num_songs;
+	gint ret;
+	gushort num_songs;
 
 	if (g_queue_get_length(queue) < 1)
-		return -1;
+		return FALSE;
 
 	num_songs = build_querystring(&querystring);
 	if (num_songs <= 0) {
 		g_free(querystring);
-		return -1;
+		return FALSE;
 	}
 
 	g_debug("querystring = %s", querystring);
@@ -367,7 +368,7 @@ static gint as_submit(void)
 	if (ret != 0) {
 		g_message("Failed to connect to Audioscrobbler: %s",
 			curl_easy_strerror(ret));
-		return 1;
+		return FALSE;
 	}
 
 	if (strstr(buffer, "<lfm status=\"ok\">")) {
@@ -384,13 +385,13 @@ static gint as_submit(void)
 	g_free(buffer);
 	buffer = NULL;
 
-	return 0;
+	return TRUE;
 }
 
 static void as_parse_error(char *response)
 {
-	char *tmp, *message;
-	int code;
+	gchar *tmp, *message;
+	gushort code;
 
 	tmp = strstr(response, "<error code=\"") + 13;
 	code = g_ascii_strtoll(tmp, NULL, 0);
@@ -416,7 +417,7 @@ void as_check_submit(void)
 {
 	if (g_queue_get_length(queue) > 0 && as_conn.status == CONNECTED &&
 			elapsed(as_conn.last_fail) >= 600) {
-		if (as_submit() == 1)
+		if (as_submit() == FALSE)
 			as_conn.last_fail = get_time();
 	}
 }

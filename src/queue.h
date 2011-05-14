@@ -33,7 +33,7 @@ typedef struct {
 	gchar *album;
 	gchar *artist;
 	gchar *title;
-	glong date;
+	gint64 date;
 	guint length;
 	guint track;
 } queue_node;

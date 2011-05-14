@@ -47,7 +47,7 @@ struct {
 
 gchar *buffer;
 
-gint as_connection_init(void);
+gboolean as_connection_init(void);
 void as_authenticate(void);
 void as_check_submit(void);
 void as_cleanup(void);

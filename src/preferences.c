@@ -36,7 +36,7 @@
 #include "scmpc.h"
 #include "preferences.h"
 
-static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const char *value,
+static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const gchar *value,
 		void *result)
 {
 	if (!strncmp(value, "none", 4))
@@ -74,7 +74,7 @@ static void free_config_files(gchar **config_files)
 		g_free(config_files[i]);
 }
 
-static gint parse_files(cfg_t *cfg)
+static gboolean parse_files(cfg_t *cfg)
 {
 	gchar *config_files[3];
 	const gchar *home;
@@ -92,7 +92,7 @@ static gint parse_files(cfg_t *cfg)
 		config_files[2] = g_strdup("");
 	}
 
-	for (int i = 0; i < 3; i++)
+	for (gint i = 0; i < 3; i++)
 	{
 		switch(cfg_parse(cfg, config_files[i]))
 		{
@@ -101,24 +101,24 @@ static gint parse_files(cfg_t *cfg)
 				"contains errors and cannot be parsed.\n",
 				config_files[i]);
 				free_config_files(config_files);
-				return -1;
+				return FALSE;
 			case CFG_FILE_ERROR:
 				break;
 			case CFG_SUCCESS:
 				free_config_files(config_files);
-				return 0;
+				return TRUE;
 			default:
 				free_config_files(config_files);
-				return -1;
+				return FALSE;
 		}
 	}
-	return 0;
+	return FALSE;
 }
 
-static char* expand_tilde(const char *path)
+static gchar* expand_tilde(const gchar *path)
 {
 	if (path[0] == '~') {
-		const char *home = getenv("HOME");
+		const gchar *home = getenv("HOME");
 		if (!home)
 			home = g_get_home_dir();
 
@@ -165,7 +165,7 @@ static gint parse_config_file(void)
 	cfg_set_validate_func(cfg, "mpd|port", &cf_validate_num);
 	cfg_set_validate_func(cfg, "mpd|timeout", &cf_validate_num);
 
-	if (parse_files(cfg) < 0) {
+	if (parse_files(cfg) == FALSE) {
 		cfg_free(cfg);
 		return -1;
 	}
@@ -203,7 +203,7 @@ static gint parse_config_file(void)
 	return 0;
 }
 
-static gint parse_command_line(gint argc, gchar **argv)
+static gboolean parse_command_line(gint argc, gchar **argv)
 {
 	GError *error = NULL;
 	gchar *pid_file = NULL, *conf_file = NULL;
@@ -234,7 +234,7 @@ static gint parse_command_line(gint argc, gchar **argv)
 	if (!g_option_context_parse(context, &argc, &argv, &error)) {
 		g_print("%s\n", error->message);
 		g_option_context_free(context);
-		return -1;
+		return FALSE;
 	}
 	g_option_context_free(context);
 
@@ -252,7 +252,7 @@ static gint parse_command_line(gint argc, gchar **argv)
 		g_free(prefs.config_file);
 		prefs.config_file = g_strdup(conf_file);
 		if (parse_config_file() < 0)
-			return -1;
+			return FALSE;
 	}
 	if (pid_file) {
 		g_free(prefs.pid_file);
@@ -261,7 +261,7 @@ static gint parse_command_line(gint argc, gchar **argv)
 	if (quiet && debug) {
 		fputs("Specifying --debug and --quiet at the same time does "
 				"not make any sense.", stderr);
-		return -1;
+		return FALSE;
 	} else if (quiet) {
 		prefs.log_level = G_LOG_LEVEL_ERROR;
 	} else if (debug) {
@@ -273,18 +273,18 @@ static gint parse_command_line(gint argc, gchar **argv)
 		kill_scmpc();
 	g_free(pid_file);
 	g_free(conf_file);
-	return 0;
+	return TRUE;
 }
 
-gint init_preferences(gint argc, gchar **argv)
+gboolean init_preferences(gint argc, gchar **argv)
 {
 	gchar *tmp, *saveptr;
 
 	prefs.config_file = NULL;
 	if (parse_config_file() < 0)
-		return -1;
-	if (parse_command_line(argc, argv) < 0)
-		return -1;
+		return FALSE;
+	if (parse_command_line(argc, argv) == FALSE)
+		return FALSE;
 
 	tmp = getenv("MPD_HOST");
 	if (tmp) {
@@ -303,7 +303,7 @@ gint init_preferences(gint argc, gchar **argv)
 	if (getenv("MPD_PORT"))
 		prefs.mpd_port = strtol(getenv("MPD_PORT"), NULL, 10);
 
-	return 0;
+	return TRUE;
 }
 
 void clear_preferences(void)

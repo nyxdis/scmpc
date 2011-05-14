@@ -127,7 +127,7 @@ static void mpd_update(void)
 
 static void mpd_schedule_check(void)
 {
-	guint timeout;
+	gushort timeout;
 
 	if (mpd.check_source > 0)
 		g_source_remove(mpd.check_source);

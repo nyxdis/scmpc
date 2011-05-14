@@ -31,8 +31,8 @@
 
 struct {
 	gchar *mpd_hostname;
-	guint mpd_port;
-	guint mpd_timeout;
+	gushort mpd_port;
+	gushort mpd_timeout;
 	gchar *mpd_password;
 	gboolean fork;
 	GLogLevelFlags log_level;
@@ -47,7 +47,7 @@ struct {
 	guint cache_interval;
 } prefs;
 
-gint init_preferences(gint argc, gchar *argv[]);
+gboolean init_preferences(gint argc, gchar *argv[]);
 void clear_preferences(void);
 
 #endif /* HAVE_PREFERENCES_H */
