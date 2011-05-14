@@ -243,7 +243,7 @@ void as_now_playing(void)
 
 static gushort build_querystring(gchar **qs)
 {
-	if (g_queue_get_length(queue) > 1)
+	if (queue_get_length() > 1)
 		return build_querystring_multi(qs);
 	else
 		return build_querystring_single(qs);
@@ -252,7 +252,7 @@ static gushort build_querystring(gchar **qs)
 static gushort build_querystring_single(gchar **qs)
 {
 	gchar *sig, *tmp;
-	queue_node *song = g_queue_peek_head(queue);
+	queue_node *song = queue_peek_head();
 
 	tmp = g_strdup_printf("album%sapi_key" API_KEY "artist%sduration%d"
 			"methodtrack.scrobblesk%stimestamp%ldtrack%s"
@@ -280,7 +280,7 @@ static gushort build_querystring_multi(gchar **qs)
 	GString *albums, *artists, *lengths, *timestamps, *titles;
 	GString *tracks;
 	gushort num = 0;
-	queue_node *song = g_queue_peek_head(queue);
+	queue_node *song = queue_peek_head();
 
 	nqs = g_string_new("api_key=" API_KEY "&method=track.scrobble&sk=");
 	g_string_append(nqs, as_conn.session_id);
@@ -319,7 +319,7 @@ static gushort build_querystring_multi(gchar **qs)
 		curl_free(album); curl_free(artist); curl_free(title);
 
 		num++;
-		song = g_queue_peek_nth(queue, num);
+		song = queue_peek_nth(num);
 	}
 
 	tmp = g_strdup_printf("%sapi_key" API_KEY "%s%smethodtrack.scrobble"
@@ -348,7 +348,7 @@ static gboolean as_submit(void)
 	gint ret;
 	gushort num_songs;
 
-	if (g_queue_get_length(queue) < 1)
+	if (queue_get_length() < 1)
 		return FALSE;
 
 	num_songs = build_querystring(&querystring);
@@ -415,7 +415,7 @@ static void as_parse_error(char *response)
 
 void as_check_submit(void)
 {
-	if (g_queue_get_length(queue) > 0 && as_conn.status == CONNECTED &&
+	if (queue_get_length() > 0 && as_conn.status == CONNECTED &&
 			elapsed(as_conn.last_fail) >= 600) {
 		if (as_submit() == FALSE)
 			as_conn.last_fail = get_time();

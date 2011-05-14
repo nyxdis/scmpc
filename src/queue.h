@@ -38,8 +38,6 @@ typedef struct {
 	guint track;
 } queue_node;
 
-extern GQueue *queue;
-
 void queue_add_current_song(void);
 void queue_cleanup(void);
 void queue_clear_n(guint num);
@@ -47,5 +45,9 @@ void queue_init(void);
 void queue_free_song(gpointer song, G_GNUC_UNUSED gpointer user_data);
 void queue_load(void);
 gboolean queue_save(gpointer data);
+
+guint queue_get_length(void);
+queue_node* queue_peek_head(void);
+queue_node* queue_peek_nth(guint n);
 
 #endif /* HAVE_QUEUE_H */

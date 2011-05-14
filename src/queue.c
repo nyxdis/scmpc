@@ -40,7 +40,7 @@ static void queue_add(const gchar *artist, const gchar *title, const gchar *albu
 	guint length, gint track, gint64 date);
 static void write_element(gpointer data, G_GNUC_UNUSED gpointer user_data);
 
-GQueue *queue;
+static GQueue *queue;
 
 void queue_init(void)
 {
@@ -199,4 +199,19 @@ void queue_clear_n(guint num)
 		queue_node *song = g_queue_pop_head(queue);
 		queue_free_song(song, NULL);
 	}
+}
+
+guint queue_get_length(void)
+{
+	return g_queue_get_length(queue);
+}
+
+queue_node* queue_peek_head(void)
+{
+	return g_queue_peek_head(queue);
+}
+
+queue_node* queue_peek_nth(guint n)
+{
+	return g_queue_peek_nth(queue, n);
 }
