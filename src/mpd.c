@@ -33,7 +33,6 @@
 #include "scmpc.h"
 
 static void mpd_update(void);
-static void mpd_disconnect(void);
 static void mpd_schedule_check(void);
 
 gboolean mpd_connect(void)
@@ -146,6 +145,7 @@ gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source, GIOCondition condition,
 	if (condition & G_IO_HUP) {
 		mpd_disconnect();
 		g_message("Disconnected from MPD, reconnecting");
+		mpd_schedule_reconnect();
 		return TRUE;
 	} else if (condition & G_IO_IN) {
 		enum mpd_idle events = mpd_recv_idle(mpd.conn, FALSE);
@@ -155,6 +155,7 @@ gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source, GIOCondition condition,
 					mpd_connection_get_error_message(
 						mpd.conn));
 			mpd_disconnect();
+			mpd_schedule_reconnect();
 			return FALSE;
 		}
 
@@ -172,22 +173,23 @@ gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source, GIOCondition condition,
 
 gboolean mpd_reconnect(G_GNUC_UNUSED gpointer data)
 {
-	if (mpd.connected)
-		return TRUE;
-
-	mpd.connected = mpd_connect();
-	if (!mpd.connected) {
+	if(!mpd_connect()) {
 		mpd_disconnect();
 		return TRUE;
 	}
 
-	return TRUE;
+	mpd.reconnect_source = 0;
+	return FALSE;
 }
 
-static void mpd_disconnect(void)
+void mpd_disconnect(void)
 {
 	if (mpd.conn)
 		mpd_connection_free(mpd.conn);
-	mpd.connected = FALSE;
 	mpd.conn = NULL;
+}
+
+void mpd_schedule_reconnect(void)
+{
+	mpd.reconnect_source = g_timeout_add_seconds(30, mpd_reconnect, NULL);
 }

@@ -38,11 +38,13 @@ struct {
 	gboolean song_submitted;
 	guint idle_source;
 	guint check_source;
-	gboolean connected;
+	guint reconnect_source;
 } mpd;
 
 gboolean mpd_connect(void);
 gboolean mpd_parse(GIOChannel *source, GIOCondition condition, gpointer data);
 gboolean mpd_reconnect(gpointer data);
+void mpd_disconnect(void);
+void mpd_schedule_reconnect(void);
 
 #endif /* HAVE_MPD_H */

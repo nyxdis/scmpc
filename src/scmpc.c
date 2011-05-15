@@ -55,7 +55,7 @@ static int signal_pipe[2] = { -1, -1 };
 static void daemonise(void);
 static gboolean current_song_eligible_for_submission(void);
 
-static guint signal_source, cache_save_source, reconnect_source;
+static guint signal_source, cache_save_source;
 static GMainLoop *loop;
 
 int main(int argc, char *argv[])
@@ -103,10 +103,9 @@ int main(int argc, char *argv[])
 	// submit the loaded queue
 	as_check_submit();
 
-	mpd.connected = mpd_connect();
-	if (!mpd.connected) {
-		mpd_connection_free(mpd.conn);
-		mpd.conn = NULL;
+	if (!mpd_connect()) {
+		mpd_disconnect();
+		mpd_schedule_reconnect();
 	}
 
 	mpd.song_pos = g_timer_new();
@@ -117,9 +116,6 @@ int main(int argc, char *argv[])
 	// save queue
 	cache_save_source = g_timeout_add_seconds(prefs.cache_interval * 60,
 			queue_save, NULL);
-
-	// reconnect if disconnected
-	reconnect_source = g_timeout_add_seconds(300, mpd_reconnect, NULL);
 
 	g_main_loop_run(loop);
 
@@ -297,7 +293,8 @@ static void scmpc_cleanup(void)
 	if (mpd.check_source > 0)
 		g_source_remove(mpd.check_source);
 	g_source_remove(cache_save_source);
-	g_source_remove(reconnect_source);
+	if (mpd.reconnect_source > 0)
+		g_source_remove(mpd.reconnect_source);
 
 	if (current_song_eligible_for_submission())
 		queue_add_current_song();
