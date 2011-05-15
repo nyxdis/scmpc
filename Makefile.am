@@ -28,4 +28,4 @@ ChangeLog:
 distclean-local:
 	rm -f ChangeLog
 
-EXTRA_DIST = scmpc.conf.example scmpc.1.in ChangeLog
+EXTRA_DIST = scmpc.conf.example scmpc.1.in ChangeLog README.md
