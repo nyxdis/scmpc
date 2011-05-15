@@ -36,7 +36,7 @@ struct {
 	GTimer *song_pos;
 	gint64 song_date;
 	gboolean song_submitted;
-	guint source;
+	guint idle_source;
 	guint check_source;
 	gboolean connected;
 } mpd;

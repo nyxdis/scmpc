@@ -293,7 +293,7 @@ void scmpc_shutdown(void)
 static void scmpc_cleanup(void)
 {
 	g_source_remove(signal_source);
-	g_source_remove(mpd.source);
+	g_source_remove(mpd.idle_source);
 	if (mpd.check_source > 0)
 		g_source_remove(mpd.check_source);
 	g_source_remove(cache_save_source);

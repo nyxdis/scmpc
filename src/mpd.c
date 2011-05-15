@@ -70,7 +70,7 @@ gboolean mpd_connect(void)
 
 		GIOChannel *channel = g_io_channel_unix_new(
 				mpd_connection_get_fd(mpd.conn));
-		mpd.source = g_io_add_watch(channel, G_IO_IN | G_IO_HUP,
+		mpd.idle_source = g_io_add_watch(channel, G_IO_IN | G_IO_HUP,
 				mpd_parse, NULL);
 		g_io_channel_unref(channel);
 		mpd.check_source = 0;
