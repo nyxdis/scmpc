@@ -69,8 +69,8 @@ gboolean mpd_connect(void)
 
 		GIOChannel *channel = g_io_channel_unix_new(
 				mpd_connection_get_fd(mpd.conn));
-		mpd.idle_source = g_io_add_watch(channel, G_IO_IN | G_IO_HUP,
-				mpd_parse, NULL);
+		mpd.idle_source = g_io_add_watch(channel, G_IO_IN, mpd_parse,
+				NULL);
 		g_io_channel_unref(channel);
 		mpd.check_source = 0;
 
@@ -139,36 +139,26 @@ static void mpd_schedule_check(void)
 	mpd.check_source = g_timeout_add_seconds(timeout, scmpc_check, NULL);
 }
 
-gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source, GIOCondition condition,
+gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source,
+		G_GNUC_UNUSED GIOCondition condition,
 		G_GNUC_UNUSED gpointer data)
 {
-	if (condition & G_IO_HUP) {
+	enum mpd_idle events = mpd_recv_idle(mpd.conn, FALSE);
+
+	if (!mpd_response_finish(mpd.conn)) {
+		g_warning("Failed to read MPD response: %s",
+				mpd_connection_get_error_message(mpd.conn));
 		mpd_disconnect();
-		g_message("Disconnected from MPD, reconnecting");
 		mpd_schedule_reconnect();
-		return TRUE;
-	} else if (condition & G_IO_IN) {
-		enum mpd_idle events = mpd_recv_idle(mpd.conn, FALSE);
-
-		if (!mpd_response_finish(mpd.conn)) {
-			g_warning("Failed to read MPD response: %s",
-					mpd_connection_get_error_message(
-						mpd.conn));
-			mpd_disconnect();
-			mpd_schedule_reconnect();
-			return FALSE;
-		}
-
-		if (events & MPD_IDLE_PLAYER) {
-			mpd_update();
-		}
-
-		mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
-		return TRUE;
-	} else {
-		// this shouldn't happen
 		return FALSE;
 	}
+
+	if (events & MPD_IDLE_PLAYER) {
+		mpd_update();
+	}
+
+	mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
+	return TRUE;
 }
 
 gboolean mpd_reconnect(G_GNUC_UNUSED gpointer data)
