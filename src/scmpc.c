@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 	pid_t pid;
 	struct pollfd fds[2];
 	struct sigaction sa;
-	time_t last_queue_save = 0, mpd_last_fail = 0, as_last_fail = 0;
+	time_t last_queue_save = 0, mpd_last_fail = 0;
 
 	if (init_preferences(argc, argv) < 0)
 		g_error("Config file parsing failed");
@@ -167,10 +167,7 @@ int main(int argc, char *argv[])
 		}
 
 		/* submit queue */
-		if (queue.length > 0 && as_conn.status == CONNECTED && difftime(time(NULL), as_last_fail) >= 600) {
-			if (as_submit() == 1)
-				as_last_fail = time(NULL);
-		}
+		as_check_submit();
 	}
 }
 

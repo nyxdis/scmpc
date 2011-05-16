@@ -227,6 +227,10 @@ void mpd_parse(gchar *buf)
 				current_song.mpd_state = PAUSED;
 			} else if (!strncmp(&line[7], "stop", 4)) {
 				current_song.mpd_state = STOPPED;
+				if (queue.length > 0) {
+					queue.last->finished_playing = TRUE;
+					as_check_submit();
+				}
 			}
 			if (write(mpd_info.sockfd, "idle player\n", 12) < 0)
 				return;

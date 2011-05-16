@@ -38,12 +38,13 @@ struct {
 	connection_status status;
 	CURL *handle;
 	struct curl_slist *headers;
+	time_t last_fail;
 } as_conn;
 
 gchar *buffer;
 
 gint as_connection_init(void);
-gint as_submit(void);
+void as_check_submit(void);
 void as_cleanup(void);
 void as_handshake(void);
 void as_now_playing(void);

@@ -38,6 +38,7 @@
 #include "queue.h"
 
 static gchar curl_error_buffer[CURL_ERROR_SIZE];
+static gint as_submit(void);
 
 #define HANDSHAKE_URL \
 	"http://post.audioscrobbler.com/?hs=true&p=1.2.1&c=spc&v=%s&u=%s&t=%ld&a=%s"
@@ -49,6 +50,7 @@ gint as_connection_init(void)
 		return -1;
 	as_conn.submit_url = as_conn.np_url = as_conn.session_id = NULL;
 	as_conn.last_handshake = 0;
+	as_conn.last_fail = 0;
 	as_conn.status = DISCONNECTED;
 	as_conn.headers = curl_slist_append(as_conn.headers,
 			"User-Agent: scmpc/" PACKAGE_VERSION);
@@ -286,7 +288,7 @@ static gint build_querystring(gchar **qs, queue_node **last_song)
 	return num;
 }
 
-gint as_submit(void)
+static gint as_submit(void)
 {
 	gchar *querystring, *line, *saveptr = NULL;
 	queue_node *last_added;
@@ -342,4 +344,13 @@ gint as_submit(void)
 	g_free(buffer);
 
 	return 0;
+}
+
+void as_check_submit(void)
+{
+	if (queue.length > 0 && as_conn.status == CONNECTED &&
+			difftime(time(NULL), as_conn.last_fail) >= 600) {
+		if (as_submit() == 1)
+			as_conn.last_fail = time(NULL);
+	}
 }
