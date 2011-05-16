@@ -44,7 +44,7 @@ scmpc requires the following to be installed:
 Installation
 ------------
 
-Download the tarball, and then you just need to run `./configure; make; make` install as usual.
+Download the tarball, and then you just need to run `./configure; make; make install` as usual.
 
 The following distributions already ship scmpc packages:
 
