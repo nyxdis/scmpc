@@ -58,6 +58,7 @@ gboolean as_connection_init(void)
 		return FALSE;
 	as_conn.submit_url = as_conn.session_id = NULL;
 	as_conn.last_auth = 0;
+	as_conn.last_fail = 0;
 	as_conn.status = DISCONNECTED;
 	as_conn.headers = curl_slist_append(as_conn.headers,
 			"User-Agent: scmpc/" PACKAGE_VERSION);
