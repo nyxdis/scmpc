@@ -40,7 +40,6 @@
 #include "scmpc.h"
 #include "mpd.h"
 
-static gchar curl_error_buffer[CURL_ERROR_SIZE];
 static void as_parse_error(char *response);
 static gboolean as_submit(void);
 static gushort build_querystring(gchar **qs);
@@ -56,7 +55,7 @@ gboolean as_connection_init(void)
 	as_conn.handle = curl_easy_init();
 	if (!as_conn.handle)
 		return FALSE;
-	as_conn.submit_url = as_conn.session_id = NULL;
+	as_conn.session_id = NULL;
 	as_conn.last_auth = 0;
 	as_conn.last_fail = 0;
 	as_conn.status = DISCONNECTED;
@@ -65,7 +64,6 @@ gboolean as_connection_init(void)
 
 	curl_easy_setopt(as_conn.handle, CURLOPT_HTTPHEADER, as_conn.headers);
 	curl_easy_setopt(as_conn.handle, CURLOPT_WRITEFUNCTION, &buffer_write);
-	curl_easy_setopt(as_conn.handle, CURLOPT_ERRORBUFFER,curl_error_buffer);
 	curl_easy_setopt(as_conn.handle, CURLOPT_NOSIGNAL, 1L);
 	curl_easy_setopt(as_conn.handle, CURLOPT_CONNECTTIMEOUT, 5L);
 	curl_easy_setopt(as_conn.handle, CURLOPT_TIMEOUT, 5L);
@@ -78,7 +76,6 @@ void as_cleanup(void)
 	curl_easy_cleanup(as_conn.handle);
 	as_conn.headers = as_conn.handle = NULL;
 	g_free(as_conn.session_id);
-	g_free(as_conn.submit_url);
 }
 
 void as_authenticate(void)

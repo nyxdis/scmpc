@@ -36,8 +36,6 @@
 
 struct {
 	gchar *session_id;
-	gchar *submit_url;
-	gchar password[33];
 	gint64 last_auth;
 	gint64 last_fail;
 	connection_status status;
