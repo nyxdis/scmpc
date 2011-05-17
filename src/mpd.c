@@ -60,11 +60,6 @@ gboolean mpd_connect(void)
 
 		g_message("Connected to MPD");
 
-		// only send now playing, don't queue the song
-		if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY)
-			as_now_playing();
-		mpd.song_submitted = TRUE;
-
 		mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
 
 		GIOChannel *channel = g_io_channel_unix_new(
@@ -74,8 +69,10 @@ gboolean mpd_connect(void)
 		g_io_channel_unref(channel);
 		mpd.check_source = 0;
 
-		if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY)
+		if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY) {
+			as_now_playing();
 			mpd_schedule_check();
+		}
 
 		return TRUE;
 	}
