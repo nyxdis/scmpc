@@ -37,6 +37,15 @@
 #include "preferences.h"
 
 static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const gchar *value,
+		void *result);
+static gint cf_validate_num(cfg_t *cfg, cfg_opt_t *opt);
+static void free_config_files(gchar **config_files);
+static gboolean parse_files(cfg_t *cfg);
+static gchar* expand_tilde(const gchar *path);
+static gint parse_config_file(void);
+static gboolean parse_command_line(gint argc, gchar **argv);
+
+static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const gchar *value,
 		void *result)
 {
 	if (!strncmp(value, "none", 4))
