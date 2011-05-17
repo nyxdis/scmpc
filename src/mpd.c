@@ -80,16 +80,18 @@ gboolean mpd_connect(void)
 
 static void mpd_update(void)
 {
-	struct mpd_status *prev = mpd.status;
+	enum mpd_state prev_state = MPD_STATE_UNKNOWN;
 
-	if (mpd.status)
+	if (mpd.status) {
+		prev_state = mpd_status_get_state(mpd.status);
 		mpd_status_free(mpd.status);
+	}
 	mpd.status = mpd_run_status(mpd.conn);
 	mpd_response_finish(mpd.conn);
 
 	if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY) {
-		if (mpd_status_get_state(prev) == MPD_STATE_PLAY ||
-				mpd_status_get_state(prev) == MPD_STATE_STOP) {
+		if (prev_state == MPD_STATE_PLAY ||
+				prev_state == MPD_STATE_STOP) {
 			// initialize new song
 			if (mpd.song)
 				mpd_song_free(mpd.song);
@@ -108,11 +110,11 @@ static void mpd_update(void)
 
 			// schedule queueing
 			mpd_schedule_check();
-		} else if (mpd_status_get_state(prev) == MPD_STATE_PAUSE) {
+		} else if (prev_state == MPD_STATE_PAUSE) {
 			g_timer_continue(mpd.song_pos);
 		}
 	} else if (mpd_status_get_state(mpd.status) == MPD_STATE_PAUSE &&
-			mpd_status_get_state(prev) == MPD_STATE_PLAY) {
+			prev_state == MPD_STATE_PLAY) {
 			g_timer_stop(mpd.song_pos);
 	} else if (mpd_status_get_state(mpd.status) == MPD_STATE_STOP) {
 		as_check_submit();
