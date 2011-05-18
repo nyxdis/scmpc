@@ -73,7 +73,11 @@ gboolean mpd_connect(void)
 
 		if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY) {
 			as_now_playing();
+			g_timer_start(mpd.song_pos);
 			mpd_schedule_check();
+		} else {
+			mpd.check_source = 0;
+			g_timer_stop(mpd.song_pos);
 		}
 
 		return TRUE;
@@ -120,7 +124,8 @@ static void mpd_update(void)
 			g_timer_stop(mpd.song_pos);
 	} else if (mpd_status_get_state(mpd.status) == MPD_STATE_STOP) {
 		as_check_submit();
-		g_source_remove(mpd.check_source);
+		if (mpd.check_source > 0)
+			g_source_remove(mpd.check_source);
 		mpd.check_source = 0;
 	}
 }

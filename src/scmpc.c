@@ -103,12 +103,11 @@ int main(int argc, char *argv[])
 	// submit the loaded queue
 	as_check_submit();
 
+	mpd.song_pos = g_timer_new();
 	if (!mpd_connect()) {
 		mpd_disconnect();
 		mpd_schedule_reconnect();
 	}
-
-	mpd.song_pos = g_timer_new();
 
 	// set up main loop events
 	loop = g_main_loop_new(NULL, FALSE);
