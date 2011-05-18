@@ -224,8 +224,7 @@ static gboolean open_signal_pipe(void)
 	}
 
 	channel = g_io_channel_unix_new(signal_pipe[0]);
-	signal_source = g_io_add_watch(channel, G_IO_IN, signal_parse,
-			NULL);
+	signal_source = g_io_add_watch(channel, G_IO_IN, signal_parse, NULL);
 	g_io_channel_unref(channel);
 	return TRUE;
 }

@@ -34,6 +34,8 @@
 
 static void mpd_update(void);
 static void mpd_schedule_check(void);
+static gboolean mpd_parse(GIOChannel *source, GIOCondition condition,
+		gpointer data);
 
 gboolean mpd_connect(void)
 {
@@ -138,7 +140,7 @@ static void mpd_schedule_check(void)
 	mpd.check_source = g_timeout_add_seconds(timeout, scmpc_check, NULL);
 }
 
-gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source,
+static gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source,
 		G_GNUC_UNUSED GIOCondition condition,
 		G_GNUC_UNUSED gpointer data)
 {
