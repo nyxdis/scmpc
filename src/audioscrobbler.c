@@ -226,6 +226,8 @@ void as_now_playing(void)
 		return;
 	}
 
+	mpd.song_state = SONG_ANNOUNCED;
+
 	if (strstr(buffer, "<lfm status=\"ok\">")) {
 		g_message("Sent Now Playing notification.");
 	} else if (strstr(buffer, "<lfm status=\"failed\">")) {

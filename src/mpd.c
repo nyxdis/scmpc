@@ -105,7 +105,7 @@ static void mpd_update(void)
 			mpd_response_finish(mpd.conn);
 			g_timer_start(mpd.song_pos);
 			mpd.song_date = get_time();
-			mpd.song_submitted = FALSE;
+			mpd.song_state = SONG_NEW;
 
 			// submit previous song(s)
 			as_check_submit();

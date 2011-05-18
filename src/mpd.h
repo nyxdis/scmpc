@@ -35,7 +35,7 @@ struct {
 	struct mpd_song *song;
 	GTimer *song_pos;
 	gint64 song_date;
-	gboolean song_submitted;
+	enum { SONG_NEW, SONG_ANNOUNCED, SONG_SUBMITTED } song_state;
 	guint idle_source;
 	guint check_source;
 	guint reconnect_source;

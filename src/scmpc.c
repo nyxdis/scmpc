@@ -331,7 +331,7 @@ static gboolean current_song_eligible_for_submission(void)
 	if (!mpd.song)
 		return FALSE;
 
-	return (!mpd.song_submitted &&
+	return (mpd.song_state != SONG_SUBMITTED &&
 			(g_timer_elapsed(mpd.song_pos, NULL) >= 240 ||
 			 g_timer_elapsed(mpd.song_pos, NULL) >=
 				mpd_song_get_duration(mpd.song) / 2));
