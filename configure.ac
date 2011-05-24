@@ -24,15 +24,5 @@ PKG_CHECK_MODULES([libcurl], [libcurl >= 7.15.4])
 AC_SUBST(libcurl_LIBS)
 AC_SUBST(libcurl_CFLAGS)
 
-# Checks for header files.
-AC_CHECK_HEADERS([fcntl.h netdb.h stdlib.h string.h unistd.h])
-
-# Checks for typedefs, structures, and compiler characteristics.
-AC_TYPE_PID_T
-
-# Checks for library functions.
-AC_FUNC_FORK
-AC_CHECK_FUNCS([memset select socket strrchr strtol])
-
 AC_CONFIG_FILES([Makefile scmpc.1])
 AC_OUTPUT
