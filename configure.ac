@@ -18,15 +18,5 @@ PKG_CHECK_MODULES([confuse], [libconfuse])
 PKG_CHECK_MODULES([curl], [libcurl >= 7.15.4])
 PKG_CHECK_MODULES([libmpdclient], [libmpdclient >= 2.4])
 
-# Checks for header files.
-AC_CHECK_HEADERS([fcntl.h stdlib.h string.h unistd.h])
-
-# Checks for typedefs, structures, and compiler characteristics.
-AC_TYPE_PID_T
-
-# Checks for library functions.
-AC_FUNC_FORK
-AC_CHECK_FUNCS([strcspn strrchr strstr strtol])
-
 AC_CONFIG_FILES([Makefile scmpc.1])
 AC_OUTPUT
