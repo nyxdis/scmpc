@@ -24,8 +24,6 @@
  */
 
 
-#include <stdarg.h>
-
 #include "misc.h"
 #include "audioscrobbler.h"
 #include "preferences.h"
