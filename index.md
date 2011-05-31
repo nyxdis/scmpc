@@ -8,7 +8,7 @@ About
 
 **scmpc** is a client for [MPD](http://musicpd.org) which submits your tracks to [Last.fm](http://last.fm).
 
-'*Another one?*', I hear you cry? Yes, I know about [mpdscribble](http://mpd.wikia.com/wiki/Client:Mpdscribble), but when I started this project it didn't do entirely what I wanted it to. It didn't run as a daemon, for example, and it didn't work if you enable crossfading in MPD. I didn't add the support for these in mpdscribble, partly because GNU coding style scares me, and I got slightly lost in the source code, but also because I created this as a way of teaching myself C programming.
+"*Another one?*", I hear you cry? Yes, I know about [mpdscribble](http://mpd.wikia.com/wiki/Client:Mpdscribble), but when I started this project it didn't do entirely what I wanted it to. It didn't run as a daemon, for example, and it didn't work if you enable crossfading in MPD. I didn't add the support for these in mpdscribble, partly because GNU coding style scares me, and I got slightly lost in the source code, but also because I created this as a way of teaching myself C programming.
 
 Features
 --------
