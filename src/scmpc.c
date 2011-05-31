@@ -25,10 +25,9 @@
 
 
 #include <errno.h>
-#include <fcntl.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <mpd/client.h>
 
@@ -212,13 +211,6 @@ static gboolean open_signal_pipe(void)
 	if (pipe(signal_pipe) < 0) {
 		g_critical("Opening signal pipe failed, signals will not be "
 				"caught: %s", g_strerror(errno));
-		return FALSE;
-	}
-
-	if (fcntl(signal_pipe[1], F_SETFL, fcntl(signal_pipe[1], F_GETFL)
-				| O_NONBLOCK) < 0) {
-		g_critical("Setting flags on signal pipe failed, signals will "
-				"not be caught: %s", g_strerror(errno));
 		return FALSE;
 	}
 
