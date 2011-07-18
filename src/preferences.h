@@ -29,6 +29,9 @@
 
 #include <glib.h>
 
+/**
+ * scmpc settings
+ */
 struct {
 	gchar *mpd_hostname;
 	gushort mpd_port;
@@ -47,7 +50,14 @@ struct {
 	guint cache_interval;
 } prefs;
 
+/**
+ * Initialize preferences
+ */
 gboolean init_preferences(gint argc, gchar *argv[]);
+
+/**
+ * Release resources
+ */
 void clear_preferences(void);
 
 #endif /* HAVE_PREFERENCES_H */

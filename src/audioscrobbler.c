@@ -241,6 +241,9 @@ void as_now_playing(void)
 	buffer = NULL;
 }
 
+/**
+ * Build the song submission query string
+ */
 static gushort build_querystring(gchar **qs)
 {
 	if (queue_get_length() > 1)
@@ -249,6 +252,9 @@ static gushort build_querystring(gchar **qs)
 		return build_querystring_single(qs);
 }
 
+/**
+ * Build a simple submission string for only one item
+ */
 static gushort build_querystring_single(gchar **qs)
 {
 	gchar *sig, *tmp;
@@ -273,6 +279,9 @@ static gushort build_querystring_single(gchar **qs)
 	return 1;
 }
 
+/**
+ * Build a more complex string using array notation for up to 10 songs
+ */
 static gushort build_querystring_multi(gchar **qs)
 {
 	gchar *sig, *tmp;
@@ -342,6 +351,9 @@ static gushort build_querystring_multi(gchar **qs)
 	return num;
 }
 
+/**
+ * Submit new songs from the queue
+ */
 static gboolean as_submit(void)
 {
 	gchar *querystring;
@@ -388,6 +400,9 @@ static gboolean as_submit(void)
 	return TRUE;
 }
 
+/**
+ * Parse errors returned from Last.fm and adjust the status if applicable
+ */
 static void as_parse_error(char *response)
 {
 	gchar *tmp, *message;

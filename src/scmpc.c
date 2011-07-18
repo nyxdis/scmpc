@@ -49,12 +49,25 @@ static gboolean signal_parse(GIOChannel *source, GIOCondition condition,
 		gpointer data);
 static gboolean open_signal_pipe(void);
 static void close_signal_pipe(void);
+/**
+ * Pipe for incoming UNIX signals
+ */
 static int signal_pipe[2] = { -1, -1 };
 
 static void daemonise(void);
 static gboolean current_song_eligible_for_submission(void);
 
-static guint signal_source, cache_save_source;
+/**
+ * GSource for UNIX signals
+ */
+static guint signal_source;
+/**
+ * Timeout source for the queue save interval
+ */
+static guint cache_save_source;
+/**
+ * scmpc's main event loop
+ */
 static GMainLoop *loop;
 
 int main(int argc, char *argv[])
@@ -120,6 +133,9 @@ int main(int argc, char *argv[])
 	scmpc_cleanup();
 }
 
+/**
+ * Check if there is a running scmpc instance
+ */
 static gint scmpc_is_running(void)
 {
 	FILE *pid_file = fopen(prefs.pid_file, "r");
@@ -175,6 +191,9 @@ static gint scmpc_is_running(void)
 	return 0;
 }
 
+/**
+ * Create the pid file and write the current pid
+ */
 static gboolean scmpc_pid_create(void)
 {
 	FILE *pid_file = fopen(prefs.pid_file, "w");
@@ -189,12 +208,18 @@ static gboolean scmpc_pid_create(void)
 	return TRUE;
 }
 
+/**
+ * Delete the pid file
+ */
 static void scmpc_pid_remove(void)
 {
 	if (unlink(prefs.pid_file) < 0)
 		g_warning("Could not remove pid file: %s", g_strerror(errno));
 }
 
+/**
+ * Handler for UNIX signals
+ */
 static void sighandler(gint sig)
 {
 	if (write(signal_pipe[1], &sig, 1) < 0) {
@@ -204,6 +229,9 @@ static void sighandler(gint sig)
 	}
 }
 
+/**
+ * Open the pipe for UNIX signals
+ */
 static gboolean open_signal_pipe(void)
 {
 	GIOChannel *channel;
@@ -220,6 +248,9 @@ static gboolean open_signal_pipe(void)
 	return TRUE;
 }
 
+/**
+ * Close the pipe for UNIX signals
+ */
 static void close_signal_pipe(void)
 {
 	if (signal_pipe[0] > 0)
@@ -230,6 +261,9 @@ static void close_signal_pipe(void)
 	signal_pipe[1] = -1;
 }
 
+/**
+ * Parse incoming UNIX signals
+ */
 static gboolean signal_parse(GIOChannel *source,
 		G_GNUC_UNUSED GIOCondition condition,
 		G_GNUC_UNUSED gpointer data)
@@ -248,6 +282,9 @@ static gboolean signal_parse(GIOChannel *source,
 	}
 }
 
+/**
+ * Fork to background
+ */
 static void daemonise(void)
 {
 	pid_t pid;
@@ -276,6 +313,9 @@ void scmpc_shutdown(void)
 		g_main_loop_quit(loop);
 }
 
+/**
+ * Release resources
+ */
 static void scmpc_cleanup(void)
 {
 	g_source_remove(signal_source);
@@ -318,6 +358,9 @@ void kill_scmpc(void)
 	exit(EXIT_SUCCESS);
 }
 
+/**
+ * Check if the current song is eligible for submission
+ */
 static gboolean current_song_eligible_for_submission(void)
 {
 	if (!mpd.song)

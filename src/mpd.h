@@ -29,6 +29,9 @@
 
 #include <glib.h>
 
+/**
+ * MPD connection data
+ */
 struct {
 	struct mpd_connection *conn;
 	struct mpd_status *status;
@@ -41,9 +44,24 @@ struct {
 	guint reconnect_source;
 } mpd;
 
+/**
+ * Connect to MPD
+ */
 gboolean mpd_connect(void);
+
+/**
+ * Wrapper around #mpd_disconnect and #mpd_connect
+ */
 gboolean mpd_reconnect(gpointer data);
+
+/**
+ * Disconnect from MPD
+ */
 void mpd_disconnect(void);
+
+/**
+ * Schedule a reconnect to the MPD server
+ */
 void mpd_schedule_reconnect(void);
 
 #endif /* HAVE_MPD_H */

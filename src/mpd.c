@@ -85,6 +85,11 @@ gboolean mpd_connect(void)
 	}
 }
 
+/**
+ * Parse status changes, check for state changes (play/stop/pause) and
+ * retrieve the current song on play->play or stop->play.
+ * Clean up on play->pause and *->stop
+ */
 static void mpd_update(void)
 {
 	enum mpd_state prev_state = MPD_STATE_UNKNOWN;
@@ -133,6 +138,9 @@ static void mpd_update(void)
 	}
 }
 
+/**
+ * Schedule a check of the current song for submission
+ */
 static void mpd_schedule_check(void)
 {
 	gushort timeout;
@@ -148,6 +156,9 @@ static void mpd_schedule_check(void)
 	mpd.check_source = g_timeout_add_seconds(timeout, scmpc_check, NULL);
 }
 
+/**
+ * Parse mpd responses, this should only be called when "idle" returns
+ */
 static gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source,
 		G_GNUC_UNUSED GIOCondition condition,
 		G_GNUC_UNUSED gpointer data)

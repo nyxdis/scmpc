@@ -36,10 +36,13 @@
 #include "scmpc.h"
 #include "mpd.h"
 
-static void queue_add(const gchar *artist, const gchar *title, const gchar *album,
-	guint length, gint track, gint64 date);
+static void queue_add(const gchar *artist, const gchar *title,
+	const gchar *album, guint length, gint track, gint64 date);
 static void write_element(gpointer data, G_GNUC_UNUSED gpointer user_data);
 
+/**
+ * Internal song queue
+ */
 static GQueue *queue;
 
 void queue_init(void)
@@ -53,8 +56,11 @@ void queue_cleanup(void)
 	g_queue_free(queue);
 }
 
-static void queue_add(const gchar *artist, const gchar *title, const gchar *album,
-	guint length, gint track, gint64 date)
+/**
+ * Add a song to the queue
+ */
+static void queue_add(const gchar *artist, const gchar *title,
+	const gchar *album, guint length, gint track, gint64 date)
 {
 	queue_node *new_song;
 
@@ -174,6 +180,9 @@ gboolean queue_save(G_GNUC_UNUSED gpointer data)
 	return TRUE;
 }
 
+/**
+ * Write a song to the cache file
+ */
 static void write_element(gpointer data, gpointer user_data)
 {
 	FILE *cache_file = user_data;

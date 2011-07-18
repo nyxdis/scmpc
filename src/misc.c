@@ -28,6 +28,9 @@
 #include "audioscrobbler.h"
 #include "preferences.h"
 
+/**
+ * Log file resource
+ */
 static FILE *log_file;
 
 void open_log(const gchar *filename)

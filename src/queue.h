@@ -29,6 +29,9 @@
 
 #include <glib.h>
 
+/**
+ * An element in the song queue
+ */
 typedef struct {
 	gchar *album;
 	gchar *artist;
@@ -38,16 +41,54 @@ typedef struct {
 	guint track;
 } queue_node;
 
+/**
+ * Add the currently playing song to the queue
+ */
 void queue_add_current_song(void);
+
+/**
+ * Release resources
+ */
 void queue_cleanup(void);
+
+/**
+ * Remove n songs from the queue
+ */
 void queue_clear_n(guint num);
+
+/**
+ * Initialize the queue
+ */
 void queue_init(void);
+
+/**
+ * Free the memory used by a #queue_node
+ */
 void queue_free_song(gpointer song, G_GNUC_UNUSED gpointer user_data);
+
+/**
+ * Load the queue from the cache file
+ */
 void queue_load(void);
+
+/**
+ * Save the queue to the cache file
+ */
 gboolean queue_save(gpointer data);
 
+/**
+ * Get the current queue length
+ */
 guint queue_get_length(void);
+
+/**
+ * Return the first song from the queue, but don't remove it
+ */
 queue_node* queue_peek_head(void);
+
+/**
+ * Return the nth song from the queue, but don't remove it
+ */
 queue_node* queue_peek_nth(guint n);
 
 #endif /* HAVE_QUEUE_H */

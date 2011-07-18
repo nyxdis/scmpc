@@ -29,9 +29,19 @@
 
 #include <glib.h>
 
-
+/**
+ * Exit a running scmpc instance
+ */
 void kill_scmpc(void);
+
+/**
+ * Exit the current scmpc instance
+ */
 void scmpc_shutdown(void);
+
+/**
+ * Check if a song is eligible for submission and add it to the queue
+ */
 gboolean scmpc_check(gpointer data);
 
 #endif /* HAVE_SCMPC_H */

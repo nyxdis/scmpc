@@ -45,6 +45,10 @@ static gchar* expand_tilde(const gchar *path);
 static gint parse_config_file(void);
 static gboolean parse_command_line(gint argc, gchar **argv);
 
+/**
+ * Parse log level values from the config file and set result to a
+ * GLogLevelFlags value
+ */
 static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const gchar *value,
 		void *result)
 {
@@ -66,6 +70,9 @@ static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const gchar *value,
 	return 0;
 }
 
+/**
+ * Check if the given opt value is positive
+ */
 static gint cf_validate_num(cfg_t *cfg, cfg_opt_t *opt)
 {
 	gint value = cfg_opt_getnint(opt, 0);
@@ -77,12 +84,18 @@ static gint cf_validate_num(cfg_t *cfg, cfg_opt_t *opt)
 	return 0;
 }
 
+/**
+ * Release resources
+ */
 static void free_config_files(gchar **config_files)
 {
 	for (int i = 0; i < 3; i++)
 		g_free(config_files[i]);
 }
 
+/**
+ * Search for a working config file and parse it
+ */
 static gboolean parse_files(cfg_t *cfg)
 {
 	gchar *config_files[3];
@@ -124,6 +137,9 @@ static gboolean parse_files(cfg_t *cfg)
 	return FALSE;
 }
 
+/**
+ * Expand ~ to the user's home dir
+ */
 static gchar* expand_tilde(const gchar *path)
 {
 	if (path[0] == '~') {
@@ -137,6 +153,9 @@ static gchar* expand_tilde(const gchar *path)
 	return g_strdup(path);
 }
 
+/**
+ * Parse config file options
+ */
 static gint parse_config_file(void)
 {
 	cfg_t *cfg, *sec_as, *sec_mpd;
@@ -212,6 +231,9 @@ static gint parse_config_file(void)
 	return 0;
 }
 
+/**
+ * Parse command line options
+ */
 static gboolean parse_command_line(gint argc, gchar **argv)
 {
 	GError *error = NULL;

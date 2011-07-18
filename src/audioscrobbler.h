@@ -34,6 +34,9 @@
 
 #include "misc.h"
 
+/**
+ * Last.fm connection data
+ */
 struct {
 	gchar *session_id;
 	gint64 last_auth;
@@ -43,12 +46,34 @@ struct {
 	struct curl_slist *headers;
 } as_conn;
 
+/**
+ * cURL data buffer
+ */
 gchar *buffer;
 
+/**
+ * Initialize cURL
+ */
 gboolean as_connection_init(void);
+
+/**
+ * Build Last.fm authentication string and send it
+ */
 void as_authenticate(void);
+
+/**
+ * Check if the queue can be submitted and do it
+ */
 void as_check_submit(void);
+
+/**
+ * Release resources
+ */
 void as_cleanup(void);
+
+/**
+ * Build "Now playing" notification string and send it
+ */
 void as_now_playing(void);
 
 #endif /* HAVE_AUDIOSCROBBLER_H */
