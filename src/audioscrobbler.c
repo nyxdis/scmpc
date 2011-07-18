@@ -181,23 +181,26 @@ void as_now_playing(void)
 		return;
 	}
 
-	// TODO: implement this without casts
-	artist = (gchar*) mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0);
-	title = (gchar*) mpd_song_get_tag(mpd.song, MPD_TAG_TITLE, 0);
-	album = (gchar*) mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0);
 	track = strtol(mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0), NULL, 10);
 	length = mpd_song_get_duration(mpd.song);
 
 	tmp = g_strdup_printf("album%sapi_key" API_KEY "artist%sduration%d"
 			"methodtrack.updateNowPlayingsk%strack%strackNumber%d"
-			API_SECRET, album, artist, length, as_conn.session_id,
-			title, track);
+			API_SECRET,
+			mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0),
+			mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0),
+			length, as_conn.session_id,
+			mpd_song_get_tag(mpd.song, MPD_TAG_TITLE, 0),
+			track);
 	sig = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
 	g_free(tmp);
 
-	artist = curl_easy_escape(as_conn.handle, artist, 0);
-	title = curl_easy_escape(as_conn.handle, title, 0);
-	album = curl_easy_escape(as_conn.handle, album, 0);
+	artist = curl_easy_escape(as_conn.handle,
+			mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0), 0);
+	title = curl_easy_escape(as_conn.handle,
+			mpd_song_get_tag(mpd.song, MPD_TAG_TITLE, 0), 0);
+	album = curl_easy_escape(as_conn.handle,
+			mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0), 0);
 
 	querystring = g_strdup_printf("album=%s&api_key=" API_KEY "&artist=%s"
 			"&duration=%d&method=track.updateNowPlaying&sk=%s"

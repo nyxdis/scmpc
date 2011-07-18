@@ -369,7 +369,7 @@ static gboolean current_song_eligible_for_submission(void)
 	return (mpd.song_state != SONG_SUBMITTED &&
 			(g_timer_elapsed(mpd.song_pos, NULL) >= 240 ||
 			 g_timer_elapsed(mpd.song_pos, NULL) >=
-				mpd_song_get_duration(mpd.song) / 2));
+				mpd_song_get_duration(mpd.song) * 0.5));
 }
 
 gboolean scmpc_check(G_GNUC_UNUSED gpointer data)

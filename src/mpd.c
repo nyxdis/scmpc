@@ -151,7 +151,7 @@ static void mpd_schedule_check(void)
 	if (mpd_song_get_duration(mpd.song) >= 480)
 		timeout = 240;
 	else
-		timeout = mpd_song_get_duration(mpd.song) / 2;
+		timeout = mpd_song_get_duration(mpd.song) * 0.5;
 
 	mpd.check_source = g_timeout_add_seconds(timeout, scmpc_check, NULL);
 }
