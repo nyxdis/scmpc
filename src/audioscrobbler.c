@@ -322,11 +322,11 @@ static gushort build_querystring_multi(gchar **qs)
 		artist = curl_easy_escape(as_conn.handle, song->artist, 0);
 		title = curl_easy_escape(as_conn.handle, song->title, 0);
 
-		g_string_append_printf(nqs, "&album[%d]=%s&artist[%d]=%s"
-				"&duration[%d]=%d&timestamp[%d]=%ld"
-				"&track[%d]=%s&trackNumber[%d]=%d",
-				num, album, num, artist, num, song->length, num,
-				song->date, num, title, num, song->track);
+		g_string_append_printf(nqs, "&album[%1$d]=%2$s"
+				"&artist[%1$d]=%3$s&duration[%1$d]=%4$d"
+				"&timestamp[%1$d]=%5$ld&track[%1$d]=%6$s"
+				"&trackNumber[%1$d]=%7$d", num, album, artist,
+				song->length, song->date, title, song->track);
 
 		curl_free(album); curl_free(artist); curl_free(title);
 
