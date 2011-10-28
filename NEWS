@@ -2,6 +2,7 @@
 - port to libmpdclient
 - support for the Last.fm protocol v2.0
 - config: mpd -> interval was removed
+- fixed a bug that prevents loading config files specific on the command-line when no other files are found (thanks to Yann Ormanns)
 
 == scmpc 0.3.0 ==
 - Last.fm Now Playing support
