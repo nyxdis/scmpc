@@ -282,9 +282,12 @@ static gboolean parse_command_line(gint argc, gchar **argv)
 	if (conf_file) {
 		g_free(prefs.config_file);
 		prefs.config_file = g_strdup(conf_file);
-		if (!parse_config_file())
-			return FALSE;
+	} else {
+		prefs.config_file = NULL;
 	}
+	if (!parse_config_file())
+		return FALSE;
+
 	if (pid_file) {
 		g_free(prefs.pid_file);
 		prefs.pid_file = g_strdup(pid_file);
@@ -311,9 +314,6 @@ gboolean init_preferences(gint argc, gchar **argv)
 {
 	gchar *tmp, *saveptr;
 
-	prefs.config_file = NULL;
-	if (!parse_config_file())
-		return FALSE;
 	if (parse_command_line(argc, argv) == FALSE)
 		return FALSE;
 
