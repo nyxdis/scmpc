@@ -134,6 +134,7 @@ static gboolean parse_files(cfg_t *cfg)
 				return FALSE;
 		}
 	}
+	fprintf(stderr, "Couldn't find any valid configuration files.\n");
 	return FALSE;
 }
 
