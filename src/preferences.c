@@ -42,7 +42,7 @@ static gint cf_validate_num(cfg_t *cfg, cfg_opt_t *opt);
 static void free_config_files(gchar **config_files);
 static gboolean parse_files(cfg_t *cfg);
 static gchar* expand_tilde(const gchar *path);
-static gint parse_config_file(void);
+static gboolean parse_config_file(void);
 static gboolean parse_command_line(gint argc, gchar **argv);
 
 /**
@@ -156,7 +156,7 @@ static gchar* expand_tilde(const gchar *path)
 /**
  * Parse config file options
  */
-static gint parse_config_file(void)
+static gboolean parse_config_file(void)
 {
 	cfg_t *cfg, *sec_as, *sec_mpd;
 
@@ -195,7 +195,7 @@ static gint parse_config_file(void)
 
 	if (parse_files(cfg) == FALSE) {
 		cfg_free(cfg);
-		return -1;
+		return FALSE;
 	}
 
 	g_free(prefs.log_file);
@@ -228,7 +228,7 @@ static gint parse_config_file(void)
 	prefs.fork = TRUE;
 
 	cfg_free(cfg);
-	return 0;
+	return TRUE;
 }
 
 /**
@@ -282,7 +282,7 @@ static gboolean parse_command_line(gint argc, gchar **argv)
 	if (conf_file) {
 		g_free(prefs.config_file);
 		prefs.config_file = g_strdup(conf_file);
-		if (parse_config_file() < 0)
+		if (!parse_config_file())
 			return FALSE;
 	}
 	if (pid_file) {
@@ -312,7 +312,7 @@ gboolean init_preferences(gint argc, gchar **argv)
 	gchar *tmp, *saveptr;
 
 	prefs.config_file = NULL;
-	if (parse_config_file() < 0)
+	if (!parse_config_file())
 		return FALSE;
 	if (parse_command_line(argc, argv) == FALSE)
 		return FALSE;
