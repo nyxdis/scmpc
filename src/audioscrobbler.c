@@ -149,7 +149,7 @@ void as_authenticate(void)
 
 	as_conn.last_auth = get_time();
 	if (!buffer) {
-		g_debug("Could not parse Audioscrobbler response.");
+		g_message("Could not parse Audioscrobbler response.");
 		g_free(buffer);
 		buffer = NULL;
 		return;
@@ -163,7 +163,8 @@ void as_authenticate(void)
 	} else if (strstr(buffer, "<lfm status=\"failed\">")) {
 		as_parse_error(buffer);
 	} else {
-		g_debug("Could not parse Audioscrobbler response");
+		g_message("Could not parse Audioscrobbler response");
+		g_debug("Response was: %s", buffer);
 	}
 	g_free(buffer);
 	buffer = NULL;
@@ -395,6 +396,7 @@ static gboolean as_submit(void)
 	} else {
 		g_message("Could not parse Audioscrobbler submit"
 				" response.");
+		g_debug("Response was: %s", buffer);
 	}
 
 	g_free(buffer);
