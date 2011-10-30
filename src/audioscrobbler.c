@@ -61,6 +61,9 @@ gboolean as_connection_init(void)
 	as_conn.status = DISCONNECTED;
 	as_conn.headers = curl_slist_append(as_conn.headers,
 			"User-Agent: scmpc/" PACKAGE_VERSION);
+	/* squid workaround */
+	as_conn.headers = curl_slist_append(as_conn.headers,
+			"Expect:");
 
 	curl_easy_setopt(as_conn.handle, CURLOPT_HTTPHEADER, as_conn.headers);
 	curl_easy_setopt(as_conn.handle, CURLOPT_WRITEFUNCTION, &buffer_write);
