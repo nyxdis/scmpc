@@ -176,7 +176,7 @@ void as_authenticate(void)
 void as_now_playing(void)
 {
 	gchar *querystring, *tmp, *sig, *artist, *album, *title;
-	const gchar *trackstr, *albumstr;
+	const gchar *trackstr, *albumstr, *artiststr, *titlestr;
 	gint ret;
 	guint length, track = 0;
 
@@ -186,40 +186,65 @@ void as_now_playing(void)
 		return;
 	}
 
+	albumstr = mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0);
+	artiststr = mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0);
+	titlestr = mpd_song_get_tag(mpd.song, MPD_TAG_TITLE, 0);
 	trackstr = mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0);
 	if (trackstr)
 		track = strtol(trackstr, NULL, 10);
 	length = mpd_song_get_duration(mpd.song);
 
-	tmp = g_strdup_printf("album%sapi_key" API_KEY "artist%sduration%d"
-			"methodtrack.updateNowPlayingsk%strack%strackNumber%d"
-			API_SECRET,
-			mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0),
-			mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0),
-			length, as_conn.session_id,
-			mpd_song_get_tag(mpd.song, MPD_TAG_TITLE, 0),
-			track);
+	if (!artiststr || !titlestr) {
+		g_message("Not sending Now Playing notification: Missing tags");
+		return;
+	}
+
+	tmp = g_strdup_printf("%s%sapi_key" API_KEY "artist%sduration%d"
+			"methodtrack.updateNowPlayingsk%strack%s",
+			(albumstr ? "album" : ""), (albumstr ? albumstr : ""),
+			artiststr, length, as_conn.session_id, titlestr);
+
+	if (trackstr) {
+		sig = g_strdup(tmp);
+		g_free(tmp);
+		tmp = g_strdup_printf("%strackNumber%d", sig, track);
+		g_free(sig);
+	}
+
+	sig = g_strdup(tmp);
+	g_free(tmp);
+	tmp = g_strconcat(sig, API_SECRET, NULL);
+	g_free(sig);
+
 	sig = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
 	g_free(tmp);
 
-	artist = curl_easy_escape(as_conn.handle,
-			mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0), 0);
-	title = curl_easy_escape(as_conn.handle,
-			mpd_song_get_tag(mpd.song, MPD_TAG_TITLE, 0), 0);
-
-	albumstr = mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0);
+	artist = curl_easy_escape(as_conn.handle, artiststr, 0);
+	title = curl_easy_escape(as_conn.handle, titlestr, 0);
 	if (albumstr)
 		album = curl_easy_escape(as_conn.handle, albumstr, 0);
-	else
-		album = g_strdup("");
 
-	querystring = g_strdup_printf("album=%s&api_key=" API_KEY "&artist=%s"
+	querystring = g_strdup_printf("api_key=" API_KEY "&artist=%s"
 			"&duration=%d&method=track.updateNowPlaying&sk=%s"
-			"&track=%s&trackNumber=%d&api_sig=%s",
-			album, artist, length, as_conn.session_id, title,
-			track, sig);
+			"&track=%s&api_sig=%s",
+			artist, length, as_conn.session_id, title, sig);
 
-	curl_free(album);
+	if (albumstr) {
+		tmp = strdup(querystring);
+		g_free(querystring);
+		querystring = g_strconcat(tmp, "&album=", album, NULL);
+		g_free(tmp);
+	}
+
+	if (track > 0) {
+		tmp = strdup(querystring);
+		g_free(querystring);
+		querystring = g_strdup_printf("%s&trackNumber=%d", tmp, track);
+		g_free(tmp);
+	}
+
+	if (albumstr)
+		curl_free(album);
 	curl_free(artist);
 	curl_free(title);
 	g_free(sig);
