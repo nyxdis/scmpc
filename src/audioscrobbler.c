@@ -173,7 +173,7 @@ void as_authenticate(void)
 void as_now_playing(void)
 {
 	gchar *querystring, *tmp, *sig, *artist, *album, *title;
-	const gchar *trackstr;
+	const gchar *trackstr, *albumstr;
 	gint ret;
 	guint length, track = 0;
 
@@ -203,8 +203,12 @@ void as_now_playing(void)
 			mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0), 0);
 	title = curl_easy_escape(as_conn.handle,
 			mpd_song_get_tag(mpd.song, MPD_TAG_TITLE, 0), 0);
-	album = curl_easy_escape(as_conn.handle,
-			mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0), 0);
+
+	albumstr = mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0);
+	if (albumstr)
+		album = curl_easy_escape(as_conn.handle, albumstr, 0);
+	else
+		album = g_strdup("");
 
 	querystring = g_strdup_printf("album=%s&api_key=" API_KEY "&artist=%s"
 			"&duration=%d&method=track.updateNowPlaying&sk=%s"
