@@ -1,1 +1,2 @@
 - use g_get_monotonic_time() for measurements as soon as glib 2.28 is required
+- throttle as_check_submit()

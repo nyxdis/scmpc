@@ -173,8 +173,9 @@ void as_authenticate(void)
 void as_now_playing(void)
 {
 	gchar *querystring, *tmp, *sig, *artist, *album, *title;
+	const gchar *trackstr;
 	gint ret;
-	guint length, track;
+	guint length, track = 0;
 
 	if (as_conn.status != CONNECTED) {
 		g_message("Not sending Now Playing notification:"
@@ -182,7 +183,9 @@ void as_now_playing(void)
 		return;
 	}
 
-	track = strtol(mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0), NULL, 10);
+	trackstr = mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0);
+	if (trackstr)
+		track = strtol(trackstr, NULL, 10);
 	length = mpd_song_get_duration(mpd.song);
 
 	tmp = g_strdup_printf("album%sapi_key" API_KEY "artist%sduration%d"
