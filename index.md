@@ -54,7 +54,7 @@ The following distributions already ship scmpc packages:
 * [FreeBSD](http://freshports.org/audio/scmpc/) (thanks to Павел Мотырев)
 * [OpenBSD](http://openports.se/audio/scmpc) (thanks to Nicholas Marriott and Jasper Lievisse Adriaanse)
 
-Your distribution ships it too? [Tell me](mende.christoph@gmail.com)!
+Your distribution ships it too? [Tell me](mailto:mende.christoph@gmail.com)!
 
 Development
 -----------
