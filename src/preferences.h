@@ -2,7 +2,7 @@
  * preferences.h: Preferences parsing
  *
  * ==================================================================
- * Copyright (c) 2009-2011 Christoph Mende <mende.christoph@gmail.com>
+ * Copyright (c) 2009-2012 Christoph Mende <mende.christoph@gmail.com>
  * Based on Jonathan Coome's work on scmpc
  *
  * This file is part of scmpc.

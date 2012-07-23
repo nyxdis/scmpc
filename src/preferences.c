@@ -2,7 +2,7 @@
  * preferences.c: Preferences parsing
  *
  * ==================================================================
- * Copyright (c) 2009-2011 Christoph Mende <mende.christoph@gmail.com>
+ * Copyright (c) 2009-2012 Christoph Mende <mende.christoph@gmail.com>
  * Based on Jonathan Coome's work on scmpc
  *
  * This file is part of scmpc.
@@ -273,7 +273,7 @@ static gboolean parse_command_line(gint argc, gchar **argv)
 	if (version) {
 		puts(PACKAGE_STRING);
 		puts("An Audioscrobbler client for MPD.");
-		puts("Copyright 2009-2011 Christoph Mende "
+		puts("Copyright 2009-2012 Christoph Mende "
 				"<mende.christoph@gmail.com>");
 		puts("Based on Jonathan Coome's work on scmpc");
 		exit(EXIT_SUCCESS);
