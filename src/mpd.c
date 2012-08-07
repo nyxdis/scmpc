@@ -60,6 +60,14 @@ gboolean mpd_connect(void)
 		mpd.song = mpd_recv_song(mpd.conn);
 		mpd_response_finish(mpd.conn);
 
+		if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
+			g_warning("Failed to connect to MPD: %s",
+					mpd_connection_get_error_message(mpd.conn));
+			mpd_disconnect();
+			mpd_schedule_reconnect();
+			return FALSE;
+		}
+
 		g_message("Connected to MPD");
 
 		mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);
