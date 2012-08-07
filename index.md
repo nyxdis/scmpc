@@ -41,6 +41,7 @@ scmpc requires the following to be installed:
 * [confuse](http://www.nongnu.org/confuse/)
 * [glib](http://www.gtk.org) (>= 2.16)
 * [libcurl](http://curl.haxx.se/libcurl/) (>= 7.15.4)
+* [libmpdclient](http://www.musicpd.org)
 
 Installation
 ------------

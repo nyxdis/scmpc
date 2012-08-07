@@ -1,0 +1,6 @@
+---
+title: scmpc-0.4.0 has been released!
+---
+
+New major version! See `NEWS` and `ChangeLog` for changes.
+Also note that this version starts using libmpdclient.
