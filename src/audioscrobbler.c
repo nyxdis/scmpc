@@ -204,7 +204,7 @@ void as_now_playing(void)
 			(albumstr ? "album" : ""), (albumstr ? albumstr : ""),
 			artiststr, length, as_conn.session_id, titlestr);
 
-	if (trackstr) {
+	if (track > 0) {
 		sig = g_strdup(tmp);
 		g_free(tmp);
 		tmp = g_strdup_printf("%strackNumber%d", sig, track);
