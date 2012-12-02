@@ -126,8 +126,10 @@ int main(int argc, char *argv[])
 	loop = g_main_loop_new(NULL, FALSE);
 
 	// save queue
-	cache_save_source = g_timeout_add_seconds(prefs.cache_interval * 60,
-			queue_save, NULL);
+	if (prefs.cache_interval){
+		cache_save_source = g_timeout_add_seconds(prefs.cache_interval * 60,
+				queue_save, NULL);
+	}
 
 	g_main_loop_run(loop);
 
