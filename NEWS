@@ -1,3 +1,7 @@
+== scmpc 0.4.1 ==
+- fixed segfault when connecting with a wrong password
+- fixed invalid signatures on tracks with non-integer track numbers in now playing notifications
+
 == scmpc 0.4.0 ==
 - port to libmpdclient
 - support for the Last.fm protocol v2.0
