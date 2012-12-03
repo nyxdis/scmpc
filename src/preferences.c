@@ -71,13 +71,13 @@ static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const gchar *value,
 }
 
 /**
- * Check if the given opt value is positive
+ * Check if the given opt value is non-negative
  */
 static gint cf_validate_num(cfg_t *cfg, cfg_opt_t *opt)
 {
 	gint value = cfg_opt_getnint(opt, 0);
 	if (value < 0) {
-		cfg_error(cfg, "'%s' in section '%s' must be a positive value",
+		cfg_error(cfg, "'%s' in section '%s' must be a non-negative value",
 			cfg_opt_name(opt), cfg_name(cfg));
 		return -1;
 	}
