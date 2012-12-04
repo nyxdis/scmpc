@@ -126,8 +126,10 @@ int main(int argc, char *argv[])
 	loop = g_main_loop_new(NULL, FALSE);
 
 	// save queue
-	cache_save_source = g_timeout_add_seconds(prefs.cache_interval * 60,
-			queue_save, NULL);
+	if (prefs.cache_interval > 0) {
+		cache_save_source = g_timeout_add_seconds(prefs.cache_interval * 60,
+				queue_save, NULL);
+	}
 
 	g_main_loop_run(loop);
 
@@ -320,7 +322,8 @@ void scmpc_shutdown(void)
 static void scmpc_cleanup(void)
 {
 	g_source_remove(signal_source);
-	g_source_remove(cache_save_source);
+	if (prefs.cache_interval > 0)
+		g_source_remove(cache_save_source);
 	if (mpd.idle_source > 0)
 		g_source_remove(mpd.idle_source);
 	if (mpd.check_source > 0)
@@ -333,7 +336,8 @@ static void scmpc_cleanup(void)
 	if (prefs.fork)
 		scmpc_pid_remove();
 	close_signal_pipe();
-	queue_save(NULL);
+	if (prefs.cache_interval > 0)
+		queue_save(NULL);
 	queue_cleanup();
 	if (mpd.song_pos)
 		g_timer_destroy(mpd.song_pos);
