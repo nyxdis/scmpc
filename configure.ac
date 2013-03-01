@@ -16,7 +16,7 @@ PKG_PROG_PKG_CONFIG([0.24])
 PKG_CHECK_MODULES([glib], [glib-2.0 >= 2.16])
 PKG_CHECK_MODULES([confuse], [libconfuse])
 PKG_CHECK_MODULES([curl], [libcurl >= 7.15.4])
-PKG_CHECK_MODULES([libmpdclient], [libmpdclient >= 2.4])
+PKG_CHECK_MODULES([libmpdclient], [libmpdclient >= 2.3])
 
 AC_CONFIG_FILES([Makefile scmpc.1])
 AC_OUTPUT
