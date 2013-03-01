@@ -197,7 +197,7 @@ static void write_element(gpointer data, gpointer user_data)
 		"album: %s\n"
 		"length: %d\n"
 		"track: %d\n"
-		"date: %ld\n"
+		"date: %" G_GINT64_FORMAT "\n"
 		"# END SONG\n\n", song->artist, song->title, song->album,
 		song->length, song->track, song->date);
 }

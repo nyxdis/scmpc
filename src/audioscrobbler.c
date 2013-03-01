@@ -300,7 +300,7 @@ static gushort build_querystring_single(gchar **qs)
 	queue_node *song = queue_peek_head();
 
 	tmp = g_strdup_printf("album%sapi_key" API_KEY "artist%sduration%d"
-			"methodtrack.scrobblesk%stimestamp%ldtrack%s"
+			"methodtrack.scrobblesk%stimestamp%" G_GINT64_FORMAT "track%s"
 			"tracknumber%d" API_SECRET,
 			song->album, song->artist, song->length,
 			as_conn.session_id, song->date, song->title,
@@ -309,7 +309,7 @@ static gushort build_querystring_single(gchar **qs)
 	g_free(tmp);
 
 	*qs = g_strdup_printf("api_key=" API_KEY "&method=track.scrobble&sk=%s"
-			"&album=%s&artist=%s&duration=%d&timestamp=%ld&track=%s"
+			"&album=%s&artist=%s&duration=%d&timestamp=%" G_GINT64_FORMAT "&track=%s"
 			"&tracknumber=%d&api_sig=%s",
 			as_conn.session_id, song->album, song->artist,
 			song->length, song->date, song->title, song->track,
@@ -348,7 +348,7 @@ static gushort build_querystring_multi(gchar **qs)
 				song->artist);
 		g_string_append_printf(lengths, "duration[%d]%d", num,
 				song->length);
-		g_string_append_printf(timestamps, "timestamp[%d]%ld", num,
+		g_string_append_printf(timestamps, "timestamp[%d]%" G_GINT64_FORMAT, num,
 				song->date);
 		g_string_append_printf(titles, "track[%d]%s", num, song->title);
 		g_string_append_printf(tracks, "trackNumber[%d]%d", num,
@@ -360,7 +360,7 @@ static gushort build_querystring_multi(gchar **qs)
 
 		g_string_append_printf(nqs, "&album[%1$d]=%2$s"
 				"&artist[%1$d]=%3$s&duration[%1$d]=%4$d"
-				"&timestamp[%1$d]=%5$ld&track[%1$d]=%6$s"
+				"&timestamp[%1$d]=%5$" G_GINT64_FORMAT "&track[%1$d]=%6$s"
 				"&trackNumber[%1$d]=%7$d", num, album, artist,
 				song->length, song->date, title, song->track);
 
