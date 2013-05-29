@@ -5,4 +5,4 @@ title: scmpc-0.4.1 has been released! And was moved!
 This is just a bugfix release! See `NEWS` and `ChangeLog` for changes.
 Note that this version now requires libmpdclient-2.3 (down from 2.4 in 0.4.0).
 Also, since github no longer allows file hosting, the downloads were moved to
-bitbucket and can be found here: https://bitbucket.org/cmende/scmpc/downloads
+[bitbucket](https://bitbucket.org/cmende/scmpc/downloads)
