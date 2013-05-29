@@ -31,7 +31,7 @@ News
 Downloads
 ---------
 
-[Downloads are available from our github project page.](https://github.com/cmende/scmpc/downloads)
+[Downloads are available from our bitbucket project page.](https://bitbucket.org/cmende/scmpc/downloads)
 
 Requirements
 ------------
@@ -41,7 +41,7 @@ scmpc requires the following to be installed:
 * [confuse](http://www.nongnu.org/confuse/)
 * [glib](http://www.gtk.org) (>= 2.16)
 * [libcurl](http://curl.haxx.se/libcurl/) (>= 7.15.4)
-* [libmpdclient](http://www.musicpd.org)
+* [libmpdclient](http://www.musicpd.org) (>= 2.3)
 
 Installation
 ------------
