@@ -442,6 +442,11 @@ static gboolean as_submit(void)
 		g_message("Could not parse Audioscrobbler submit"
 				" response.");
 		g_debug("Response was: %s", buffer);
+
+		// Temporary fix for duplicate submissions problem
+		g_message("Couldn't verify if songs were submitted;"
+				" clearing queue anyway.");
+		queue_clear_n(num_songs);
 	}
 
 	g_free(buffer);
