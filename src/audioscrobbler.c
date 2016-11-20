@@ -296,7 +296,7 @@ static gushort build_querystring(gchar **qs)
  */
 static gushort build_querystring_single(gchar **qs)
 {
-	gchar *sig, *tmp;
+	gchar *sig, *tmp, *album, *artist, *title;
 	queue_node *song = queue_peek_head();
 
 	tmp = g_strdup_printf("album%sapi_key" API_KEY "artist%sduration%d"
@@ -308,12 +308,22 @@ static gushort build_querystring_single(gchar **qs)
 	sig = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
 	g_free(tmp);
 
+	if (song->album)
+		album = curl_easy_escape(as_conn.handle, song->album, 0);
+	artist = curl_easy_escape(as_conn.handle, song->artist, 0);
+	title = curl_easy_escape(as_conn.handle, song->title, 0);
+
 	*qs = g_strdup_printf("api_key=" API_KEY "&method=track.scrobble&sk=%s"
 			"&album=%s&artist=%s&duration=%d&timestamp=%" G_GINT64_FORMAT "&track=%s"
 			"&tracknumber=%d&api_sig=%s",
-			as_conn.session_id, song->album, song->artist,
-			song->length, song->date, song->title, song->track,
+			as_conn.session_id, album, artist,
+			song->length, song->date, title, song->track,
 			sig);
+
+	if (song->album)
+		curl_free(album);
+	curl_free(artist);
+	curl_free(title);
 	g_free(sig);
 	return 1;
 }
@@ -432,6 +442,11 @@ static gboolean as_submit(void)
 		g_message("Could not parse Audioscrobbler submit"
 				" response.");
 		g_debug("Response was: %s", buffer);
+
+		// Temporary fix for duplicate submissions problem
+		g_message("Couldn't verify if songs were submitted;"
+				" clearing queue anyway.");
+		queue_clear_n(num_songs);
 	}
 
 	g_free(buffer);

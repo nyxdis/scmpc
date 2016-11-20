@@ -331,7 +331,7 @@ static void scmpc_cleanup(void)
 	if (mpd.reconnect_source > 0)
 		g_source_remove(mpd.reconnect_source);
 
-	if (current_song_eligible_for_submission())
+	if (current_song_eligible_for_submission() && prefs.queue_length > 0)
 		queue_add_current_song();
 	if (prefs.fork)
 		scmpc_pid_remove();
@@ -380,7 +380,7 @@ static gboolean current_song_eligible_for_submission(void)
 
 gboolean scmpc_check(G_GNUC_UNUSED gpointer data)
 {
-	if (current_song_eligible_for_submission()) {
+	if (current_song_eligible_for_submission() && prefs.queue_length > 0) {
 		queue_add_current_song();
 		return FALSE; // remove from main event loop
 	}
