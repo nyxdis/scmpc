@@ -310,6 +310,8 @@ static gushort build_querystring_single(gchar **qs)
 
 	if (song->album)
 		album = curl_easy_escape(as_conn.handle, song->album, 0);
+	else
+		album = "";
 	artist = curl_easy_escape(as_conn.handle, song->artist, 0);
 	title = curl_easy_escape(as_conn.handle, song->title, 0);
 
