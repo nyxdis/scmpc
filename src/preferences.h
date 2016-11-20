@@ -23,7 +23,6 @@
  * ==================================================================
  */
 
-
 #ifndef HAVE_PREFERENCES_H
 #define HAVE_PREFERENCES_H
 
@@ -33,21 +32,21 @@
  * scmpc settings
  */
 struct {
-	gchar *mpd_hostname;
-	gushort mpd_port;
-	gushort mpd_timeout;
-	gchar *mpd_password;
-	gboolean fork;
-	GLogLevelFlags log_level;
-	gchar *config_file;
-	gchar *log_file;
-	gchar *pid_file;
-	gchar *as_username;
-	gchar *as_password;
-	gchar *as_password_hash;
-	gchar *cache_file;
-	guint queue_length;
-	guint cache_interval;
+  gchar *mpd_hostname;
+  gushort mpd_port;
+  gushort mpd_timeout;
+  gchar *mpd_password;
+  gboolean fork;
+  GLogLevelFlags log_level;
+  gchar *config_file;
+  gchar *log_file;
+  gchar *pid_file;
+  gchar *as_username;
+  gchar *as_password;
+  gchar *as_password_hash;
+  gchar *cache_file;
+  guint queue_length;
+  guint cache_interval;
 } prefs;
 
 /**

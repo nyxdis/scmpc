@@ -23,14 +23,13 @@
  * ==================================================================
  */
 
-
 #ifndef HAVE_AUDIOSCROBBLER_H
 #define HAVE_AUDIOSCROBBLER_H
 
 /* curl/curl.h requires sys/select.h but doesn't include it on FreeBSD */
-#include <sys/select.h>
 #include <curl/curl.h>
 #include <glib.h>
+#include <sys/select.h>
 
 #include "misc.h"
 
@@ -38,12 +37,12 @@
  * Last.fm connection data
  */
 struct {
-	gchar *session_id;
-	gint64 last_auth;
-	gint64 last_fail;
-	connection_status status;
-	CURL *handle;
-	struct curl_slist *headers;
+  gchar *session_id;
+  gint64 last_auth;
+  gint64 last_fail;
+  connection_status status;
+  CURL *handle;
+  struct curl_slist *headers;
 } as_conn;
 
 /**

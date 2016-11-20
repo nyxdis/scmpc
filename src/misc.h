@@ -23,7 +23,6 @@
  * ==================================================================
  */
 
-
 #ifndef HAVE_MISC_H
 #define HAVE_MISC_H
 
@@ -32,11 +31,7 @@
 /**
  * Possible Last.fm connection statuses
  */
-typedef enum {
-	DISCONNECTED,
-	CONNECTED,
-	BADAUTH
-} connection_status;
+typedef enum { DISCONNECTED, CONNECTED, BADAUTH } connection_status;
 
 /**
  * Open the log file for writing
@@ -47,7 +42,7 @@ void open_log(const gchar *filename);
  * GLib logging handler, should not be called directly
  */
 void scmpc_log(const gchar *log_domain, GLogLevelFlags log_level,
-		const gchar *message, gpointer user_data);
+               const gchar *message, gpointer user_data);
 
 /**
  * Return the current UNIX timestamp

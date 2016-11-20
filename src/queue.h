@@ -23,7 +23,6 @@
  * ==================================================================
  */
 
-
 #ifndef HAVE_QUEUE_H
 #define HAVE_QUEUE_H
 
@@ -33,12 +32,12 @@
  * An element in the song queue
  */
 typedef struct {
-	gchar *album;
-	gchar *artist;
-	gchar *title;
-	gint64 date;
-	guint length;
-	guint track;
+  gchar *album;
+  gchar *artist;
+  gchar *title;
+  gint64 date;
+  guint length;
+  guint track;
 } queue_node;
 
 /**
@@ -84,11 +83,11 @@ guint queue_get_length(void);
 /**
  * Return the first song from the queue, but don't remove it
  */
-queue_node* queue_peek_head(void);
+queue_node *queue_peek_head(void);
 
 /**
  * Return the nth song from the queue, but don't remove it
  */
-queue_node* queue_peek_nth(guint n);
+queue_node *queue_peek_nth(guint n);
 
 #endif /* HAVE_QUEUE_H */

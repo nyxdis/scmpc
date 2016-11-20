@@ -23,7 +23,6 @@
  * ==================================================================
  */
 
-
 #ifndef HAVE_MPD_H
 #define HAVE_MPD_H
 
@@ -33,15 +32,15 @@
  * MPD connection data
  */
 struct {
-	struct mpd_connection *conn;
-	struct mpd_status *status;
-	struct mpd_song *song;
-	GTimer *song_pos;
-	gint64 song_date;
-	enum { SONG_NEW, SONG_ANNOUNCED, SONG_SUBMITTED } song_state;
-	guint idle_source;
-	guint check_source;
-	guint reconnect_source;
+  struct mpd_connection *conn;
+  struct mpd_status *status;
+  struct mpd_song *song;
+  GTimer *song_pos;
+  gint64 song_date;
+  enum { SONG_NEW, SONG_ANNOUNCED, SONG_SUBMITTED } song_state;
+  guint idle_source;
+  guint check_source;
+  guint reconnect_source;
 } mpd;
 
 /**
