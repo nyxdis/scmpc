@@ -36,19 +36,19 @@
 /**
  * Last.fm connection data
  */
-struct {
+struct as_conn_t {
   gchar *session_id;
   gint64 last_auth;
   gint64 last_fail;
   connection_status status;
   CURL *handle;
   struct curl_slist *headers;
-} as_conn;
+};
 
 /**
  * cURL data buffer
  */
-gchar *buffer;
+extern gchar *buffer;
 
 /**
  * Initialize cURL

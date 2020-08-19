@@ -39,6 +39,9 @@
 #include "queue.h"
 #include "scmpc.h"
 
+static struct as_conn_t as_conn;
+gchar *buffer;
+
 static void as_parse_error(char *response);
 static gboolean as_submit(void);
 static gushort build_querystring(gchar **qs);
