@@ -35,6 +35,8 @@
 #include "preferences.h"
 #include "scmpc.h"
 
+struct prefs_t prefs;
+
 static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const gchar *value,
                          void *result);
 static gint cf_validate_num(cfg_t *cfg, cfg_opt_t *opt);
