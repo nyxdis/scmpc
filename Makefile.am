@@ -43,7 +43,8 @@ DEFS += -DSYSCONFDIR=\"$(sysconfdir)\" -D_XOPEN_SOURCE=500
 dist-hook: ChangeLog
 
 ChangeLog:
-	git2cl > ChangeLog
+	git -C $(srcdir) log --date=short \
+		--format='%ad  %an  <%ae>%n%n%w(72,8,8)%s%n' > $@
 
 distclean-local:
 	rm -f ChangeLog
