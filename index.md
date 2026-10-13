@@ -33,7 +33,6 @@ Downloads
 ---------
 
 [Downloads are available from the GitHub releases page.](https://github.com/nyxdis/scmpc/releases)
-Releases up to 0.4.1 are available from the [bitbucket project page](https://bitbucket.org/cmende/scmpc/downloads).
 
 Requirements
 ------------
@@ -57,7 +56,7 @@ The following distributions already ship scmpc packages:
 * [Gentoo Linux](https://packages.gentoo.org/packages/media-sound/scmpc)
 * [OpenBSD](https://openports.pl/path/audio/scmpc) (thanks to Nicholas Marriott and Jasper Lievisse Adriaanse)
 
-Your distribution ships it too? [Tell me](mailto:mende.christoph@gmail.com)!
+Your distribution ships it too? [Tell me](mailto:freydis.mende@proton.me)!
 
 Development
 -----------
