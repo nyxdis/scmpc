@@ -23,8 +23,6 @@
  * ==================================================================
  */
 
-#include <errno.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -104,26 +102,34 @@ void queue_add_current_song(void) {
 }
 
 void queue_load(void) {
-  gchar line[256], *artist, *album, *title;
-  FILE *cache_file;
+  gchar *contents, **lines, *artist, *album, *title;
+  GError *error = NULL;
   gint64 date = 0;
   guint track = 0, length = 0;
 
   artist = title = album = NULL;
   g_debug("Loading queue.");
 
-  cache_file = fopen(prefs.cache_file, "r");
-  if (!cache_file) {
-    if (errno != ENOENT)
-      g_message("Failed to open cache file for reading: %s", g_strerror(errno));
+  if (!g_file_get_contents(prefs.cache_file, &contents, NULL, &error)) {
+    if (!g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+      g_message("Failed to read cache file: %s", error->message);
+    g_error_free(error);
     return;
   }
 
-  while (fgets(line, sizeof line, cache_file)) {
-    *strrchr(line, '\n') = 0;
+  lines = g_strsplit(contents, "\n", -1);
+  g_free(contents);
+
+  for (gchar **l = lines; *l; l++) {
+    gchar *line = *l;
+
     if (!strncmp(line, "# BEGIN SONG", 12)) {
+      g_free(artist);
+      g_free(title);
+      g_free(album);
       artist = title = album = NULL;
-      length = 0;
+      date = 0;
+      length = track = 0;
     } else if (!strncmp(line, "artist: ", 8)) {
       g_free(artist);
       artist = g_strdup(&line[8]);
@@ -134,11 +140,11 @@ void queue_load(void) {
       g_free(album);
       album = g_strdup(&line[7]);
     } else if (!strncmp(line, "date: ", 6)) {
-      date = strtol(&line[6], NULL, 10);
+      date = g_ascii_strtoll(&line[6], NULL, 10);
     } else if (!strncmp(line, "length: ", 8)) {
-      length = strtol(&line[8], NULL, 10);
+      length = g_ascii_strtoull(&line[8], NULL, 10);
     } else if (!strncmp(line, "track: ", 7)) {
-      track = strtol(&line[7], NULL, 10);
+      track = g_ascii_strtoull(&line[7], NULL, 10);
     } else if (!strncmp(line, "# END SONG", 10)) {
       queue_add(artist, title, album, length, track, date);
       g_free(artist);
@@ -150,7 +156,7 @@ void queue_load(void) {
   g_free(artist);
   g_free(title);
   g_free(album);
-  fclose(cache_file);
+  g_strfreev(lines);
 }
 
 void queue_free_song(gpointer data, G_GNUC_UNUSED gpointer user_data) {
@@ -162,17 +168,23 @@ void queue_free_song(gpointer data, G_GNUC_UNUSED gpointer user_data) {
 }
 
 gboolean queue_save(G_GNUC_UNUSED gpointer data) {
-  FILE *cache_file = fopen(prefs.cache_file, "w");
+  GString *contents = g_string_new("");
+  GError *error = NULL;
 
-  if (!cache_file) {
-    g_warning("Failed to open cache file for writing: %s", g_strerror(errno));
-    return FALSE;
+  g_queue_foreach(queue, write_element, contents);
+
+  /* writes a temporary file and renames it, so a crash or power loss
+   * leaves either the old or the new cache, never a truncated one */
+  if (g_file_set_contents(prefs.cache_file, contents->str, contents->len,
+                          &error)) {
+    g_debug("Cache saved.");
+  } else {
+    g_warning("Failed to save cache file: %s", error->message);
+    g_error_free(error);
   }
+  g_string_free(contents, TRUE);
 
-  g_queue_foreach(queue, write_element, cache_file);
-
-  fclose(cache_file);
-  g_debug("Cache saved.");
+  /* keep the periodic save scheduled even if this attempt failed */
   return TRUE;
 }
 
@@ -180,10 +192,15 @@ gboolean queue_save(G_GNUC_UNUSED gpointer data) {
  * Write a song to the cache file
  */
 static void write_element(gpointer data, gpointer user_data) {
-  FILE *cache_file = user_data;
+  GString *cache = user_data;
   queue_node *song = data;
 
-  fprintf(cache_file, "# BEGIN SONG\n"
+  /* the cache format is line based, a newline in a tag would split it */
+  g_strdelimit(song->artist, "\r\n", ' ');
+  g_strdelimit(song->title, "\r\n", ' ');
+  g_strdelimit(song->album, "\r\n", ' ');
+
+  g_string_append_printf(cache, "# BEGIN SONG\n"
                       "artist: %s\n"
                       "title: %s\n"
                       "album: %s\n"
