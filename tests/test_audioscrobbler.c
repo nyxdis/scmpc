@@ -12,6 +12,8 @@
 
 #include "../src/audioscrobbler.c"
 
+#include <glib/gstdio.h>
+
 /* normally defined in preferences.c and mpd.c */
 struct prefs_t prefs;
 struct mpd_t mpd;
@@ -49,6 +51,42 @@ static void test_expired_session_throttled(void) {
   g_assert_cmpint(as_conn.status, ==, CONNECTED);
 }
 
+/* a failed first login, e.g. before the network is up at boot, is retried
+ * on the next submission, but at most once a minute; API_URL points at a
+ * closed local port, so attempts fail immediately without leaving the host */
+static void test_retry_failed_login(void) {
+  gchar *path = g_build_filename(g_get_tmp_dir(), "scmpc-retry.cache", NULL);
+
+  g_assert_true(g_file_set_contents(
+      path, "# BEGIN SONG\nartist: A\ntitle: T\nlength: 200\n# END SONG\n", -1,
+      NULL));
+  prefs.cache_file = path;
+  prefs.queue_length = 500;
+  queue_init();
+  queue_load();
+  g_assert_cmpuint(queue_get_length(), ==, 1);
+
+  as_conn.status = DISCONNECTED;
+  as_conn.last_auth = 0;
+  as_conn.last_attempt = 0;
+  as_check_submit();
+  g_assert_cmpint(as_conn.last_attempt, >, 0); /* tried to log in */
+  g_assert_cmpint(as_conn.status, ==, DISCONNECTED);
+
+  as_conn.last_attempt = get_monotonic_time() - 30;
+  as_check_submit();
+  g_assert_cmpint(elapsed(as_conn.last_attempt), >=, 30); /* throttled */
+
+  as_conn.last_attempt = get_monotonic_time() - 61;
+  as_check_submit();
+  g_assert_cmpint(elapsed(as_conn.last_attempt), <, 5); /* tried again */
+
+  g_assert_cmpuint(queue_get_length(), ==, 1); /* nothing was lost */
+  queue_cleanup();
+  g_unlink(path);
+  g_free(path);
+}
+
 static void test_xml_text_after(void) {
   gchar *text;
 
@@ -79,5 +117,7 @@ int main(int argc, char **argv) {
   g_test_add_func("/audioscrobbler/error/expired-session",
                   test_expired_session_throttled);
   g_test_add_func("/audioscrobbler/xml-text-after", test_xml_text_after);
+  g_test_add_func("/audioscrobbler/retry-failed-login",
+                  test_retry_failed_login);
   return g_test_run();
 }

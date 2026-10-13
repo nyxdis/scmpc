@@ -43,6 +43,7 @@ static struct as_conn_t as_conn;
 gchar *buffer;
 
 static void as_parse_error(char *response);
+static gboolean as_ensure_connected(void);
 static gchar *xml_text_after(const gchar *haystack, const gchar *open);
 static gboolean as_submit(void);
 static gushort build_querystring(gchar **qs);
@@ -61,6 +62,7 @@ gboolean as_connection_init(void) {
     return FALSE;
   as_conn.session_id = NULL;
   as_conn.last_auth = 0;
+  as_conn.last_attempt = 0;
   as_conn.last_fail = 0;
   as_conn.status = DISCONNECTED;
   as_conn.headers =
@@ -146,6 +148,7 @@ void as_authenticate(void) {
   curl_easy_setopt(as_conn.handle, CURLOPT_COPYPOSTFIELDS, postdata);
   curl_easy_setopt(as_conn.handle, CURLOPT_URL, API_URL);
 
+  as_conn.last_attempt = get_monotonic_time();
   ret = curl_easy_perform(as_conn.handle);
   g_free(postdata);
 
@@ -193,7 +196,7 @@ void as_now_playing(void) {
   gint ret;
   guint length, track = 0;
 
-  if (as_conn.status != CONNECTED) {
+  if (!as_ensure_connected()) {
     g_message("Not sending Now Playing notification:"
               " not connected");
     return;
@@ -531,8 +534,20 @@ static gchar *xml_text_after(const gchar *haystack, const gchar *open) {
   return g_strndup(start, strcspn(start, "<"));
 }
 
+/**
+ * Log in again if the last login failed, for example because scmpc started
+ * before the network was up. Tries at most once a minute, since every
+ * attempt can block for the cURL timeout.
+ */
+static gboolean as_ensure_connected(void) {
+  if (as_conn.status == DISCONNECTED &&
+      (!as_conn.last_attempt || elapsed(as_conn.last_attempt) >= 60))
+    as_authenticate();
+  return as_conn.status == CONNECTED;
+}
+
 void as_check_submit(void) {
-  if (queue_get_length() > 0 && as_conn.status == CONNECTED &&
+  if (queue_get_length() > 0 && as_ensure_connected() &&
       (!as_conn.last_fail || elapsed(as_conn.last_fail) >= 600)) {
     if (as_submit() == FALSE)
       as_conn.last_fail = get_monotonic_time();

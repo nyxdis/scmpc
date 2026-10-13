@@ -34,7 +34,9 @@ tests_test_queue_LDADD = $(scmpc_LDADD)
 # includes src/audioscrobbler.c to reach its static functions
 tests_test_audioscrobbler_SOURCES = tests/test_audioscrobbler.c \
 		src/queue.c src/misc.c
-tests_test_audioscrobbler_CFLAGS = $(test_cflags)
+# a closed local port: login attempts fail at once, nothing leaves the host
+tests_test_audioscrobbler_CFLAGS = $(test_cflags) \
+		'-DAPI_URL="http://127.0.0.1:9/"'
 tests_test_audioscrobbler_LDADD = $(scmpc_LDADD)
 EXTRA_tests_test_audioscrobbler_DEPENDENCIES = src/audioscrobbler.c
 

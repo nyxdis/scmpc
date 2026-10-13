@@ -38,8 +38,9 @@
  */
 struct as_conn_t {
   gchar *session_id;
-  gint64 last_auth; /* get_monotonic_time() of the last login, 0 if never */
-  gint64 last_fail; /* get_monotonic_time() of the last failure, 0 if none */
+  gint64 last_auth;    /* get_monotonic_time() of the last login, 0 if never */
+  gint64 last_attempt; /* ... of the last login attempt, 0 if never */
+  gint64 last_fail;    /* get_monotonic_time() of the last failure, 0 if none */
   connection_status status;
   CURL *handle;
   struct curl_slist *headers;
