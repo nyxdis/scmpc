@@ -106,7 +106,7 @@ static gboolean parse_files(cfg_t *cfg) {
     config_files[1] = g_strdup_printf("%s/.scmpc/scmpc.conf", home);
     config_files[2] = g_strdup(SYSCONFDIR "/scmpc.conf");
   } else {
-    config_files[0] = prefs.config_file;
+    config_files[0] = g_strdup(prefs.config_file);
     config_files[1] = g_strdup("");
     config_files[2] = g_strdup("");
   }
