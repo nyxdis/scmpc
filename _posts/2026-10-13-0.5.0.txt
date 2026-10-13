@@ -1,0 +1,17 @@
+---
+title: scmpc-0.5.0 has been released! And has moved again!
+---
+
+The first release in a long time, with many bug fixes. See `NEWS` and
+`ChangeLog` for the full list. Highlights:
+
+* scmpc builds with current compilers again (GCC 10 and later).
+* Last.fm is now contacted over HTTPS.
+* Password protected MPD servers work again.
+* Duplicate scrobbles caused by unreadable Last.fm responses are fixed, and
+  seeking no longer scrobbles a song twice.
+* Many crashes are fixed, and the daemon detaches properly from the terminal.
+
+This version requires glib-2.28. The project now lives at
+[github.com/nyxdis/scmpc](https://github.com/nyxdis/scmpc), and downloads are
+available from its [releases page](https://github.com/nyxdis/scmpc/releases).

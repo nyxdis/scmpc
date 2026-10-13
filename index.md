@@ -31,7 +31,8 @@ News
 Downloads
 ---------
 
-[Downloads are available from our bitbucket project page.](https://bitbucket.org/cmende/scmpc/downloads)
+[Downloads are available from the GitHub releases page.](https://github.com/nyxdis/scmpc/releases)
+Releases up to 0.4.1 are available from the [bitbucket project page](https://bitbucket.org/cmende/scmpc/downloads).
 
 Requirements
 ------------
@@ -39,7 +40,7 @@ Requirements
 scmpc requires the following to be installed:
 
 * [confuse](http://www.nongnu.org/confuse/)
-* [glib](http://www.gtk.org) (>= 2.16)
+* [glib](https://www.gtk.org) (>= 2.28)
 * [libcurl](http://curl.haxx.se/libcurl/) (>= 7.15.4)
 * [libmpdclient](http://www.musicpd.org) (>= 2.3)
 
@@ -60,4 +61,4 @@ Your distribution ships it too? [Tell me](mailto:mende.christoph@gmail.com)!
 Development
 -----------
 
-If you want to get involved, have any feature requests or find any bugs, please write to the [mailing list](https://groups.google.com/group/scmpc-devel) or open a [new issue](https://github.com/cmende/scmpc/issues). You can also contact us via IRC on irc.freenode.net, #scmpc.
+If you want to get involved, have any feature requests or find any bugs, please write to the [mailing list](https://groups.google.com/group/scmpc-devel) or open a [new issue](https://github.com/nyxdis/scmpc/issues). You can also contact us via IRC on irc.freenode.net, #scmpc.
