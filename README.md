@@ -8,7 +8,7 @@ Dependencies
 
 The following packages are required to build and run scmpc:
 
-* [glib-2](http://www.gtk.org) (requires >= 2.16)
+* [glib-2](https://www.gtk.org) (requires >= 2.28)
 * [libmpdclient](http://www.musicpd.org) (requires >= 2.3)
 * [libconfuse](http://www.nongnu.org/confuse)
 * [libcurl](http://curl.haxx.se/libcurl) (requires >= 7.15.4)

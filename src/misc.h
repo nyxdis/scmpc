@@ -45,12 +45,18 @@ void scmpc_log(const gchar *log_domain, GLogLevelFlags log_level,
                const gchar *message, gpointer user_data);
 
 /**
- * Return the current UNIX timestamp
+ * Return the current UNIX timestamp, for timestamps sent to Last.fm
  */
 gint64 get_time(void);
 
 /**
- * Get the seconds that elapsed since the passed timestamp
+ * Return seconds on a clock that is not affected by changes to the system
+ * time, for measuring intervals
+ */
+gint64 get_monotonic_time(void);
+
+/**
+ * Get the seconds that elapsed since a #get_monotonic_time value
  */
 gint64 elapsed(gint64 since);
 

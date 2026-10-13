@@ -68,19 +68,11 @@ void scmpc_log(G_GNUC_UNUSED const gchar *log_domain, GLogLevelFlags log_level,
     fputs("\n", stderr);
   }
 
-#if GLIB_CHECK_VERSION(2, 26, 0)
   GDateTime *datetime = g_date_time_new_now_local();
   ts = g_date_time_format(datetime, format);
-#else
-  gint64 t = get_time();
-  ts = g_malloc(22);
-  strftime(ts, 22, format, localtime(&t));
-#endif
   fputs(ts, log_file);
   g_free(ts);
-#if GLIB_CHECK_VERSION(2, 26, 0)
   g_date_time_unref(datetime);
-#endif
 
   fputs(message, log_file);
   fputs("\n", log_file);
@@ -100,14 +92,10 @@ gsize buffer_write(void *input, gsize size, gsize nmemb,
   return len;
 }
 
-gint64 get_time(void) {
-#if GLIB_CHECK_VERSION(2, 28, 0)
-  return (g_get_real_time() / G_USEC_PER_SEC);
-#else
-  GTimeVal *tv;
-  g_get_current_time(tv);
-  return tv->tv_sec;
-#endif
+gint64 get_time(void) { return g_get_real_time() / G_USEC_PER_SEC; }
+
+gint64 get_monotonic_time(void) {
+  return g_get_monotonic_time() / G_USEC_PER_SEC;
 }
 
-gint64 elapsed(gint64 since) { return (get_time() - since); }
+gint64 elapsed(gint64 since) { return get_monotonic_time() - since; }

@@ -103,7 +103,7 @@ void as_authenticate(void) {
     return;
   }
 
-  if (elapsed(as_conn.last_auth) < 1800) {
+  if (as_conn.last_auth && elapsed(as_conn.last_auth) < 1800) {
     g_debug("Requested authentication, but last try "
             "was less than 30 minutes ago.");
     return;
@@ -157,7 +157,7 @@ void as_authenticate(void) {
     return;
   }
 
-  as_conn.last_auth = get_time();
+  as_conn.last_auth = get_monotonic_time();
   if (!buffer) {
     g_message("Could not parse Audioscrobbler response.");
     g_free(buffer);
@@ -532,8 +532,8 @@ static gchar *xml_text_after(const gchar *haystack, const gchar *open) {
 
 void as_check_submit(void) {
   if (queue_get_length() > 0 && as_conn.status == CONNECTED &&
-      elapsed(as_conn.last_fail) >= 600) {
+      (!as_conn.last_fail || elapsed(as_conn.last_fail) >= 600)) {
     if (as_submit() == FALSE)
-      as_conn.last_fail = get_time();
+      as_conn.last_fail = get_monotonic_time();
   }
 }
