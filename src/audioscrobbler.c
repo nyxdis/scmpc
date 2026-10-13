@@ -230,14 +230,14 @@ void as_now_playing(void) {
                       artist, length, as_conn.session_id, title, sig);
 
   if (albumstr) {
-    tmp = strdup(querystring);
+    tmp = g_strdup(querystring);
     g_free(querystring);
     querystring = g_strconcat(tmp, "&album=", album, NULL);
     g_free(tmp);
   }
 
   if (track > 0) {
-    tmp = strdup(querystring);
+    tmp = g_strdup(querystring);
     g_free(querystring);
     querystring = g_strdup_printf("%s&trackNumber=%d", tmp, track);
     g_free(tmp);
