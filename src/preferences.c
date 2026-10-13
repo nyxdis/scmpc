@@ -166,7 +166,9 @@ static gboolean parse_config_file(void) {
   cfg_opt_t mpd_opts[] = {CFG_STR("host", "localhost", CFGF_NONE),
                           CFG_INT("port", 6600, CFGF_NONE),
                           CFG_INT("timeout", 5, CFGF_NONE),
-                          CFG_INT("interval", 10, CFGF_NONE),
+                          /* removed in 0.4.0, still accepted so old
+                           * configuration files keep working */
+                          CFG_INT("interval", 0, CFGF_NODEFAULT),
                           CFG_STR("password", "", CFGF_NONE),
                           CFG_END()};
   cfg_opt_t as_opts[] = {CFG_STR("username", "", CFGF_NONE),
@@ -211,6 +213,9 @@ static gboolean parse_config_file(void) {
   prefs.cache_interval = cfg_getint(cfg, "cache_interval");
 
   sec_mpd = cfg_getsec(cfg, "mpd");
+  if (cfg_size(sec_mpd, "interval") > 0)
+    fprintf(stderr, "The 'interval' option in the mpd section is no longer "
+                    "used and can be removed.\n");
   prefs.mpd_hostname = g_strdup(cfg_getstr(sec_mpd, "host"));
   prefs.mpd_port = cfg_getint(sec_mpd, "port");
   prefs.mpd_timeout = cfg_getint(sec_mpd, "timeout");
@@ -304,18 +309,20 @@ static gboolean parse_command_line(gint argc, gchar **argv) {
 }
 
 gboolean init_preferences(gint argc, gchar **argv) {
-  gchar *tmp, *saveptr;
+  const gchar *tmp, *at;
 
   if (parse_command_line(argc, argv) == FALSE)
     return FALSE;
 
-  tmp = getenv("MPD_HOST");
+  /* MPD_HOST is either host or password@host; read it without
+   * modifying the environment */
+  tmp = g_getenv("MPD_HOST");
   if (tmp) {
     g_free(prefs.mpd_password);
     g_free(prefs.mpd_hostname);
-    if (g_strrstr(tmp, "@")) {
-      prefs.mpd_password = g_strdup(strtok_r(tmp, "@", &saveptr));
-      prefs.mpd_hostname = g_strdup(strtok_r(NULL, "@", &saveptr));
+    if ((at = strchr(tmp, '@')) && at != tmp) {
+      prefs.mpd_password = g_strndup(tmp, at - tmp);
+      prefs.mpd_hostname = g_strdup(at + 1);
     } else {
       prefs.mpd_password = g_strdup("");
       prefs.mpd_hostname = g_strdup(tmp);
