@@ -133,12 +133,14 @@ static gboolean mpd_update(void) {
         return FALSE;
       }
 
-      // Same song and not back at its start: this was a seek. Keep the
-      // play time and submission state so the song is scrobbled once.
-      // A song repeating itself starts again at 0 and counts as new.
+      // Same song: either a seek, or MPD reporting the start of playback
+      // twice. Keep the play time and submission state so the song is
+      // scrobbled once. Only a song that played for a while and is back
+      // at its start, as when it repeats, counts as a new play.
       if (prev_state == MPD_STATE_PLAY && song && mpd.song &&
           mpd_song_get_id(song) == mpd_song_get_id(mpd.song) &&
-          mpd_status_get_elapsed_time(mpd.status) > 1) {
+          (mpd_status_get_elapsed_time(mpd.status) > 1 ||
+           g_timer_elapsed(mpd.song_pos, NULL) < 3)) {
         mpd_song_free(song);
         return TRUE;
       }
