@@ -1,3 +1,8 @@
+== scmpc 0.5.1 ==
+- scmpc logs in to Last.fm again when the first login failed, for example
+  because it started before the network was up; until now nothing was
+  submitted until scmpc was restarted (thanks to Simon Arlott)
+
 == scmpc 0.5.0 ==
 - builds with GCC 10 and later (-fno-common) (thanks to Jeroen Roovers)
 - now requires glib >= 2.28
