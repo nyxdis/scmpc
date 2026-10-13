@@ -2,7 +2,7 @@
 title: scmpc - An Audioscrobbler client for MPD
 layout: default
 description: scmpc is a small daemon that submits the tracks you play in MPD to Last.fm.
-latest: 0.5.0
+latest: 0.5.1
 ---
 
 About

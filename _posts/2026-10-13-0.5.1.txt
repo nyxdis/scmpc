@@ -1,0 +1,8 @@
+---
+title: scmpc-0.5.1 has been released!
+---
+
+A bugfix release: if the first Last.fm login fails, for example because
+scmpc starts before the network is up, scmpc now logs in again instead of
+waiting for a restart. Thanks to Simon Arlott for finding this. Downloads are
+on the [releases page](https://github.com/nyxdis/scmpc/releases).
