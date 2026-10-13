@@ -31,7 +31,7 @@
 /**
  * scmpc settings
  */
-struct {
+struct prefs_t {
   gchar *mpd_hostname;
   gushort mpd_port;
   gushort mpd_timeout;
@@ -47,7 +47,9 @@ struct {
   gchar *cache_file;
   guint queue_length;
   guint cache_interval;
-} prefs;
+};
+
+extern struct prefs_t prefs;
 
 /**
  * Initialize preferences
