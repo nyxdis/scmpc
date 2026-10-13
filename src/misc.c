@@ -23,6 +23,8 @@
  * ==================================================================
  */
 
+#include <string.h>
+
 #include "audioscrobbler.h"
 #include "misc.h"
 #include "preferences.h"
@@ -76,8 +78,15 @@ void scmpc_log(G_GNUC_UNUSED const gchar *log_domain, GLogLevelFlags log_level,
 
 gsize buffer_write(void *input, gsize size, gsize nmemb,
                    G_GNUC_UNUSED void *buf) {
-  buffer = g_strdup(input);
-  return size * nmemb;
+  gsize len = size * nmemb;
+  gsize old = buffer ? strlen(buffer) : 0;
+
+  /* libcurl delivers the body in chunks that are not NUL-terminated,
+   * so append to what has already arrived instead of replacing it */
+  buffer = g_realloc(buffer, old + len + 1);
+  memcpy(buffer + old, input, len);
+  buffer[old + len] = '\0';
+  return len;
 }
 
 gint64 get_time(void) {

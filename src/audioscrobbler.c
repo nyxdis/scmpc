@@ -267,6 +267,12 @@ void as_now_playing(void) {
 
   mpd.song_state = SONG_ANNOUNCED;
 
+  if (!buffer) {
+    g_debug("Empty response from Audioscrobbler while "
+            "sending Now Playing notification.");
+    return;
+  }
+
   if (strstr(buffer, "<lfm status=\"ok\">")) {
     g_message("Sent Now Playing notification.");
   } else if (strstr(buffer, "<lfm status=\"failed\">")) {
@@ -428,6 +434,13 @@ static gboolean as_submit(void) {
   if (ret != 0) {
     g_message("Failed to connect to Audioscrobbler: %s",
               curl_easy_strerror(ret));
+    g_free(buffer);
+    buffer = NULL;
+    return FALSE;
+  }
+
+  if (!buffer) {
+    g_message("Empty response from Audioscrobbler, will retry later.");
     return FALSE;
   }
 
