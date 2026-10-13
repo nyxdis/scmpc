@@ -61,4 +61,4 @@ Your distribution ships it too? [Tell me](mailto:mende.christoph@gmail.com)!
 Development
 -----------
 
-If you want to get involved, have any feature requests or find any bugs, please write to the [mailing list](https://groups.google.com/group/scmpc-devel) or open a [new issue](https://github.com/nyxdis/scmpc/issues). You can also contact us via IRC on irc.freenode.net, #scmpc.
+If you want to get involved, have any feature requests or find any bugs, please write to the [mailing list](https://groups.google.com/group/scmpc-devel) or open a [new issue](https://github.com/nyxdis/scmpc/issues).
