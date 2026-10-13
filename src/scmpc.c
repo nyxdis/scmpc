@@ -2,7 +2,7 @@
  * scmpc.c: The front end of the program.
  *
  * ==================================================================
- * Copyright (c) 2009-2013 Christoph Mende <mende.christoph@gmail.com>
+ * Copyright (c) 2009-2026 Freydis Mende <freydis.mende@proton.me>
  * Based on Jonathan Coome's work on scmpc
  *
  * This file is part of scmpc.

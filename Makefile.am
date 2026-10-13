@@ -44,7 +44,7 @@ dist-hook: ChangeLog
 
 ChangeLog:
 	git -C $(srcdir) log --date=short \
-		--format='%ad  %an  <%ae>%n%n%w(72,8,8)%s%n' > $@
+		--format='%ad  %aN  <%aE>%n%n%w(72,8,8)%s%n' > $@
 
 distclean-local:
 	rm -f ChangeLog

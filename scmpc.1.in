@@ -1,5 +1,5 @@
 .\" Copyright 2006 Jonathan Coome (jcoome@gmail.com)
-.\" Copyright 2009-2013 Christoph Mende (mende.christoph@gmail.com)
+.\" Copyright 2009-2026 Freydis Mende (freydis.mende@proton.me)
 .\" Released under the GNU General Public License
 .TH scmpc 1 "October 2026" "" "scmpc User Guide"
 .SH NAME
@@ -195,9 +195,9 @@ to Audioscrobbler.
 Currently, there is no support for translating scmpc, but that could be added
 at some point in the future if there is demand for it.
 .PP
-Please report any other bugs to Christoph Mende <mende.christoph@gmail.com>.
+Please report any other bugs to Freydis Mende <freydis.mende@proton.me>.
 
 .SH CREDITS
 Original author: Jonathan Coome <jcoome@gmail.com>
 .br
-Current maintainer: Christoph Mende <mende.christoph@gmail.com>
+Current maintainer: Freydis Mende <freydis.mende@proton.me>
