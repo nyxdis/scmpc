@@ -31,6 +31,8 @@
 #include "queue.h"
 #include "scmpc.h"
 
+struct mpd_t mpd;
+
 static void mpd_update(void);
 static void mpd_schedule_check(void);
 static gboolean mpd_parse(GIOChannel *source, GIOCondition condition,

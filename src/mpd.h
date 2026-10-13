@@ -31,7 +31,7 @@
 /**
  * MPD connection data
  */
-struct {
+struct mpd_t {
   struct mpd_connection *conn;
   struct mpd_status *status;
   struct mpd_song *song;
@@ -41,7 +41,9 @@ struct {
   guint idle_source;
   guint check_source;
   guint reconnect_source;
-} mpd;
+};
+
+extern struct mpd_t mpd;
 
 /**
  * Connect to MPD
