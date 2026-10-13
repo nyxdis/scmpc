@@ -112,11 +112,23 @@ static void mpd_update(void) {
 
   if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY) {
     if (prev_state == MPD_STATE_PLAY || prev_state == MPD_STATE_STOP) {
+      struct mpd_song *song = mpd_run_current_song(mpd.conn);
+      mpd_response_finish(mpd.conn);
+
+      // Same song and not back at its start: this was a seek. Keep the
+      // play time and submission state so the song is scrobbled once.
+      // A song repeating itself starts again at 0 and counts as new.
+      if (prev_state == MPD_STATE_PLAY && song && mpd.song &&
+          mpd_song_get_id(song) == mpd_song_get_id(mpd.song) &&
+          mpd_status_get_elapsed_time(mpd.status) > 1) {
+        mpd_song_free(song);
+        return;
+      }
+
       // initialize new song
       if (mpd.song)
         mpd_song_free(mpd.song);
-      mpd.song = mpd_run_current_song(mpd.conn);
-      mpd_response_finish(mpd.conn);
+      mpd.song = song;
       g_timer_start(mpd.song_pos);
       mpd.song_date = get_time();
       mpd.song_state = SONG_NEW;
