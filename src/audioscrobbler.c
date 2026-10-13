@@ -199,6 +199,9 @@ void as_now_playing(void) {
     return;
   }
 
+  if (!mpd.song)
+    return;
+
   albumstr = mpd_song_get_tag(mpd.song, MPD_TAG_ALBUM, 0);
   artiststr = mpd_song_get_tag(mpd.song, MPD_TAG_ARTIST, 0);
   titlestr = mpd_song_get_tag(mpd.song, MPD_TAG_TITLE, 0);

@@ -414,7 +414,8 @@ static gboolean current_song_eligible_for_submission(void) {
 gboolean scmpc_check(G_GNUC_UNUSED gpointer data) {
   if (current_song_eligible_for_submission() && prefs.queue_length > 0) {
     queue_add_current_song();
-    return FALSE; // remove from main event loop
+    mpd.check_source = 0; // returning FALSE removes this timeout
+    return FALSE;
   }
 
   // TODO don't return true, reschedule this properly

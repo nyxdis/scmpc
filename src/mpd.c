@@ -33,7 +33,7 @@
 
 struct mpd_t mpd;
 
-static void mpd_update(void);
+static gboolean mpd_update(void);
 static void mpd_schedule_check(void);
 static gboolean mpd_parse(GIOChannel *source, GIOCondition condition,
                           gpointer data);
@@ -41,7 +41,10 @@ static gboolean mpd_parse(GIOChannel *source, GIOCondition condition,
 gboolean mpd_connect(void) {
   mpd.conn = mpd_connection_new(prefs.mpd_hostname, prefs.mpd_port,
                                 prefs.mpd_timeout * 1000);
-  if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
+  if (!mpd.conn) {
+    g_warning("Failed to connect to MPD: out of memory");
+    return FALSE;
+  } else if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
     g_warning("Failed to connect to MPD: %s",
               mpd_connection_get_error_message(mpd.conn));
     return FALSE;
@@ -60,12 +63,19 @@ gboolean mpd_connect(void) {
     mpd_send_current_song(mpd.conn);
     mpd_command_list_end(mpd.conn);
 
+    /* drop what is left over from a previous connection */
+    if (mpd.status)
+      mpd_status_free(mpd.status);
+    if (mpd.song)
+      mpd_song_free(mpd.song);
+
     mpd.status = mpd_recv_status(mpd.conn);
     mpd_response_next(mpd.conn);
     mpd.song = mpd_recv_song(mpd.conn);
     mpd_response_finish(mpd.conn);
 
-    if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
+    if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS ||
+        !mpd.status) {
       g_warning("Failed to connect to MPD: %s",
                 mpd_connection_get_error_message(mpd.conn));
       return FALSE;
@@ -81,7 +91,10 @@ gboolean mpd_connect(void) {
     g_io_channel_unref(channel);
     mpd.check_source = 0;
 
-    if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY) {
+    if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY && mpd.song) {
+      /* the song started before we connected */
+      mpd.song_date = get_time() - mpd_status_get_elapsed_time(mpd.status);
+      mpd.song_state = SONG_NEW;
       as_now_playing();
       g_timer_start(mpd.song_pos);
       mpd_schedule_check();
@@ -100,7 +113,7 @@ gboolean mpd_connect(void) {
  * retrieve the current song on play->play or stop->play.
  * Clean up on play->pause and *->stop
  */
-static void mpd_update(void) {
+static gboolean mpd_update(void) {
   enum mpd_state prev_state = MPD_STATE_UNKNOWN;
 
   if (mpd.status) {
@@ -108,12 +121,17 @@ static void mpd_update(void) {
     mpd_status_free(mpd.status);
   }
   mpd.status = mpd_run_status(mpd.conn);
-  mpd_response_finish(mpd.conn);
+  if (!mpd.status || !mpd_response_finish(mpd.conn))
+    return FALSE;
 
   if (mpd_status_get_state(mpd.status) == MPD_STATE_PLAY) {
     if (prev_state == MPD_STATE_PLAY || prev_state == MPD_STATE_STOP) {
       struct mpd_song *song = mpd_run_current_song(mpd.conn);
-      mpd_response_finish(mpd.conn);
+      if (!mpd_response_finish(mpd.conn)) {
+        if (song)
+          mpd_song_free(song);
+        return FALSE;
+      }
 
       // Same song and not back at its start: this was a seek. Keep the
       // play time and submission state so the song is scrobbled once.
@@ -122,7 +140,7 @@ static void mpd_update(void) {
           mpd_song_get_id(song) == mpd_song_get_id(mpd.song) &&
           mpd_status_get_elapsed_time(mpd.status) > 1) {
         mpd_song_free(song);
-        return;
+        return TRUE;
       }
 
       // initialize new song
@@ -156,6 +174,7 @@ static void mpd_update(void) {
       g_source_remove(mpd.check_source);
     mpd.check_source = 0;
   }
+  return TRUE;
 }
 
 /**
@@ -166,6 +185,12 @@ static void mpd_schedule_check(void) {
 
   if (mpd.check_source > 0)
     g_source_remove(mpd.check_source);
+  mpd.check_source = 0;
+
+  /* nothing to check for, or too short to be scrobbled (and a 0 second
+   * timeout would fire right away) */
+  if (!mpd.song || mpd_song_get_duration(mpd.song) < 30)
+    return;
 
   if (mpd_song_get_duration(mpd.song) >= 480)
     timeout = 240;
@@ -183,16 +208,14 @@ static gboolean mpd_parse(G_GNUC_UNUSED GIOChannel *source,
                           G_GNUC_UNUSED gpointer data) {
   enum mpd_idle events = mpd_recv_idle(mpd.conn, FALSE);
 
-  if (!mpd_response_finish(mpd.conn)) {
+  if (!mpd_response_finish(mpd.conn) ||
+      ((events & MPD_IDLE_PLAYER) && !mpd_update())) {
     g_warning("Failed to read MPD response: %s",
               mpd_connection_get_error_message(mpd.conn));
     mpd_disconnect();
     mpd_schedule_reconnect();
+    mpd.idle_source = 0; /* returning FALSE removes this watch */
     return FALSE;
-  }
-
-  if (events & MPD_IDLE_PLAYER) {
-    mpd_update();
   }
 
   mpd_send_idle_mask(mpd.conn, MPD_IDLE_PLAYER);

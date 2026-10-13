@@ -88,9 +88,13 @@ static void queue_add(const gchar *artist, const gchar *title,
 }
 
 void queue_add_current_song(void) {
-  const gchar *trackstr = mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0);
+  const gchar *trackstr;
   guint track = 0;
 
+  if (!mpd.song)
+    return;
+
+  trackstr = mpd_song_get_tag(mpd.song, MPD_TAG_TRACK, 0);
   if (trackstr)
     track = strtol(trackstr, NULL, 10);
 
