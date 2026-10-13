@@ -1,7 +1,7 @@
 .\" Copyright 2006 Jonathan Coome (jcoome@gmail.com)
 .\" Copyright 2009-2013 Christoph Mende (mende.christoph@gmail.com)
 .\" Released under the GNU General Public License
-.TH scmpc 1 "20 December 2008" "" "scmpc User Guide"
+.TH scmpc 1 "October 2026" "" "scmpc User Guide"
 .SH NAME
 scmpc \- An Audioscrobbler client for MPD
 .SH SYNOPSIS
@@ -24,13 +24,12 @@ unexpectedly for some reason, such as a power failure, you should 'lose' as
 few songs as possible.
 .PP
 The program is also forgiving in terms of the connection to the MPD server. If
-it can't connect immediately it will wait for half an hour and then try again.
-If it discovers that the server exists but doesn't respond to requests for the
-current song it will assume the server is password protected and the correct
-password wasn't specified, and it will not attempt to reconnect. The program
-doesn't exit in case there is a queue that could be submitted to
-Audioscrobbler, but when that is done the program will do very little. Check
-the log if the program doesn't appear to be doing anything.
+it can't connect, or the connection is lost, it tries again every 30 seconds.
+If the server requires a password, set it in the configuration file or in
+\fIMPD_HOST\fR; a rejected password is reported in the log and retried at the
+same interval. The program doesn't exit while it cannot reach MPD, in case
+there is a queue that could be submitted to Audioscrobbler. Check the log if
+the program doesn't appear to be doing anything.
 .PP
 .B scmpc
 is able to pick up and submit songs if crossfading is enabled, and it is able
@@ -62,7 +61,7 @@ Runs the program in the foreground instead of immediately forking. It also
 redirects logging output to standard out and doesn't create a pid file.
 .TP
 .B -q or --quiet
-Sets the logging level to none, which disables logging completely.
+Sets the logging level to none, so that only fatal errors are logged.
 .TP
 .B -v or --version
 Prints the name and version of the program along with a brief copyright notice.
@@ -94,8 +93,8 @@ and options isn't significant.
 .TP
 .B log_level
 Select the amount of logging you would like scmpc to do. This is a choice of
-four identifiers, not a text string, so don't quote it. Valid options are:
-error, warning, info and debug.
+five identifiers, not a text string, so don't quote it. Valid options are:
+none, error, warning, info and debug. The default is error.
 .TP
 .B log_file
 The file that scmpc should write the log to. It will be created if necessary.
@@ -124,8 +123,8 @@ are unlikely to need to lower this, but it's there in case.
 .RS
 .TP
 .B host
-The hostname or IP address of the server on which MPD is running. Currently
-only supports IPv4.
+The hostname, IPv4 or IPv6 address of the server on which MPD is running, or
+the path of its UNIX domain socket.
 .TP
 .B port
 The port which MPD is listening on.
@@ -135,8 +134,8 @@ The timeout in seconds before giving up on the MPD server.
 .TP
 .B password
 Set this if you need a password to read information from the MPD server.
-.PP
 .RE
+.PP
 .B Audioscrobbler Section
 .RS
 .TP
@@ -148,6 +147,19 @@ Your plaintext Audioscrobbler password.
 .TP
 .B password_hash
 Your md5 hashed Audioscrobbler password. password_hash will be preferred over password if it is set
+
+.SH ENVIRONMENT
+.TP
+.B MPD_HOST
+Overrides the MPD host from the configuration file. To also set a password,
+use the form \fIpassword@host\fR.
+.TP
+.B MPD_PORT
+Overrides the MPD port from the configuration file.
+
+.SH SIGNALS
+.B scmpc
+saves its queue and exits on SIGINT, SIGTERM, SIGQUIT and SIGHUP.
 
 .SH FILES
 .I ~/.scmpcrc
@@ -175,10 +187,6 @@ The default location of the pid file.
 .RE
 
 .SH BUGS
-If libcurl was compiled with IPv6 support and Audioscrobbler supports it, it
-should work for communicating with Audioscrobbler, but I have no way of
-knowing.
-.PP
 There is no proxy support for communicating with MPD. However, if you use a
 proxy to connect to the internet and your \fIhttp_proxy\fR environment variable
 is set up correctly, \fBscmpc\fR should use that automatically when connecting
