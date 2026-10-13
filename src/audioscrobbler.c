@@ -43,12 +43,15 @@ static struct as_conn_t as_conn;
 gchar *buffer;
 
 static void as_parse_error(char *response);
+static gchar *xml_text_after(const gchar *haystack, const gchar *open);
 static gboolean as_submit(void);
 static gushort build_querystring(gchar **qs);
 static gushort build_querystring_multi(gchar **qs);
 static gushort build_querystring_single(gchar **qs);
 
-#define API_URL "http://ws.audioscrobbler.com/2.0/"
+#ifndef API_URL
+#define API_URL "https://ws.audioscrobbler.com/2.0/"
+#endif
 #define API_KEY "3ec5638071c41a864bf0c8d451566476"
 #define API_SECRET "365e18391ccdee3bf820cb3d2ba466f6"
 
@@ -82,7 +85,7 @@ void as_cleanup(void) {
 }
 
 void as_authenticate(void) {
-  gchar *auth_token, *api_sig, *auth_url, *tmp;
+  gchar *auth_token, *api_sig, *postdata, *username, *tmp;
   gint ret;
 
   if (as_conn.status == BADAUTH) {
@@ -125,22 +128,26 @@ void as_authenticate(void) {
   api_sig = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
   g_free(tmp);
 
-  auth_url = g_strdup_printf(
-      API_URL "?method=auth.getMobileSession"
-              "&username=%s&authToken=%s&api_key=" API_KEY "&api_sig="
-              "%s",
-      prefs.as_username, auth_token, api_sig);
+  username = curl_easy_escape(as_conn.handle, prefs.as_username, 0);
+  postdata = g_strdup_printf("method=auth.getMobileSession"
+                             "&username=%s&authToken=%s&api_key=" API_KEY
+                             "&api_sig=%s",
+                             username, auth_token, api_sig);
+  curl_free(username);
   g_free(auth_token);
   g_free(api_sig);
 
-  g_debug("auth_url = %s", auth_url);
+  g_debug("Authenticating as %s", prefs.as_username);
 
-  curl_easy_setopt(as_conn.handle, CURLOPT_WRITEDATA, buffer);
-  curl_easy_setopt(as_conn.handle, CURLOPT_HTTPGET, 1);
-  curl_easy_setopt(as_conn.handle, CURLOPT_URL, auth_url);
+  /* start from an empty buffer, this may run while a response is pending */
+  g_free(buffer);
+  buffer = NULL;
+
+  curl_easy_setopt(as_conn.handle, CURLOPT_COPYPOSTFIELDS, postdata);
+  curl_easy_setopt(as_conn.handle, CURLOPT_URL, API_URL);
 
   ret = curl_easy_perform(as_conn.handle);
-  g_free(auth_url);
+  g_free(postdata);
 
   if (ret) {
     g_warning("Could not connect to the Audioscrobbler: %s",
@@ -159,10 +166,17 @@ void as_authenticate(void) {
   }
 
   if (strstr(buffer, "<lfm status=\"ok\">")) {
-    char *tmp = strstr(buffer, "<key>") + 5;
-    as_conn.session_id = g_strndup(tmp, strcspn(tmp, "<"));
-    g_message("Connected to Audioscrobbler.");
-    as_conn.status = CONNECTED;
+    gchar *key = xml_text_after(buffer, "<key>");
+    if (key && *key) {
+      g_free(as_conn.session_id);
+      as_conn.session_id = key;
+      g_message("Connected to Audioscrobbler.");
+      as_conn.status = CONNECTED;
+    } else {
+      g_free(key);
+      g_message("Audioscrobbler response contained no session key");
+      g_debug("Response was: %s", buffer);
+    }
   } else if (strstr(buffer, "<lfm status=\"failed\">")) {
     as_parse_error(buffer);
   } else {
@@ -470,12 +484,24 @@ static gboolean as_submit(void) {
  * Parse errors returned from Last.fm and adjust the status if applicable
  */
 static void as_parse_error(char *response) {
-  gchar *tmp, *message;
-  gushort code;
+  const gchar *start = strstr(response, "<error code=\"");
+  gchar *message;
+  gint64 code;
 
-  tmp = strstr(response, "<error code=\"") + 13;
-  code = g_ascii_strtoll(tmp, NULL, 0);
+  if (!start) {
+    g_warning("Audioscrobbler reported an error without details");
+    g_debug("Response was: %s", response);
+    return;
+  }
 
+  code = g_ascii_strtoll(start + strlen("<error code=\""), NULL, 10);
+  message = xml_text_after(start, "\">");
+  g_warning("Audioscrobbler error %" G_GINT64_FORMAT ": %s", code,
+            message ? message : "(no message)");
+  g_free(message);
+
+  /* response points into the shared buffer, do not use it below here:
+   * as_authenticate() replaces the buffer with its own response */
   switch (code) {
   case 4:
     as_conn.status = BADAUTH;
@@ -486,11 +512,19 @@ static void as_parse_error(char *response) {
   default:
     break;
   }
+}
 
-  tmp = strstr(tmp, "\">") + 2;
-  message = g_strndup(tmp, strcspn(tmp, "<"));
-  g_warning("%s", message);
-  g_free(message);
+/**
+ * Return a copy of the text that follows open, up to the next '<', or NULL
+ * if open does not occur in haystack
+ */
+static gchar *xml_text_after(const gchar *haystack, const gchar *open) {
+  const gchar *start = strstr(haystack, open);
+
+  if (!start)
+    return NULL;
+  start += strlen(open);
+  return g_strndup(start, strcspn(start, "<"));
 }
 
 void as_check_submit(void) {
