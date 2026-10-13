@@ -323,7 +323,7 @@ static gushort build_querystring_single(gchar **qs) {
   tmp = g_strdup_printf(
       "album%sapi_key" API_KEY "artist%sduration%d"
       "methodtrack.scrobblesk%stimestamp%" G_GINT64_FORMAT "track%s"
-      "tracknumber%d" API_SECRET,
+      "trackNumber%d" API_SECRET,
       song->album, song->artist, song->length, as_conn.session_id, song->date,
       song->title, song->track);
   sig = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
@@ -339,7 +339,7 @@ static gushort build_querystring_single(gchar **qs) {
   *qs = g_strdup_printf(
       "api_key=" API_KEY "&method=track.scrobble&sk=%s"
       "&album=%s&artist=%s&duration=%d&timestamp=%" G_GINT64_FORMAT "&track=%s"
-      "&tracknumber=%d&api_sig=%s",
+      "&trackNumber=%d&api_sig=%s",
       as_conn.session_id, album, artist, song->length, song->date, title,
       song->track, sig);
 
@@ -467,14 +467,14 @@ static gboolean as_submit(void) {
   } else if (strstr(buffer, "<lfm status=\"failed\">")) {
     as_parse_error(buffer);
   } else {
-    g_message("Could not parse Audioscrobbler submit"
-              " response.");
+    /* keep the songs and retry later: a possible duplicate scrobble is
+     * better than silently losing them */
+    g_message("Could not parse Audioscrobbler submit response,"
+              " will retry later.");
     g_debug("Response was: %s", buffer);
-
-    // Temporary fix for duplicate submissions problem
-    g_message("Couldn't verify if songs were submitted;"
-              " clearing queue anyway.");
-    queue_clear_n(num_songs);
+    g_free(buffer);
+    buffer = NULL;
+    return FALSE;
   }
 
   g_free(buffer);
