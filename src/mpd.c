@@ -49,6 +49,11 @@ gboolean mpd_connect(void) {
     g_critical("MPD too old, please upgrade to 0.14 or newer");
     scmpc_shutdown();
     return FALSE;
+  } else if (prefs.mpd_password && prefs.mpd_password[0] != '\0' &&
+             !mpd_run_password(mpd.conn, prefs.mpd_password)) {
+    g_warning("MPD rejected the password: %s",
+              mpd_connection_get_error_message(mpd.conn));
+    return FALSE;
   } else {
     mpd_command_list_begin(mpd.conn, TRUE);
     mpd_send_status(mpd.conn);
@@ -63,8 +68,6 @@ gboolean mpd_connect(void) {
     if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
       g_warning("Failed to connect to MPD: %s",
                 mpd_connection_get_error_message(mpd.conn));
-      mpd_disconnect();
-      mpd_schedule_reconnect();
       return FALSE;
     }
 
@@ -201,5 +204,7 @@ void mpd_disconnect(void) {
 }
 
 void mpd_schedule_reconnect(void) {
+  if (mpd.reconnect_source > 0)
+    return;
   mpd.reconnect_source = g_timeout_add_seconds(30, mpd_reconnect, NULL);
 }
