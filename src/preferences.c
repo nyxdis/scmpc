@@ -55,7 +55,7 @@ static gint cf_log_level(cfg_t *cfg, cfg_opt_t *opt, const gchar *value,
   if (!strncmp(value, "none", 4))
     *(GLogLevelFlags *)result = G_LOG_LEVEL_ERROR;
   else if (!strncmp(value, "error", 5))
-    *(GLogLevelFlags *)result = G_LOG_LEVEL_ERROR;
+    *(GLogLevelFlags *)result = G_LOG_LEVEL_CRITICAL;
   else if (!strncmp(value, "warning", 7))
     *(GLogLevelFlags *)result = G_LOG_LEVEL_WARNING;
   else if (!strncmp(value, "info", 4))
@@ -164,7 +164,7 @@ static gboolean parse_config_file(void) {
                          CFG_STR("password", "", CFGF_NONE),
                          CFG_STR("password_hash", "", CFGF_NONE), CFG_END()};
   cfg_opt_t opts[] = {
-      CFG_INT_CB("log_level", G_LOG_LEVEL_ERROR, CFGF_NONE, &cf_log_level),
+      CFG_INT_CB("log_level", G_LOG_LEVEL_CRITICAL, CFGF_NONE, &cf_log_level),
       CFG_STR("log_file", "/var/log/scmpc.log", CFGF_NONE),
       CFG_STR("pid_file", "/var/run/scmpc.pid", CFGF_NONE),
       CFG_STR("cache_file", "/var/lib/scmpc/scmpc.cache", CFGF_NONE),

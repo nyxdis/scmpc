@@ -54,8 +54,19 @@ void scmpc_log(G_GNUC_UNUSED const gchar *log_domain, GLogLevelFlags log_level,
   gchar *ts;
   const gchar format[] = "%Y-%m-%d %H:%M:%S  ";
 
-  if (log_level > prefs.log_level)
+  /* strip G_LOG_FLAG_FATAL and G_LOG_FLAG_RECURSION before comparing, or
+   * g_error() and other fatal messages compare as less important */
+  GLogLevelFlags level = log_level & G_LOG_LEVEL_MASK;
+
+  if (level > prefs.log_level)
     return;
+
+  /* when logging to a file, also show errors to whoever started scmpc;
+   * once daemonised stderr is /dev/null and this is a no-op */
+  if (log_file != stdout && level <= G_LOG_LEVEL_CRITICAL) {
+    fputs(message, stderr);
+    fputs("\n", stderr);
+  }
 
 #if GLIB_CHECK_VERSION(2, 26, 0)
   GDateTime *datetime = g_date_time_new_now_local();
