@@ -114,8 +114,9 @@ static gboolean parse_files(cfg_t *cfg) {
   for (gint i = 0; i < 3; i++) {
     switch (cfg_parse(cfg, config_files[i])) {
     case CFG_PARSE_ERROR:
-      fprintf(stderr, "%s: This configuration file "
-                      "contains errors and cannot be parsed.\n",
+      fprintf(stderr,
+              "%s: This configuration file "
+              "contains errors and cannot be parsed.\n",
               config_files[i]);
       free_config_files(config_files);
       return FALSE;
@@ -169,8 +170,7 @@ static gboolean parse_config_file(void) {
                           /* removed in 0.4.0, still accepted so old
                            * configuration files keep working */
                           CFG_INT("interval", 0, CFGF_NODEFAULT),
-                          CFG_STR("password", "", CFGF_NONE),
-                          CFG_END()};
+                          CFG_STR("password", "", CFGF_NONE), CFG_END()};
   cfg_opt_t as_opts[] = {CFG_STR("username", "", CFGF_NONE),
                          CFG_STR("password", "", CFGF_NONE),
                          CFG_STR("password_hash", "", CFGF_NONE), CFG_END()};

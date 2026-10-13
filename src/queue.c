@@ -204,16 +204,17 @@ static void write_element(gpointer data, gpointer user_data) {
   g_strdelimit(song->title, "\r\n", ' ');
   g_strdelimit(song->album, "\r\n", ' ');
 
-  g_string_append_printf(cache, "# BEGIN SONG\n"
-                      "artist: %s\n"
-                      "title: %s\n"
-                      "album: %s\n"
-                      "length: %d\n"
-                      "track: %d\n"
-                      "date: %" G_GINT64_FORMAT "\n"
-                      "# END SONG\n\n",
-          song->artist, song->title, song->album, song->length, song->track,
-          song->date);
+  g_string_append_printf(cache,
+                         "# BEGIN SONG\n"
+                         "artist: %s\n"
+                         "title: %s\n"
+                         "album: %s\n"
+                         "length: %d\n"
+                         "track: %d\n"
+                         "date: %" G_GINT64_FORMAT "\n"
+                         "# END SONG\n\n",
+                         song->artist, song->title, song->album, song->length,
+                         song->track, song->date);
 }
 
 void queue_clear_n(guint num) {
