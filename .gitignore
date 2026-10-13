@@ -23,3 +23,5 @@ tests/*.log
 tests/*.trs
 test-suite.log
 *~
+.dirstamp
+test-driver

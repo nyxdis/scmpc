@@ -3,5 +3,5 @@
 autoreconf -ifv
 
 if [ -z "${NOCONFIGURE}" ]; then
-	./configure $@
+	./configure "$@"
 fi
