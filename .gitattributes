@@ -1,0 +1,2 @@
+# keep the old addresses mapped in .mailmap out of release and source archives
+.mailmap export-ignore
