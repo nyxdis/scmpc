@@ -16,3 +16,10 @@ scmpc
 scmpc.1
 stamp-h1
 .clang_complete
+tests/test_misc
+tests/test_queue
+tests/test_audioscrobbler
+tests/*.log
+tests/*.trs
+test-suite.log
+*~

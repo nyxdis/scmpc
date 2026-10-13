@@ -18,6 +18,26 @@ scmpc_CFLAGS =	$(glib_CFLAGS) \
 		$(curl_CFLAGS) \
 		$(libmpdclient_CFLAGS)
 
+TESTS = tests/test_misc tests/test_queue tests/test_audioscrobbler
+check_PROGRAMS = $(TESTS)
+
+test_cflags = $(scmpc_CFLAGS) -I$(srcdir)/src
+
+tests_test_misc_SOURCES = tests/test_misc.c src/misc.c
+tests_test_misc_CFLAGS = $(test_cflags)
+tests_test_misc_LDADD = $(scmpc_LDADD)
+
+tests_test_queue_SOURCES = tests/test_queue.c src/queue.c src/misc.c
+tests_test_queue_CFLAGS = $(test_cflags)
+tests_test_queue_LDADD = $(scmpc_LDADD)
+
+# includes src/audioscrobbler.c to reach its static functions
+tests_test_audioscrobbler_SOURCES = tests/test_audioscrobbler.c \
+		src/queue.c src/misc.c
+tests_test_audioscrobbler_CFLAGS = $(test_cflags)
+tests_test_audioscrobbler_LDADD = $(scmpc_LDADD)
+EXTRA_tests_test_audioscrobbler_DEPENDENCIES = src/audioscrobbler.c
+
 DEFS += -DSYSCONFDIR=\"$(sysconfdir)\" -D_XOPEN_SOURCE=500
 
 dist-hook: ChangeLog
