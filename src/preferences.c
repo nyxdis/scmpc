@@ -134,9 +134,12 @@ static gboolean parse_files(cfg_t *cfg) {
 }
 
 /**
- * Expand ~ to the user's home dir
+ * Expand ~ to the user's home dir and make relative paths absolute, since
+ * the daemon changes its working directory to /
  */
 static gchar *expand_tilde(const gchar *path) {
+  gchar *cwd, *abs;
+
   if (path[0] == '~') {
     const gchar *home = getenv("HOME");
     if (!home)
@@ -145,7 +148,13 @@ static gchar *expand_tilde(const gchar *path) {
     return g_strconcat(home, &path[1], NULL);
   }
 
-  return g_strdup(path);
+  if (g_path_is_absolute(path))
+    return g_strdup(path);
+
+  cwd = g_get_current_dir();
+  abs = g_build_filename(cwd, path, NULL);
+  g_free(cwd);
+  return abs;
 }
 
 /**
@@ -273,7 +282,7 @@ static gboolean parse_command_line(gint argc, gchar **argv) {
 
   if (pid_file) {
     g_free(prefs.pid_file);
-    prefs.pid_file = g_strdup(pid_file);
+    prefs.pid_file = expand_tilde(pid_file);
   }
   if (quiet && debug) {
     fputs("Specifying --debug and --quiet at the same time does "

@@ -24,6 +24,7 @@
  */
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -38,12 +39,12 @@
 #include "scmpc.h"
 
 /* Static function prototypes */
-static gint scmpc_is_running(void);
+static pid_t scmpc_is_running(void);
 static gboolean scmpc_pid_create(void);
 static void scmpc_pid_remove(void);
 static void scmpc_cleanup(void);
 
-static void sighandler(gint sig);
+static void sighandler(int sig);
 static gboolean signal_parse(GIOChannel *source, GIOCondition condition,
                              gpointer data);
 static gboolean open_signal_pipe(void);
@@ -73,8 +74,10 @@ int main(int argc, char *argv[]) {
   pid_t pid;
   struct sigaction sa;
 
-  if (init_preferences(argc, argv) == FALSE)
-    g_error("Config file parsing failed");
+  if (init_preferences(argc, argv) == FALSE) {
+    g_printerr("Config file parsing failed\n");
+    exit(EXIT_FAILURE);
+  }
 
   /* Open the log file before forking, so that if there is an error, the
    * user will get some idea what is going on */
@@ -84,8 +87,13 @@ int main(int argc, char *argv[]) {
 
   /* Check if scmpc is already running */
   if ((pid = scmpc_is_running()) > 0) {
+    g_critical("Daemon is already running with PID: %ld", (long)pid);
     clear_preferences();
-    g_error("Daemon is already running with PID: %ld", (long)pid);
+    exit(EXIT_FAILURE);
+  } else if (pid < 0 && prefs.fork) {
+    g_critical("Cannot tell whether scmpc is already running, not starting");
+    clear_preferences();
+    exit(EXIT_FAILURE);
   }
 
   /* Daemonise if wanted */
@@ -100,6 +108,10 @@ int main(int argc, char *argv[]) {
   sigaction(SIGINT, &sa, NULL);
   sigaction(SIGTERM, &sa, NULL);
   sigaction(SIGQUIT, &sa, NULL);
+  sigaction(SIGHUP, &sa, NULL);
+  /* a server closing the connection must not kill scmpc mid-write */
+  sa.sa_handler = SIG_IGN;
+  sigaction(SIGPIPE, &sa, NULL);
 
   if (as_connection_init() == FALSE) {
     scmpc_cleanup();
@@ -136,8 +148,11 @@ int main(int argc, char *argv[]) {
 
 /**
  * Check if there is a running scmpc instance
+ *
+ * Returns the pid of the running instance, 0 if there is none, or -1 if
+ * the pid file cannot be checked.
  */
-static gint scmpc_is_running(void) {
+static pid_t scmpc_is_running(void) {
   FILE *pid_file = fopen(prefs.pid_file, "r");
   pid_t pid;
 
@@ -145,51 +160,46 @@ static gint scmpc_is_running(void) {
     return 0;
 
   if (!pid_file) {
-    /* Unable to open PID file, returning error */
     g_warning("Cannot open pid file (%s) for reading: %s", prefs.pid_file,
               g_strerror(errno));
     return -1;
   }
 
-  if (fscanf(pid_file, "%d", &pid) < 1) {
-    /* Read nothing from pid_file */
+  /* pid 0 or below would address a process group in kill() */
+  if (fscanf(pid_file, "%d", &pid) < 1 || pid <= 0) {
     fclose(pid_file);
     if (unlink(prefs.pid_file) < 0) {
-      /* Unable to remove invalid PID file, returning error */
       g_warning("Invalid pid file %s cannot be removed, "
                 "please remove this file or change pid_file in "
                 "your configuration.",
                 prefs.pid_file);
       return -1;
-    } else {
-      /* Invalid PID file removed, start new instance */
-      g_message("Invalid pid file %s removed.", prefs.pid_file);
-      return 0;
     }
+    g_message("Invalid pid file %s removed.", prefs.pid_file);
+    return 0;
   }
 
   fclose(pid_file);
 
-  if (!kill(pid, 0)) {
-    /* scmpc already running */
+  /* EPERM: the process exists but belongs to someone else */
+  if (!kill(pid, 0) || errno == EPERM)
     return pid;
-  } else if (errno == ESRCH) {
-    /* no such process */
+
+  if (errno == ESRCH) {
     if (unlink(prefs.pid_file) < 0) {
-      /* Unable to remove invalid pid file, returning error */
-      fprintf(stderr, "Old pid file %s cannot be removed, "
-                      " please remove this file or change pid_file in"
-                      " your configuration.",
-              prefs.pid_file);
+      g_warning("Old pid file %s cannot be removed, "
+                "please remove this file or change pid_file in "
+                "your configuration.",
+                prefs.pid_file);
       return -1;
-    } else {
-      /* Old pid file removed, starting new instance */
-      puts("Old pid file removed.");
-      return 0;
     }
+    g_message("Old pid file removed.");
+    return 0;
   }
 
-  return 0;
+  g_warning("Cannot check pid %ld from %s: %s", (long)pid, prefs.pid_file,
+            g_strerror(errno));
+  return -1;
 }
 
 /**
@@ -218,13 +228,18 @@ static void scmpc_pid_remove(void) {
 
 /**
  * Handler for UNIX signals
+ *
+ * Runs in signal context, so it may only use async-signal-safe calls. The
+ * main loop picks the signal number up from the pipe.
  */
-static void sighandler(gint sig) {
-  if (write(signal_pipe[1], &sig, 1) < 0) {
-    g_message("Writing to signal pipe failed, re-opening pipe.");
-    close_signal_pipe();
-    open_signal_pipe();
-  }
+static void sighandler(int sig) {
+  int saved_errno = errno;
+  unsigned char byte = (unsigned char)sig;
+  /* if this fails the pipe is full and a shutdown is already pending */
+  ssize_t ret = write(signal_pipe[1], &byte, 1);
+
+  (void)ret;
+  errno = saved_errno;
 }
 
 /**
@@ -239,6 +254,9 @@ static gboolean open_signal_pipe(void) {
                g_strerror(errno));
     return FALSE;
   }
+
+  /* never block inside the signal handler */
+  fcntl(signal_pipe[1], F_SETFL, fcntl(signal_pipe[1], F_GETFL) | O_NONBLOCK);
 
   channel = g_io_channel_unix_new(signal_pipe[0]);
   signal_source = g_io_add_watch(channel, G_IO_IN, signal_parse, NULL);
@@ -265,17 +283,18 @@ static gboolean signal_parse(GIOChannel *source,
                              G_GNUC_UNUSED GIOCondition condition,
                              G_GNUC_UNUSED gpointer data) {
   gint fd = g_io_channel_unix_get_fd(source);
-  gchar sig;
-  if (read(fd, &sig, 1) < 0) {
+  unsigned char sig;
+
+  if (read(fd, &sig, 1) != 1) {
     g_message("Reading from signal pipe failed, re-opening pipe.");
     close_signal_pipe();
     open_signal_pipe();
-    return TRUE;
-  } else {
-    g_message("Caught signal %hhd, exiting.", sig);
-    scmpc_shutdown();
-    return TRUE;
+    return FALSE; /* the new pipe has its own watch */
   }
+
+  g_message("Caught signal %d, exiting.", sig);
+  scmpc_shutdown();
+  return TRUE;
 }
 
 /**
@@ -283,22 +302,37 @@ static gboolean signal_parse(GIOChannel *source,
  */
 static void daemonise(void) {
   pid_t pid;
+  int fd;
 
   if ((pid = fork()) < 0) {
-    /* Something went wrong... */
+    g_critical("Could not fork process: %s", g_strerror(errno));
     clear_preferences();
-    g_error("Could not fork process.");
+    exit(EXIT_FAILURE);
   } else if (pid) { /* The parent */
     exit(EXIT_SUCCESS);
-  } else { /* The child */
-    /* Force sane umask */
-    umask(022);
+  }
 
-    /* Create the PID file */
-    if (scmpc_pid_create() == FALSE) {
-      clear_preferences();
-      g_error("Failed to create PID file");
-    }
+  /* The child: leave the terminal's session so closing it does not
+   * send us SIGHUP, and let go of the working directory and stdio */
+  if (setsid() < 0)
+    g_warning("Could not create a new session: %s", g_strerror(errno));
+  if (chdir("/") < 0)
+    g_warning("Could not change directory to /: %s", g_strerror(errno));
+  umask(022);
+
+  fd = open("/dev/null", O_RDWR);
+  if (fd >= 0) {
+    dup2(fd, STDIN_FILENO);
+    dup2(fd, STDOUT_FILENO);
+    dup2(fd, STDERR_FILENO);
+    if (fd > STDERR_FILENO)
+      close(fd);
+  }
+
+  if (scmpc_pid_create() == FALSE) {
+    g_critical("Failed to create PID file");
+    clear_preferences();
+    exit(EXIT_FAILURE);
   }
 }
 
@@ -341,14 +375,25 @@ void kill_scmpc(void) {
   FILE *pid_file = fopen(prefs.pid_file, "r");
   pid_t pid;
 
-  if (!pid_file)
-    g_critical("Unable to open PID file: %s", g_strerror(errno));
+  if (!pid_file) {
+    g_printerr("Unable to open pid file %s: %s\n", prefs.pid_file,
+               g_strerror(errno));
+    exit(EXIT_FAILURE);
+  }
 
-  if (fscanf(pid_file, "%d", &pid) < 1)
-    g_critical("Invalid PID file");
+  /* pid 0 or below would signal a whole process group */
+  if (fscanf(pid_file, "%d", &pid) < 1 || pid <= 0) {
+    fclose(pid_file);
+    g_printerr("Invalid pid file %s\n", prefs.pid_file);
+    exit(EXIT_FAILURE);
+  }
+  fclose(pid_file);
 
-  if (kill(pid, SIGTERM) < 0)
-    g_critical("Cannot kill running scmpc");
+  if (kill(pid, SIGTERM) < 0) {
+    g_printerr("Cannot kill scmpc with pid %ld: %s\n", (long)pid,
+               g_strerror(errno));
+    exit(EXIT_FAILURE);
+  }
 
   exit(EXIT_SUCCESS);
 }
